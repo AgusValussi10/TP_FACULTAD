@@ -1,0 +1,34 @@
+Core - Comparación de cotizaciones (5)
+
+1. Comparación en tiempo real de tasas de cambio de billeteras virtuales
+2. Calculadora de conversión de moneda (ARS → BRL vía PIX)
+3. Visualización de diferencial de ahorro entre opciones
+4. Histórico de cotizaciones por billetera (últimas 24hs/7 días)
+5. Alertas de mejor momento para pagar
+
+Gestión de billeteras y preferencias (4)
+
+6. Agregar/eliminar billeteras virtuales a comparar
+7. Configuración de billeteras favoritas/más usadas
+8. Selector de país/moneda de destino
+9. Configuración de notificaciones push
+
+Usuario y autenticación (3)
+
+10. Registro/Login (email o social login)
+11. Perfil de usuario con preferencias
+12. Historial de consultas realizadas
+
+Información y contenido (4)
+
+13. Tutorial/onboarding para nuevos usuarios
+14. FAQ sobre uso de billeteras y PIX
+15. Información sobre comisiones por billetera
+16. Noticias/actualizaciones sobre cambios en billeteras
+
+Funcionalidades avanzadas - Escalabilidad (4)
+
+17. Modo offline (última cotización guardada)
+18. Compartir comparación con otros usuarios
+19. Widget para pantalla de inicio con mejor opción del momento
+20. Sistema de reseñas/experiencias de usuarios por billetera
