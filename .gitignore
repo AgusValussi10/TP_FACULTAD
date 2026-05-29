@@ -1,0 +1,8 @@
+# Claude Code memory
+.claude/
+
+# Visual Studio
+.vs/
+
+# Node
+node_modules/
