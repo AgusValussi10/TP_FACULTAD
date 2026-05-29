@@ -199,9 +199,10 @@
     .noticias-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
     .noticia-card {
       background: var(--blanco); border-radius: 16px; overflow: hidden;
-      box-shadow: var(--sombra); transition: transform .2s;
+      box-shadow: var(--sombra); transition: transform .2s, box-shadow .2s;
+      cursor: pointer;
     }
-    .noticia-card:hover { transform: translateY(-4px); }
+    .noticia-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(249,115,22,.22); }
     .noticia-img {
       height: 140px; display: flex; align-items: center; justify-content: center;
       font-size: 3rem;
@@ -215,6 +216,60 @@
     .noticia-body h3 { font-size: .95rem; font-weight: 800; margin-bottom: .4rem; line-height: 1.4; }
     .noticia-body p { font-size: .83rem; color: #6B7280; line-height: 1.6; }
     .noticia-date { font-size: .75rem; color: #9CA3AF; margin-top: .75rem; }
+    .noticia-leer-mas {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .78rem; font-weight: 800; color: var(--verde);
+      margin-top: .8rem; text-decoration: none;
+    }
+    .noticia-leer-mas::after { content: '→'; transition: transform .2s; }
+    .noticia-card:hover .noticia-leer-mas::after { transform: translateX(4px); }
+
+    /* ======= MODAL NOTICIAS ======= */
+    .noticia-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 300;
+      align-items: center; justify-content: center;
+      padding: 1rem;
+    }
+    .noticia-overlay.open { display: flex; }
+    .noticia-modal {
+      background: var(--blanco); border-radius: 20px;
+      width: min(600px, 95vw); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 70px rgba(0,0,0,.3);
+      position: relative; animation: popIn .25s ease;
+    }
+    .nm-header {
+      height: 200px; display: flex; align-items: center; justify-content: center;
+      font-size: 4rem; border-radius: 20px 20px 0 0; flex-shrink: 0;
+      overflow: hidden; position: relative;
+    }
+    .nm-header img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 20px 20px 0 0;
+    }
+    .nm-body { padding: 1.8rem 2rem 2rem; }
+    .nm-meta {
+      display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .nm-tag {
+      display: inline-block; background: var(--verde-bg); color: var(--verde);
+      font-size: .72rem; font-weight: 800; padding: .2rem .7rem; border-radius: 10px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .nm-date { font-size: .78rem; color: #9CA3AF; font-weight: 600; }
+    .nm-title { font-size: 1.25rem; font-weight: 900; color: var(--gris-texto); line-height: 1.35; margin-bottom: .75rem; }
+    .nm-resumen { font-size: .9rem; color: #4B5563; line-height: 1.7; margin-bottom: 1.25rem; }
+    .nm-divider { border: none; border-top: 2px solid var(--borde); margin: 1.25rem 0; }
+    .nm-detalle { font-size: .88rem; color: #6B7280; line-height: 1.8; }
+    .nm-detalle p { margin-bottom: .85rem; }
+    .nm-detalle p:last-child { margin-bottom: 0; }
+    .nm-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: rgba(255,255,255,.85); border: none; border-radius: 50%;
+      width: 34px; height: 34px; font-size: 1.1rem; cursor: pointer;
+      color: #6B7280; display: flex; align-items: center; justify-content: center;
+      transition: background .2s, color .2s; z-index: 1;
+    }
+    .nm-close:hover { background: var(--blanco); color: var(--gris-texto); }
 
     /* ======= ACCESO ======= */
     .acceso-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
@@ -224,9 +279,9 @@
       text-decoration: none; color: inherit; display: block;
     }
     .acceso-card:hover { transform: translateY(-5px); }
-    .acceso-card.docentes { background: linear-gradient(135deg, #F97316, #FB923C); color: var(--blanco); }
+    .acceso-card.docentes { background: linear-gradient(135deg, #F88C20, #FB963A); color: var(--blanco); }
     .acceso-card.padres   { background: linear-gradient(135deg, #1F2937, #374151); color: var(--blanco); }
-    .acceso-card.alumnos  { background: linear-gradient(135deg, #EA580C, #9A3412); color: var(--blanco); }
+    .acceso-card.alumnos  { background: linear-gradient(135deg, #E35E15, #983316); color: var(--blanco); }
     .acceso-icon { font-size: 3rem; margin-bottom: 1rem; }
     .acceso-card h3 { font-size: 1.1rem; font-weight: 900; margin-bottom: .4rem; }
     .acceso-card p { font-size: .85rem; opacity: .85; line-height: 1.5; }
@@ -535,7 +590,7 @@
         <img src="assets/campofutbol.avif" alt="Campo de fútbol">
       </div>
       <div class="galeria-item">
-        <img src="assets/laboratorio.avif" alt="Laboratorio">
+        <img src="assets/salacomputacion.avif" alt="Laboratorio">
       </div>
     </div>
   </div>
@@ -622,8 +677,6 @@
       <div class="bienestar-item"><div class="bi-icon">🥋</div><span>Artes Marciales</span></div>
       <div class="bienestar-item"><div class="bi-icon">🏐</div><span>Vóleibol</span></div>
       <div class="bienestar-item"><div class="bi-icon">💃</div><span>Danza</span></div>
-      <div class="bienestar-item"><div class="bi-icon">🏀</div><span>Básquet</span></div>
-      <div class="bienestar-item"><div class="bi-icon">♟️</div><span>Ajedrez</span></div>
     </div>
   </div>
 </section>
@@ -635,31 +688,57 @@
     <h2 class="section-title">Novedades del Centro Educativo</h2>
     <p class="section-sub">Mantente informado sobre las últimas novedades, eventos y actividades de nuestra institución.</p>
     <div class="noticias-grid">
-      <div class="noticia-card">
-        <div class="noticia-img" style="background:#D5F5E3;">🎉</div>
+      <div class="noticia-card"
+           onclick="abrirNoticia(this)"
+           data-emoji="🎉"
+           data-color="#D5F5E3"
+           data-img="assets/inscripciones2027.avif"
+           data-tag="Institución"
+           data-date="📅 Mayo 2026"
+           data-title="Apertura de inscripciones para el ciclo 2027"
+           data-resumen="Ya están abiertas las inscripciones para todos los niveles del próximo ciclo lectivo. ¡No pierdas tu lugar!"
+           data-detalle="&lt;p&gt;Nos complace anunciar que a partir del &lt;strong&gt;1° de junio de 2026&lt;/strong&gt; se encuentran abiertas las inscripciones para el ciclo lectivo &lt;strong&gt;2027&lt;/strong&gt; en todos los niveles: Inicial, Primario y Secundario.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Período de inscripción:&lt;/strong&gt; del 1° de junio al 31 de julio de 2026. Los cupos son limitados, por lo que se recomienda inscribirse con anticipación.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Documentación requerida:&lt;/strong&gt;&lt;/p&gt;&lt;ul style=&quot;margin:.4rem 0 .8rem 1.2rem;line-height:2&quot;&gt;&lt;li&gt;DNI original y fotocopia del alumno&lt;/li&gt;&lt;li&gt;Partida de nacimiento&lt;/li&gt;&lt;li&gt;Libreta o boletín del año anterior&lt;/li&gt;&lt;li&gt;2 fotos carnet&lt;/li&gt;&lt;li&gt;Certificado de vacunación actualizado&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;strong&gt;Cómo inscribirse:&lt;/strong&gt; Las inscripciones se realizan de forma &lt;strong&gt;presencial&lt;/strong&gt; en secretaría, de lunes a viernes de 8:00 a 12:00 hs y de 16:00 a 19:00 hs. &lt;/p&gt;&lt;p&gt;Para más información escribinos a &lt;strong&gt;inscripciones@educar.edu.ar&lt;/strong&gt; o comunicate al &lt;strong&gt;+54 362 XXX-XXXX&lt;/strong&gt;.&lt;/p&gt;">
+        <div class="noticia-img" style="padding:0;overflow:hidden;"><img src="assets/inscripciones2027.avif" alt="Inscripciones 2027" style="width:100%;height:100%;object-fit:cover;"></div>
         <div class="noticia-body">
           <span class="noticia-tag">Institución</span>
           <h3>Apertura de inscripciones para el ciclo 2027</h3>
           <p>Ya están abiertas las inscripciones para todos los niveles del próximo ciclo lectivo. ¡No pierdas tu lugar!</p>
-          <div class="noticia-date">📅 Mayo 2026</div>
+          <div class="noticia-date">📅 Septiembre 2026</div>
+          <span class="noticia-leer-mas">Leer más</span>
         </div>
       </div>
-      <div class="noticia-card">
-        <div class="noticia-img" style="background:#D6EAF8;">🏗️</div>
+      <div class="noticia-card"
+           onclick="abrirNoticia(this)"
+           data-img="assets/salacomputacion.avif"
+           data-tag="Infraestructura"
+           data-date="📅 Mayo 2026"
+           data-title="Inauguración de la nueva Sala de Computación"
+           data-resumen="Nuestra nueva sala de computación con 30 equipos modernos ya está disponible para toda la comunidad educativa."
+           data-detalle="<p>Inauguramos nuestra nueva Sala de Computación con 30 equipos modernos, proyector interactivo y fibra óptica, disponible para toda la comunidad educativa.</p><p>A partir del ciclo 2027 se incorporan talleres de programación y robótica para todos los niveles.</p>">
+        <div class="noticia-img" style="padding:0;overflow:hidden;"><img src="assets/salacomputacion.avif" alt="Sala de Computación" style="width:100%;height:100%;object-fit:cover;"></div>
         <div class="noticia-body">
           <span class="noticia-tag">Infraestructura</span>
-          <h3>Avances en la construcción de las instalaciones deportivas</h3>
-          <p>Las obras de la pileta de natación y las canchas de fútbol avanzan según el cronograma previsto.</p>
-          <div class="noticia-date">📅 Abril 2026</div>
+          <h3>Inauguración de la nueva Sala de Computación</h3>
+          <p>Nuestra nueva sala de computación con 30 equipos modernos ya está disponible para toda la comunidad educativa.</p>
+          <div class="noticia-date">📅 Mayo 2026</div>
+          <span class="noticia-leer-mas">Leer más</span>
         </div>
       </div>
-      <div class="noticia-card">
-        <div class="noticia-img" style="background:#FDEBD0;">📚</div>
+      <div class="noticia-card"
+           onclick="abrirNoticia(this)"
+           data-img="assets/nuevosprofesores.avif"
+           data-tag="Educación"
+           data-date="📅 Marzo 2026"
+           data-title="Incorporación de nuevos docentes para el ciclo 2027"
+           data-resumen="Sumamos profesionales altamente capacitados en distintas áreas para fortalecer nuestra propuesta educativa."
+           data-detalle="<p>Nos complace anunciar la incorporación de nuevos docentes especializados en matemáticas, ciencias, idiomas y tecnología para el ciclo lectivo 2027.</p><p>Cada nuevo integrante fue seleccionado por su trayectoria, vocación y compromiso con una educación de calidad.</p>">
+        <div class="noticia-img" style="padding:0;overflow:hidden;"><img src="assets/nuevosprofesores.avif" alt="Nuevos docentes" style="width:100%;height:100%;object-fit:cover;"></div>
         <div class="noticia-body">
           <span class="noticia-tag">Educación</span>
-          <h3>Presentación del proyecto educativo institucional</h3>
-          <p>Compartimos los lineamientos pedagógicos que guiarán el proceso de enseñanza-aprendizaje en nuestro centro.</p>
+          <h3>Incorporación de nuevos docentes para el ciclo 2027</h3>
+          <p>Sumamos profesionales altamente capacitados en distintas áreas para fortalecer nuestra propuesta educativa.</p>
           <div class="noticia-date">📅 Marzo 2026</div>
+          <span class="noticia-leer-mas">Leer más</span>
         </div>
       </div>
     </div>
@@ -897,6 +976,24 @@
   </div>
 </footer>
 
+<!-- ======= MODAL NOTICIAS ======= -->
+<div class="noticia-overlay" id="noticia-overlay" onclick="cerrarNoticia(event)">
+  <div class="noticia-modal" id="noticia-modal">
+    <button class="nm-close" onclick="document.getElementById('noticia-overlay').classList.remove('open')">✕</button>
+    <div class="nm-header" id="nm-header">🎉</div>
+    <div class="nm-body">
+      <div class="nm-meta">
+        <span class="nm-tag" id="nm-tag"></span>
+        <span class="nm-date" id="nm-date"></span>
+      </div>
+      <h2 class="nm-title" id="nm-title"></h2>
+      <p class="nm-resumen" id="nm-resumen"></p>
+      <hr class="nm-divider">
+      <div class="nm-detalle" id="nm-detalle"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ======= MODAL LOGIN ======= -->
 <div class="overlay" id="overlay" onclick="cerrarLogin(event)">
   <div class="modal">
@@ -921,6 +1018,31 @@
 
 <!-- ======= SCRIPTS ======= -->
 <script>
+  // Modal noticias
+  function abrirNoticia(card) {
+    const header = document.getElementById('nm-header');
+    if (card.dataset.img) {
+      header.innerHTML = `<img src="${card.dataset.img}" alt="">`;
+      header.style.background = '';
+    } else {
+      header.innerHTML = card.dataset.emoji;
+      header.style.background = card.dataset.color;
+    }
+    document.getElementById('nm-tag').textContent       = card.dataset.tag;
+    document.getElementById('nm-date').textContent      = card.dataset.date;
+    document.getElementById('nm-title').textContent     = card.dataset.title;
+    document.getElementById('nm-resumen').textContent   = card.dataset.resumen;
+    document.getElementById('nm-detalle').innerHTML     = card.dataset.detalle;
+    document.getElementById('noticia-overlay').classList.add('open');
+  }
+  function cerrarNoticia(e) {
+    if (e.target === document.getElementById('noticia-overlay'))
+      document.getElementById('noticia-overlay').classList.remove('open');
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') document.getElementById('noticia-overlay').classList.remove('open');
+  });
+
   // Login modal
   function abrirLogin(e) { e.preventDefault(); document.getElementById('overlay').classList.add('open'); }
   function abrirLoginRol(e, rol) {
@@ -979,13 +1101,11 @@
   const contenidos = {
     0: [
       {icon:'🏃',label:'Atletismo'},{icon:'🏊',label:'Natación'},{icon:'⚽',label:'Fútbol'},
-      {icon:'🥋',label:'Artes Marciales'},{icon:'🏐',label:'Vóleibol'},{icon:'💃',label:'Danza'},
-      {icon:'🏀',label:'Básquet'},{icon:'♟️',label:'Ajedrez'}
+      {icon:'🥋',label:'Artes Marciales'},{icon:'🏐',label:'Vóleibol'},{icon:'💃',label:'Danza'}
     ],
     1: [
       {icon:'🏊',label:'Pileta de Natación'},{icon:'⚽',label:'Canchas de Fútbol'},{icon:'🏃',label:'Pista de Atletismo'},
-      {icon:'🏋️',label:'Gimnasio Cubierto'},{icon:'🍽️',label:'Comedor'},{icon:'🔬',label:'Lab. Física'},
-      {icon:'⚗️',label:'Lab. Química'},{icon:'💻',label:'Lab. Computación'}
+      {icon:'🏋️',label:'Gimnasio Cubierto'},{icon:'🍽️',label:'Comedor'},{icon:'🔬',label:'Lab. Física'}
     ],
     2: [
       {icon:'🚌',label:'Micros de Traslado'},{icon:'🍽️',label:'Servicio de Comedor'},

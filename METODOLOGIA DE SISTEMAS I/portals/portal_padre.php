@@ -157,8 +157,8 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Padre/Tutor');
 <body>
 
 <header>
-  <a href="Educar Para Transformar - Centro Educativo.html" class="logo-area">
-    <img src="logo.jpg" alt="Educar para Transformar" class="logo-circle">
+  <a href="../Educar Para Transformar - Centro Educativo.html" class="logo-area">
+    <img src="../assets/logo.avif" alt="Educar para Transformar" class="logo-circle">
     <div class="logo-text">
       <strong>Educar para Transformar</strong>
       <span>Centro Educativo – Resistencia, Chaco</span>
@@ -166,7 +166,7 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Padre/Tutor');
   </a>
   <div class="user-info">
     <span class="user-badge">👨‍👩‍👧 Familia</span>
-    <a href="logout.php" class="btn-logout">Cerrar sesión</a>
+    <a href="../auth/logout.php" class="btn-logout">Cerrar sesión</a>
   </div>
 </header>
 
