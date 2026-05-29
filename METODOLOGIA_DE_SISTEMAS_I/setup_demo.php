@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 $host    = getenv('MYSQLHOST')     ?: 'localhost';
 $dbname  = getenv('MYSQLDATABASE') ?: 'educar_db';
 $db_user = getenv('MYSQLUSER')     ?: 'root';
@@ -6,20 +9,28 @@ $db_pass = getenv('MYSQLPASSWORD') ?: '';
 $db_port = (int)(getenv('MYSQLPORT') ?: 3306);
 
 echo "<h2>Variables de entorno</h2><pre>";
-echo "MYSQLHOST="     . ($host    ?: '(vacío)') . "\n";
-echo "MYSQLDATABASE=" . ($dbname  ?: '(vacío)') . "\n";
-echo "MYSQLUSER="     . ($db_user ?: '(vacío)') . "\n";
+echo "MYSQLHOST="     . $host    . "\n";
+echo "MYSQLDATABASE=" . $dbname  . "\n";
+echo "MYSQLUSER="     . $db_user . "\n";
 echo "MYSQLPASSWORD=" . ($db_pass ? '(tiene valor)' : '(vacío)') . "\n";
 echo "MYSQLPORT="     . $db_port . "\n";
 echo "</pre>";
+flush();
 
-$conn = new mysqli($host, $db_user, $db_pass, $dbname, $db_port);
-if ($conn->connect_error) {
+echo "<p>Intentando conectar...</p>";
+flush();
+
+$conn = mysqli_init();
+$conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 5);
+$ok = $conn->real_connect($host, $db_user, $db_pass, $dbname, $db_port);
+
+if (!$ok || $conn->connect_error) {
     echo "<p style='color:red'><strong>Error de conexion:</strong> " . htmlspecialchars($conn->connect_error) . "</p>";
     exit;
 }
 
-echo "<p style='color:green'>Conexion OK</p>";
+echo "<p style='color:green'><strong>Conexion OK</strong></p>";
+flush();
 
 $usuarios_demo = [
     ['nombre' => 'Ana García',       'usuario' => 'ana.garcia',       'password' => 'alumno123',  'rol' => 'alumno'],
