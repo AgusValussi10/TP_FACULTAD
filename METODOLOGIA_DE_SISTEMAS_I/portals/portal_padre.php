@@ -157,7 +157,7 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Padre/Tutor');
 <body>
 
 <header>
-  <a href="../Educar Para Transformar - Centro Educativo.html" class="logo-area">
+  <a href="../index.html" class="logo-area">
     <img src="../assets/logo.avif" alt="Educar para Transformar" class="logo-circle">
     <div class="logo-text">
       <strong>Educar para Transformar</strong>
