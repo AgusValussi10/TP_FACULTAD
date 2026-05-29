@@ -10,26 +10,27 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Merriweather:wght@700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --verde:      #3B9BD4;
-      --verde-claro:#5AB4E5;
-      --verde-bg:   #EBF5FB;
-      --azul:       #1A5276;
-      --amarillo:   #F4C430;
-      --gris-texto: #2C3E50;
-      --blanco:     #FFFFFF;
-      --borde:      #C5DCF0;
-      --sombra:     0 4px 18px rgba(59,155,212,.13);
+      --verde:       #F97316;
+      --verde-claro: #FB923C;
+      --verde-bg:    #FFF7ED;
+      --azul:        #374151;
+      --amarillo:    #F97316;
+      --naranja:     #EA580C;
+      --gris-texto:  #111827;
+      --blanco:      #FFFFFF;
+      --borde:       #E5E7EB;
+      --sombra:      0 4px 18px rgba(249,115,22,.13);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Nunito', sans-serif; color: var(--gris-texto); background: #f0f6fc; }
+    body { font-family: 'Nunito', sans-serif; color: var(--gris-texto); background: #F9FAFB; }
 
     header {
       background: var(--blanco);
       color: var(--gris-texto);
       padding: .75rem 1.5rem;
       display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 2px 12px rgba(59,155,212,.12);
-      border-bottom: 1px solid rgba(59,155,212,.15);
+      box-shadow: 0 2px 12px rgba(249,115,22,.12);
+      border-bottom: 1px solid rgba(249,115,22,.15);
       position: sticky; top: 0; z-index: 100;
     }
     .logo-area { display: flex; align-items: center; gap: .7rem; text-decoration: none; color: inherit; }
@@ -45,23 +46,23 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
       padding: .35rem .9rem; font-size: .85rem; font-weight: 700;
     }
     .btn-logout {
-      background: var(--amarillo); color: #1a3a1a;
+      background: #C2410C; color: #FFFFFF;
       border: none; border-radius: 20px; padding: .4rem 1rem;
       font-weight: 900; font-size: .85rem; cursor: pointer;
       text-decoration: none; transition: opacity .2s;
-      box-shadow: 0 2px 8px rgba(244,196,48,.35);
+      box-shadow: 0 2px 8px rgba(194,65,12,.25);
     }
     .btn-logout:hover { opacity: .85; }
 
     .welcome {
-      background: linear-gradient(135deg, #1A5276 0%, #154360 100%);
+      background: linear-gradient(135deg, #374151 0%, #1F2937 45%, #111827 100%);
       color: var(--blanco); padding: 2.5rem 1.5rem; text-align: center;
     }
     .welcome h1 { font-family: 'Merriweather', serif; font-size: clamp(1.4rem, 4vw, 2rem); margin-bottom: .4rem; }
     .welcome p  { opacity: .85; font-size: .95rem; }
     .rol-badge  {
       display: inline-block; margin-top: .8rem;
-      background: rgba(244,196,48,.25); border: 1px solid rgba(244,196,48,.5);
+      background: rgba(249,115,22,.25); border: 1px solid rgba(249,115,22,.5);
       color: var(--amarillo); border-radius: 20px;
       padding: .25rem .9rem; font-size: .78rem; font-weight: 800;
       text-transform: uppercase; letter-spacing: .1em;
@@ -84,12 +85,12 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
     table { width: 100%; border-collapse: collapse; font-size: .88rem; }
     th { background: var(--verde-bg); color: var(--verde); font-weight: 800;
          padding: .5rem .7rem; text-align: left; font-size: .8rem; text-transform: uppercase; }
-    td { padding: .55rem .7rem; border-bottom: 1px solid #eaf2fb; }
+    td { padding: .55rem .7rem; border-bottom: 1px solid #F3F4F6; }
     tr:last-child td { border-bottom: none; }
 
     .materia-item {
       display: flex; align-items: center; justify-content: space-between;
-      padding: .75rem 0; border-bottom: 1px solid #eaf2fb;
+      padding: .75rem 0; border-bottom: 1px solid #F3F4F6;
     }
     .materia-item:last-child { border-bottom: none; }
     .materia-info strong { display: block; font-weight: 800; font-size: .92rem; }
@@ -102,7 +103,7 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
 
     .agenda-item {
       display: flex; align-items: flex-start; gap: .8rem;
-      padding: .7rem 0; border-bottom: 1px solid #eaf2fb;
+      padding: .7rem 0; border-bottom: 1px solid #F3F4F6;
     }
     .agenda-item:last-child { border-bottom: none; }
     .agenda-hora {
@@ -116,7 +117,7 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
 
     .comunicado {
       padding: .8rem; border-left: 4px solid var(--azul);
-      background: #eaf2fb; border-radius: 0 10px 10px 0;
+      background: #F3F4F6; border-radius: 0 10px 10px 0;
       margin-bottom: .75rem; font-size: .88rem; line-height: 1.5;
     }
     .comunicado:last-child { margin-bottom: 0; }
