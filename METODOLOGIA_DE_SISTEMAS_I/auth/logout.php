@@ -6,7 +6,7 @@ session_destroy();
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=../Educar%20Para%20Transformar%20-%20Centro%20Educativo.html">
+  <meta http-equiv="refresh" content="0;url=/">
 </head>
 <body></body>
 </html>
