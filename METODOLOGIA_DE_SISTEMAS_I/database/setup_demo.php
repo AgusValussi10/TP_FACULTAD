@@ -25,7 +25,7 @@ $usuarios_demo = [
 ];
 
 $stmt = $conn->prepare(
-    "INSERT INTO usuarios (nombre, usuario, password_hash, rol) VALUES (?, ?, ?, ?)"
+    "INSERT IGNORE INTO usuarios (nombre, usuario, password_hash, rol) VALUES (?, ?, ?, ?)"
 );
 
 echo '<h2>Creando usuarios de demo...</h2><ul>';
