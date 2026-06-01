@@ -25,3 +25,18 @@ CREATE TABLE IF NOT EXISTS usuarios (
 --  Usá el archivo setup_demo.php para crear usuarios de prueba
 --  con contraseñas correctamente encriptadas (bcrypt).
 -- =========================================================
+
+-- Solicitudes de inscripción enviadas desde el formulario público
+CREATE TABLE IF NOT EXISTS solicitudes_inscripcion (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_alumno    VARCHAR(100) NOT NULL,
+    apellido_alumno  VARCHAR(100) NOT NULL,
+    fecha_nacimiento DATE         NOT NULL,
+    nivel_educativo  ENUM('Inicial','Primario','Secundario') NOT NULL,
+    nombre_tutor     VARCHAR(100) NOT NULL,
+    telefono         VARCHAR(30)  NOT NULL,
+    email            VARCHAR(150) NOT NULL,
+    comentarios      TEXT,
+    estado           ENUM('pendiente','contactado','admitido','rechazado') NOT NULL DEFAULT 'pendiente',
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

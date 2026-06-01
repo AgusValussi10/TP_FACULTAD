@@ -822,18 +822,19 @@
     <p class="section-sub">Completá el formulario y nos comunicaremos con vos para informarte sobre el proceso de admisión para el ciclo lectivo 2027.</p>
     <div class="inscripcion-form">
       <div class="form-row">
-        <div class="form-group"><label>Nombre del alumno *</label><input type="text" placeholder="Nombre"></div>
-        <div class="form-group"><label>Apellido del alumno *</label><input type="text" placeholder="Apellido"></div>
-        <div class="form-group"><label>Fecha de nacimiento *</label><input type="date"></div>
+        <div class="form-group"><label>Nombre del alumno *</label><input id="insc-nombre" type="text" placeholder="Nombre"></div>
+        <div class="form-group"><label>Apellido del alumno *</label><input id="insc-apellido" type="text" placeholder="Apellido"></div>
+        <div class="form-group"><label>Fecha de nacimiento *</label><input id="insc-fecha" type="date"></div>
         <div class="form-group"><label>Nivel educativo solicitado *</label>
-          <select><option value="">— Seleccioná —</option><option>Inicial</option><option>Primario</option><option>Secundario</option></select>
+          <select id="insc-nivel"><option value="">— Seleccioná —</option><option>Inicial</option><option>Primario</option><option>Secundario</option></select>
         </div>
-        <div class="form-group"><label>Nombre del padre/tutor *</label><input type="text" placeholder="Nombre completo"></div>
-        <div class="form-group"><label>Teléfono de contacto *</label><input type="tel" placeholder="+54 362 ..."></div>
-        <div class="form-group form-full"><label>Correo electrónico *</label><input type="email" placeholder="ejemplo@mail.com"></div>
-        <div class="form-group form-full"><label>Consultas o comentarios</label><textarea placeholder="¿Tenés alguna pregunta o comentario adicional?"></textarea></div>
+        <div class="form-group"><label>Nombre del padre/tutor *</label><input id="insc-tutor" type="text" placeholder="Nombre completo"></div>
+        <div class="form-group"><label>Teléfono de contacto *</label><input id="insc-telefono" type="tel" placeholder="+54 362 ..."></div>
+        <div class="form-group form-full"><label>Correo electrónico *</label><input id="insc-email" type="email" placeholder="ejemplo@mail.com"></div>
+        <div class="form-group form-full"><label>Consultas o comentarios</label><textarea id="insc-comentarios" placeholder="¿Tenés alguna pregunta o comentario adicional?"></textarea></div>
       </div>
-      <button class="btn-submit" onclick="alert(&#39;¡Solicitud enviada! Nos comunicaremos con usted en breve.&#39;)">Enviar solicitud 📋</button>
+      <button id="btn-insc-submit" class="btn-submit" onclick="enviarInscripcion()">Enviar solicitud 📋</button>
+      <p id="insc-mensaje" style="margin-top:.8rem;font-weight:700;font-size:.95rem;"></p>
       <p class="form-note">* Campos obligatorios. Tu información es tratada con total confidencialidad según la Ley 25.326 de Protección de Datos Personales.</p>
     </div>
   </div>
@@ -1067,6 +1068,60 @@
   function cerrarLogin(e) { if (e.target === document.getElementById('overlay')) document.getElementById('overlay').classList.remove('open'); }
 
   // Login contra la base de datos
+  async function enviarInscripcion() {
+    const btn    = document.getElementById('btn-insc-submit');
+    const msg    = document.getElementById('insc-mensaje');
+    const nombre   = document.getElementById('insc-nombre').value.trim();
+    const apellido = document.getElementById('insc-apellido').value.trim();
+    const fecha    = document.getElementById('insc-fecha').value;
+    const nivel    = document.getElementById('insc-nivel').value;
+    const tutor    = document.getElementById('insc-tutor').value.trim();
+    const telefono = document.getElementById('insc-telefono').value.trim();
+    const email    = document.getElementById('insc-email').value.trim();
+    const comentarios = document.getElementById('insc-comentarios').value.trim();
+
+    msg.style.color = '#e53e3e';
+
+    if (!nombre || !apellido || !fecha || !nivel || !tutor || !telefono || !email) {
+      msg.textContent = 'Completá todos los campos obligatorios.';
+      return;
+    }
+
+    btn.textContent = 'Enviando...';
+    btn.disabled = true;
+    msg.textContent = '';
+
+    try {
+      const body = new FormData();
+      body.append('nombre_alumno',    nombre);
+      body.append('apellido_alumno',  apellido);
+      body.append('fecha_nacimiento', fecha);
+      body.append('nivel_educativo',  nivel);
+      body.append('nombre_tutor',     tutor);
+      body.append('telefono',         telefono);
+      body.append('email',            email);
+      body.append('comentarios',      comentarios);
+
+      const res  = await fetch('inscripciones/guardar.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        msg.style.color = '#2e7d32';
+        msg.textContent = data.message;
+        // Limpiar el formulario
+        ['insc-nombre','insc-apellido','insc-fecha','insc-nivel','insc-tutor','insc-telefono','insc-email','insc-comentarios']
+          .forEach(id => { document.getElementById(id).value = ''; });
+      } else {
+        msg.textContent = data.message;
+      }
+    } catch {
+      msg.textContent = 'No se pudo conectar con el servidor. ¿Está corriendo XAMPP?';
+    } finally {
+      btn.textContent = 'Enviar solicitud 📋';
+      btn.disabled = false;
+    }
+  }
+
   async function realizarLogin() {
     const rol      = document.getElementById('modal-rol').value;
     const usuario  = document.getElementById('modal-usuario').value.trim();
