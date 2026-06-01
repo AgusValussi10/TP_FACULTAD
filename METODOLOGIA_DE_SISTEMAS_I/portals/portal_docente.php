@@ -1,5 +1,23 @@
 <?php
 $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
+
+require_once '../database/db_config.php';
+
+$solicitudes = [];
+$pendientes  = 0;
+$result = $conn->query(
+    "SELECT id, nombre_alumno, apellido_alumno, nivel_educativo, nombre_tutor, email, telefono, estado, DATE_FORMAT(created_at,'%d/%m/%Y') AS fecha
+     FROM solicitudes_inscripcion
+     ORDER BY created_at DESC
+     LIMIT 50"
+);
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $solicitudes[] = $row;
+        if ($row['estado'] === 'pendiente') $pendientes++;
+    }
+}
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -136,6 +154,22 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
     .accion-btn:last-child { margin-bottom: 0; }
 
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+    .badge-count {
+      display: inline-block; background: #DC2626; color: #fff;
+      border-radius: 20px; padding: .15rem .6rem;
+      font-size: .75rem; font-weight: 900; margin-left: .4rem;
+    }
+    .estado-badge {
+      display: inline-block; border-radius: 20px;
+      padding: .2rem .65rem; font-size: .75rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .estado-pendiente  { background: #FEF3C7; color: #92400E; }
+    .estado-contactado { background: #DBEAFE; color: #1E40AF; }
+    .estado-admitido   { background: #D1FAE5; color: #065F46; }
+    .estado-rechazado  { background: #FEE2E2; color: #991B1B; }
+    .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 1.5rem 0; }
   </style>
 </head>
 <body>
@@ -238,6 +272,50 @@ $nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
         <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">✏️ Registrar calificaciones</button>
         <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">📤 Enviar comunicado a padres</button>
         <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">📁 Ver legajos de alumnos</button>
+      </div>
+    </div>
+
+    <!-- SOLICITUDES DE INSCRIPCIÓN (ancho completo) -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-header">
+        <span class="icon">📋</span>
+        <h2>Solicitudes de Inscripción
+          <?php if ($pendientes > 0): ?>
+            <span class="badge-count"><?= $pendientes ?> pendiente<?= $pendientes > 1 ? 's' : '' ?></span>
+          <?php endif; ?>
+        </h2>
+      </div>
+      <div class="card-body" style="overflow-x:auto;">
+        <?php if (empty($solicitudes)): ?>
+          <p class="empty-msg">No hay solicitudes registradas aún.</p>
+        <?php else: ?>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Alumno</th>
+                <th>Nivel</th>
+                <th>Tutor / Contacto</th>
+                <th>Email</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($solicitudes as $s): ?>
+              <tr>
+                <td><?= $s['id'] ?></td>
+                <td><strong><?= htmlspecialchars($s['apellido_alumno'] . ', ' . $s['nombre_alumno']) ?></strong></td>
+                <td><?= htmlspecialchars($s['nivel_educativo']) ?></td>
+                <td><?= htmlspecialchars($s['nombre_tutor']) ?><br><small><?= htmlspecialchars($s['telefono']) ?></small></td>
+                <td><?= htmlspecialchars($s['email']) ?></td>
+                <td><?= $s['fecha'] ?></td>
+                <td><span class="estado-badge estado-<?= $s['estado'] ?>"><?= ucfirst($s['estado']) ?></span></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        <?php endif; ?>
       </div>
     </div>
 

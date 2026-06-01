@@ -19,6 +19,9 @@ $usuarios_demo = [
     // PADRES
     ['nombre' => 'Laura Martínez',   'usuario' => 'laura.martinez',   'password' => 'padre123',   'rol' => 'padre'],
     ['nombre' => 'Diego Fernández',  'usuario' => 'diego.fernandez',  'password' => 'padre456',   'rol' => 'padre'],
+
+    // ADMINISTRADOR
+    ['nombre' => 'Administrador',    'usuario' => 'admin',            'password' => 'admin',      'rol' => 'admin'],
 ];
 
 $stmt = $conn->prepare(

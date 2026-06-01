@@ -23,6 +23,7 @@ $roles_map = [
     'Docentes / Personal / Autoridades' => 'docente',
     'Padres / Tutores'                  => 'padre',
     'Alumnos'                           => 'alumno',
+    'Administrador'                     => 'admin',
 ];
 
 $rol_db = $roles_map[$rol_seleccionado] ?? null;
