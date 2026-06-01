@@ -114,6 +114,24 @@ $conn->close();
     .comentario-txt { font-size: .82rem; color: #6B7280; font-style: italic; max-width: 200px; }
     .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 2rem 0; }
 
+    /* Modal admisión */
+    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+    .overlay.open { display:flex; }
+    .modal-box { background:#fff; border-radius:20px; padding:2rem; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,.25); animation: popIn .2s ease; }
+    @keyframes popIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }
+    .modal-box h3 { font-size:1.1rem; font-weight:900; color:#059669; margin-bottom:.3rem; }
+    .modal-box .modal-sub { font-size:.85rem; color:#6B7280; margin-bottom:1.2rem; }
+    .modal-field { margin-bottom:.9rem; }
+    .modal-field label { display:block; font-size:.83rem; font-weight:700; margin-bottom:.3rem; color:#374151; }
+    .modal-field input { width:100%; padding:.65rem .9rem; border:2px solid #E5E7EB; border-radius:10px; font-size:.9rem; font-family:inherit; transition:border-color .2s; }
+    .modal-field input:focus { outline:none; border-color:#059669; }
+    .modal-error { color:#DC2626; font-size:.83rem; font-weight:700; margin-bottom:.8rem; min-height:1.1rem; }
+    .modal-btns { display:flex; gap:.7rem; justify-content:flex-end; margin-top:1.2rem; }
+    .btn-cancelar { background:#F3F4F6; color:#374151; border:none; border-radius:10px; padding:.6rem 1.2rem; font-weight:800; cursor:pointer; font-family:inherit; }
+    .btn-confirmar { background:#059669; color:#fff; border:none; border-radius:10px; padding:.6rem 1.4rem; font-weight:800; cursor:pointer; font-family:inherit; transition:opacity .2s; }
+    .btn-confirmar:hover { opacity:.85; }
+    .btn-confirmar:disabled { opacity:.5; cursor:default; }
+
     @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </head>
@@ -192,7 +210,7 @@ $conn->close();
         </thead>
         <tbody>
           <?php foreach ($solicitudes as $s): ?>
-          <tr id="row-<?= $s['id'] ?>" class="row-<?= $s['estado'] ?>">
+          <tr id="row-<?= $s['id'] ?>" class="row-<?= $s['estado'] ?>" data-nombre="<?= htmlspecialchars($s['nombre_alumno']) ?>" data-apellido="<?= htmlspecialchars($s['apellido_alumno']) ?>">
             <td><?= $s['id'] ?></td>
             <td><strong><?= htmlspecialchars($s['apellido_alumno'] . ', ' . $s['nombre_alumno']) ?></strong></td>
             <td><?= htmlspecialchars($s['nivel_educativo']) ?></td>
@@ -210,7 +228,7 @@ $conn->close();
                   <button class="btn-accion btn-contactado" onclick="cambiarEstado(<?= $s['id'] ?>,'contactado')">Contactado</button>
                 <?php endif; ?>
                 <?php if ($s['estado'] !== 'admitido'): ?>
-                  <button class="btn-accion btn-admitido"   onclick="cambiarEstado(<?= $s['id'] ?>,'admitido')">Admitir</button>
+                  <button class="btn-accion btn-admitido"   onclick="abrirModalAdmitir(<?= $s['id'] ?>)">Admitir</button>
                 <?php endif; ?>
                 <?php if ($s['estado'] !== 'rechazado'): ?>
                   <button class="btn-accion btn-rechazado"  onclick="cambiarEstado(<?= $s['id'] ?>,'rechazado')">Rechazar</button>
@@ -230,13 +248,115 @@ $conn->close();
 
 </div>
 
+<!-- Modal admisión -->
+<div class="overlay" id="overlay-admitir" onclick="cerrarModal(event)">
+  <div class="modal-box">
+    <h3>✅ Admitir alumno</h3>
+    <p class="modal-sub" id="modal-alumno-nombre"></p>
+    <input type="hidden" id="modal-id">
+    <div class="modal-field">
+      <label>Nombre completo del alumno</label>
+      <input type="text" id="modal-nombre-completo" readonly style="background:#F9FAFB;color:#6B7280;">
+    </div>
+    <div class="modal-field">
+      <label>Usuario *</label>
+      <input type="text" id="modal-usuario" placeholder="ej: garcia.ana" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>Contraseña *</label>
+      <input type="text" id="modal-password" placeholder="mínimo 4 caracteres" autocomplete="off">
+    </div>
+    <p class="modal-error" id="modal-error"></p>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="document.getElementById('overlay-admitir').classList.remove('open')">Cancelar</button>
+      <button class="btn-confirmar" id="btn-confirmar" onclick="confirmarAdmision()">Crear usuario y admitir</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const BOTONES = {
     contactado: '<button class="btn-accion btn-contactado" onclick="cambiarEstado(ID,\'contactado\')">Contactado</button>',
-    admitido:   '<button class="btn-accion btn-admitido"   onclick="cambiarEstado(ID,\'admitido\')">Admitir</button>',
+    admitido:   '<button class="btn-accion btn-admitido"   onclick="abrirModalAdmitir(ID)">Admitir</button>',
     rechazado:  '<button class="btn-accion btn-rechazado"  onclick="cambiarEstado(ID,\'rechazado\')">Rechazar</button>',
     pendiente:  '<button class="btn-accion btn-pendiente"  onclick="cambiarEstado(ID,\'pendiente\')">↩ Pendiente</button>',
   };
+
+  function normalizar(str) {
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/\s+/g, '.');
+  }
+
+  function abrirModalAdmitir(id) {
+    const row      = document.getElementById(`row-${id}`);
+    const nombre   = row.dataset.nombre;
+    const apellido = row.dataset.apellido;
+    document.getElementById('modal-id').value             = id;
+    document.getElementById('modal-alumno-nombre').textContent = apellido + ', ' + nombre;
+    document.getElementById('modal-nombre-completo').value = nombre + ' ' + apellido;
+    document.getElementById('modal-usuario').value         = normalizar(apellido) + '.' + normalizar(nombre);
+    document.getElementById('modal-password').value        = '';
+    document.getElementById('modal-error').textContent     = '';
+    document.getElementById('btn-confirmar').disabled      = false;
+    document.getElementById('overlay-admitir').classList.add('open');
+    document.getElementById('modal-password').focus();
+  }
+
+  function cerrarModal(e) {
+    if (e.target === document.getElementById('overlay-admitir'))
+      document.getElementById('overlay-admitir').classList.remove('open');
+  }
+
+  async function confirmarAdmision() {
+    const id       = document.getElementById('modal-id').value;
+    const usuario  = document.getElementById('modal-usuario').value.trim();
+    const password = document.getElementById('modal-password').value.trim();
+    const nombre   = document.getElementById('modal-nombre-completo').value.trim();
+    const errorEl  = document.getElementById('modal-error');
+    const btn      = document.getElementById('btn-confirmar');
+
+    errorEl.textContent = '';
+    if (!usuario || !password) { errorEl.textContent = 'Completá usuario y contraseña.'; return; }
+    if (password.length < 4)   { errorEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+      const body = new FormData();
+      body.append('id',       id);
+      body.append('usuario',  usuario);
+      body.append('password', password);
+      body.append('nombre',   nombre);
+      const res  = await fetch('../inscripciones/admitir.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('overlay-admitir').classList.remove('open');
+
+        // Actualizar fila
+        document.getElementById(`estado-${id}`).innerHTML =
+          `<span class="estado-badge estado-admitido">Admitido</span>`;
+        const row = document.getElementById(`row-${id}`);
+        row.className = 'row-admitido';
+        const todos = ['contactado','rechazado','pendiente'];
+        document.getElementById(`acciones-${id}`).innerHTML = todos
+          .map(e => BOTONES[e].replaceAll('ID', id))
+          .join('');
+
+        actualizarStats();
+      } else {
+        errorEl.textContent = data.message || 'Error al guardar.';
+        btn.disabled = false;
+        btn.textContent = 'Crear usuario y admitir';
+      }
+    } catch {
+      errorEl.textContent = 'No se pudo conectar con el servidor.';
+      btn.disabled = false;
+      btn.textContent = 'Crear usuario y admitir';
+    }
+  }
 
   async function cambiarEstado(id, estado) {
     const btns = document.querySelectorAll(`#acciones-${id} button`);
