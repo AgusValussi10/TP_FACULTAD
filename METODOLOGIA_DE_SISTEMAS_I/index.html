@@ -302,6 +302,53 @@
     }
     .acceso-btn:hover { background: rgba(255,255,255,.35); }
 
+    /* ======= MODAL POSTULACIÓN ======= */
+    .modal-box {
+      background: var(--blanco); border-radius: 20px; padding: 2rem 2.2rem;
+      width: min(520px, 92vw); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 70px rgba(0,0,0,.3);
+      position: relative; animation: popIn .25s ease;
+      scrollbar-width: thin; scrollbar-color: rgba(0,0,0,.15) transparent;
+    }
+    .modal-box::-webkit-scrollbar { width: 4px; }
+    .modal-box::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 4px; }
+    .modal-box h3 { font-size: 1.25rem; margin-bottom: .3rem; }
+    .modal-sub { font-size: .9rem; color: #6B7280; margin-bottom: 1.2rem; font-weight: 600; }
+    .modal-field { margin-bottom: .85rem; }
+    .modal-field label {
+      display: block; font-size: .82rem; font-weight: 700;
+      margin-bottom: .3rem; color: #374151;
+    }
+    .modal-field input, .modal-field select {
+      width: 100%; padding: .65rem .9rem;
+      border: 2px solid #E5E7EB; border-radius: 10px;
+      font-size: .88rem; font-family: inherit;
+      transition: border-color .2s; box-sizing: border-box;
+    }
+    .modal-field input:focus, .modal-field select:focus {
+      outline: none; border-color: #F97316;
+    }
+    .modal-error {
+      font-size: .82rem; color: #DC2626; font-weight: 700;
+      min-height: 1.1rem; margin: .4rem 0;
+    }
+    .modal-btns {
+      display: flex; gap: .7rem; justify-content: flex-end; margin-top: .8rem;
+    }
+    .btn-cancelar {
+      padding: .6rem 1.3rem; border-radius: 10px; border: 2px solid #E5E7EB;
+      background: transparent; font-size: .88rem; font-weight: 700;
+      color: #6B7280; cursor: pointer; font-family: inherit; transition: all .2s;
+    }
+    .btn-cancelar:hover { border-color: #9CA3AF; color: #374151; }
+    .btn-confirmar {
+      padding: .6rem 1.4rem; border-radius: 10px; border: none;
+      color: #fff; font-size: .88rem; font-weight: 800;
+      cursor: pointer; font-family: inherit; transition: opacity .2s;
+    }
+    .btn-confirmar:hover { opacity: .85; }
+    .btn-confirmar:disabled { opacity: .55; cursor: not-allowed; }
+
     /* ======= LOGIN MODAL ======= */
     .overlay {
       display: none; position: fixed; inset: 0;
