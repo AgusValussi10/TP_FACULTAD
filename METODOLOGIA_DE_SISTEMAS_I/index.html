@@ -311,7 +311,7 @@
     .overlay.open { display: flex; }
     .modal {
       background: var(--blanco); border-radius: 20px; padding: 2.5rem;
-      width: min(430px, 90vw); box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      width: min(430px, 90vw); min-height: 470px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
       position: relative; animation: popIn .25s ease;
     }
     @keyframes popIn { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -1048,7 +1048,7 @@
 <!-- ======= MODAL LOGIN ======= -->
 <div class="overlay" id="overlay" onclick="cerrarLogin(event)">
   <div class="modal">
-    <button class="modal-close" onclick="document.getElementById(&#39;overlay&#39;).classList.remove(&#39;open&#39;)">✕</button>
+    <button class="modal-close" onclick="document.getElementById('overlay').classList.remove('open'); document.body.style.overflow = '';">✕</button>
     <div class="modal-icon">🔑</div>
     <h3 id="modal-title">Ingresar al Portal</h3>
     <div class="form-group">
@@ -1071,7 +1071,7 @@
 <!-- ======= MODAL RECUPERAR ACCESO ======= -->
 <div class="overlay" id="overlay-recuperar" onclick="cerrarRecuperar(event)">
   <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('overlay-recuperar').classList.remove('open')">✕</button>
+    <button class="modal-close" onclick="document.getElementById('overlay-recuperar').classList.remove('open'); document.body.style.overflow = '';">✕</button>
     <div class="modal-icon">🔐</div>
     <h3>Recuperar Acceso</h3>
 
@@ -1126,14 +1126,15 @@
   });
 
   // Login modal
-  function abrirLogin(e) { e.preventDefault(); document.getElementById('overlay').classList.add('open'); }
+  function abrirLogin(e) { e.preventDefault(); document.getElementById('overlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
   function abrirLoginRol(e, rol) {
     e.preventDefault();
     document.getElementById('overlay').classList.add('open');
     document.getElementById('modal-title').textContent = 'Ingresar – ' + rol;
     document.getElementById('modal-rol').value = rol;
+    document.body.style.overflow = 'hidden';
   }
-  function cerrarLogin(e) { if (e.target === document.getElementById('overlay')) document.getElementById('overlay').classList.remove('open'); }
+  function cerrarLogin(e) { if (e.target === document.getElementById('overlay')) { document.getElementById('overlay').classList.remove('open'); document.body.style.overflow = ''; } }
 
   // ── Validación de inscripción por campo ──────────────────────────────────
   const _RE_LETRAS       = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]{2,50}$/;
@@ -1304,6 +1305,7 @@
   // Recuperar acceso
   function abrirRecuperar(e) {
     e.preventDefault();
+    document.getElementById('overlay').classList.remove('open');
     document.getElementById('rec-paso1').style.display = '';
     document.getElementById('rec-paso2').style.display = 'none';
     document.getElementById('rec-usuario').value = '';
@@ -1313,10 +1315,13 @@
     document.getElementById('rec-mensaje1').textContent = '';
     document.getElementById('rec-mensaje2').textContent = '';
     document.getElementById('overlay-recuperar').classList.add('open');
+    document.body.style.overflow = 'hidden';
   }
   function cerrarRecuperar(e) {
-    if (e.target === document.getElementById('overlay-recuperar'))
+    if (e.target === document.getElementById('overlay-recuperar')) {
       document.getElementById('overlay-recuperar').classList.remove('open');
+      document.body.style.overflow = '';
+    }
   }
 
   async function verificarIdentidad() {
@@ -1395,6 +1400,7 @@
         msgDiv.textContent = data.message;
         setTimeout(() => {
           document.getElementById('overlay-recuperar').classList.remove('open');
+          document.body.style.overflow = '';
         }, 2000);
       } else {
         msgDiv.textContent = data.message;
