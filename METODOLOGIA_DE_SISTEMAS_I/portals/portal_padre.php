@@ -162,7 +162,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
 <body>
 
 <header>
-  <a href="../index.html" class="logo-area">
+  <a href="../" class="logo-area">
     <img src="../assets/logo.avif" alt="Educar para Transformar" class="logo-circle">
     <div class="logo-text">
       <strong>Educar para Transformar</strong>
