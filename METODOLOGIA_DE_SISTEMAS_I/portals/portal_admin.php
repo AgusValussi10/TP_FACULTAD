@@ -56,6 +56,19 @@ $res5 = $conn->query(
 );
 if ($res5) while ($r = $res5->fetch_assoc()) $postulaciones[] = $r;
 
+$consultas = [];
+$res6 = $conn->query(
+    "SELECT id, nombre, email, asunto, mensaje, estado,
+            DATE_FORMAT(created_at,'%d/%m/%Y %H:%i') AS fecha,
+            UNIX_TIMESTAMP(created_at) AS ts
+     FROM consultas
+     ORDER BY FIELD(estado,'pendiente','leida','respondida','archivada'), created_at DESC"
+);
+if ($res6) while ($r = $res6->fetch_assoc()) $consultas[] = $r;
+
+$con_stats = ['total'=>0,'pendiente'=>0,'leida'=>0,'respondida'=>0,'archivada'=>0];
+foreach ($consultas as $c) { $con_stats[$c['estado']]++; $con_stats['total']++; }
+
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -267,6 +280,7 @@ $conn->close();
   <button class="tab-btn active" data-tab="inscripciones">📋 Inscripciones</button>
   <button class="tab-btn" data-tab="opiniones">💬 Opiniones</button>
   <button class="tab-btn" data-tab="propuestas">💼 Propuestas de Trabajo</button>
+  <button class="tab-btn" data-tab="consultas">📩 Consultas</button>
 </nav>
 
 <div class="container">
@@ -594,6 +608,91 @@ $conn->close();
 
   </div><!-- /panel-propuestas -->
 
+  <!-- ══ TAB: CONSULTAS ══ -->
+  <div class="tab-panel" id="panel-consultas">
+
+    <div class="stats-grid" style="margin-top:2rem;">
+      <div class="stat-card total">
+        <div class="stat-num" id="con-stat-total"><?= $con_stats['total'] ?></div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card pendiente">
+        <div class="stat-num" id="con-stat-pendiente"><?= $con_stats['pendiente'] ?></div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+      <div class="stat-card contactado">
+        <div class="stat-num" id="con-stat-leida"><?= $con_stats['leida'] ?></div>
+        <div class="stat-label">Leídas</div>
+      </div>
+      <div class="stat-card admitido">
+        <div class="stat-num" id="con-stat-respondida"><?= $con_stats['respondida'] ?></div>
+        <div class="stat-label">Respondidas</div>
+      </div>
+      <div class="stat-card rechazado">
+        <div class="stat-num" id="con-stat-archivada"><?= $con_stats['archivada'] ?></div>
+        <div class="stat-label">Archivadas</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <div class="card-header">
+        <span class="icon">📩</span>
+        <h2>Consultas recibidas</h2>
+      </div>
+      <div class="card-body" id="consultas-card-body">
+        <?php if (empty($consultas)): ?>
+          <p class="empty-msg" id="consultas-empty">No hay consultas registradas aún.</p>
+        <?php else: ?>
+        <table id="tabla-consultas">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Asunto</th>
+              <th>Mensaje</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($consultas as $c):
+              $rowCls = match($c['estado']) {
+                'leida'      => 'row-contactado',
+                'respondida' => 'row-admitido',
+                'archivada'  => 'row-rechazado',
+                default      => ''
+              };
+            ?>
+            <tr id="con-row-<?= $c['id'] ?>" class="<?= $rowCls ?>">
+              <td><?= $c['id'] ?></td>
+              <td><strong><?= htmlspecialchars($c['nombre']) ?></strong></td>
+              <td><?= htmlspecialchars($c['email']) ?></td>
+              <td><?= $c['asunto'] ? htmlspecialchars(mb_strimwidth($c['asunto'], 0, 50, '…')) : '—' ?></td>
+              <td><span class="comentario-txt"><?= htmlspecialchars(mb_strimwidth($c['mensaje'], 0, 80, '…')) ?></span></td>
+              <td style="white-space:nowrap"><?= $c['fecha'] ?></td>
+              <td id="con-estado-<?= $c['id'] ?>">
+                <span class="estado-badge estado-<?= $c['estado'] === 'leida' ? 'contactado' : ($c['estado'] === 'respondida' ? 'admitido' : ($c['estado'] === 'archivada' ? 'rechazado' : 'pendiente')) ?>"><?= ucfirst($c['estado']) ?></span>
+              </td>
+              <td>
+                <div class="acciones" id="con-acc-<?= $c['id'] ?>">
+                  <?php if ($c['estado'] !== 'leida'):      ?><button class="btn-accion btn-contactado" onclick="conAccion(<?= $c['id'] ?>,'leida')">Leída</button><?php endif; ?>
+                  <?php if ($c['estado'] !== 'respondida'): ?><button class="btn-accion btn-admitido"   onclick="conAccion(<?= $c['id'] ?>,'respondida')">Respondida</button><?php endif; ?>
+                  <?php if ($c['estado'] !== 'archivada'):  ?><button class="btn-accion btn-rechazado"  onclick="conAccion(<?= $c['id'] ?>,'archivada')">Archivar</button><?php endif; ?>
+                  <?php if ($c['estado'] !== 'pendiente'):  ?><button class="btn-accion btn-pendiente"  onclick="conAccion(<?= $c['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                </div>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+        <?php endif; ?>
+      </div>
+    </div>
+
+  </div><!-- /panel-consultas -->
+
 </div>
 
 <!-- Modal admisión -->
@@ -891,6 +990,7 @@ $conn->close();
   setInterval(pollingActualizar, 20000);
   setInterval(pollingOpiniones,  20000);
   setInterval(pollingPropuestas, 20000);
+  setInterval(pollingConsultas,  20000);
 
   // ── Polling opiniones ────────────────────────────────────────────
   async function pollingOpiniones() {
@@ -1143,6 +1243,109 @@ $conn->close();
     if (nums[1]) nums[1].textContent = conteos.pendiente;
     if (nums[2]) nums[2].textContent = conteos.aprobado;
     if (nums[3]) nums[3].textContent = conteos.rechazado;
+  }
+
+  // ── Consultas ─────────────────────────────────────────────────────
+  const CON_ROW   = { pendiente:'', leida:'row-contactado', respondida:'row-admitido', archivada:'row-rechazado' };
+  const CON_BADGE = { pendiente:'pendiente', leida:'contactado', respondida:'admitido', archivada:'rechazado' };
+  const CON_LABELS = { pendiente:'Pendiente', leida:'Leída', respondida:'Respondida', archivada:'Archivada' };
+
+  function buildBotonesConsulta(id, estadoActual) {
+    const map = {
+      leida:      '<button class="btn-accion btn-contactado" onclick="conAccion(ID,\'leida\')">Leída</button>',
+      respondida: '<button class="btn-accion btn-admitido"   onclick="conAccion(ID,\'respondida\')">Respondida</button>',
+      archivada:  '<button class="btn-accion btn-rechazado"  onclick="conAccion(ID,\'archivada\')">Archivar</button>',
+      pendiente:  '<button class="btn-accion btn-pendiente"  onclick="conAccion(ID,\'pendiente\')">↩ Pendiente</button>',
+    };
+    return Object.entries(map)
+      .filter(([e]) => e !== estadoActual)
+      .map(([, btn]) => btn.replaceAll('ID', id))
+      .join('');
+  }
+
+  async function conAccion(id, estado) {
+    const btns = document.querySelectorAll(`#con-acc-${id} button`);
+    btns.forEach(b => b.disabled = true);
+    const body = new FormData();
+    body.append('id', id); body.append('estado', estado);
+    try {
+      const res  = await fetch('../consultas/cambiar_estado.php', { method:'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById(`con-row-${id}`).className = CON_ROW[estado];
+        document.getElementById(`con-estado-${id}`).innerHTML =
+          `<span class="estado-badge estado-${CON_BADGE[estado]}">${CON_LABELS[estado]}</span>`;
+        document.getElementById(`con-acc-${id}`).innerHTML = buildBotonesConsulta(id, estado);
+        actualizarStatsConsultas();
+      } else { alert(data.message || 'Error.'); btns.forEach(b => b.disabled = false); }
+    } catch { alert('Error de conexión.'); btns.forEach(b => b.disabled = false); }
+  }
+
+  function actualizarStatsConsultas() {
+    const c = { total:0, pendiente:0, leida:0, respondida:0, archivada:0 };
+    document.querySelectorAll('#tabla-consultas tbody tr').forEach(row => {
+      const cls = [...row.classList].find(k => k.startsWith('row-'))?.replace('row-','');
+      if (cls === 'contactado')  { c.leida++;      c.total++; }
+      else if (cls === 'admitido')  { c.respondida++; c.total++; }
+      else if (cls === 'rechazado') { c.archivada++;  c.total++; }
+      else                          { c.pendiente++;  c.total++; }
+    });
+    const upd = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    upd('con-stat-total', c.total); upd('con-stat-pendiente', c.pendiente);
+    upd('con-stat-leida', c.leida); upd('con-stat-respondida', c.respondida);
+    upd('con-stat-archivada', c.archivada);
+  }
+
+  async function pollingConsultas() {
+    try {
+      const res = await fetch('../consultas/polling.php', { credentials:'same-origin' });
+      if (!res.ok) return;
+      const { stats, consultas } = await res.json();
+
+      const upd = (id, val) => { const el = document.getElementById(id); if (el && el.textContent !== String(val)) el.textContent = val; };
+      upd('con-stat-total', stats.total); upd('con-stat-pendiente', stats.pendiente);
+      upd('con-stat-leida', stats.leida); upd('con-stat-respondida', stats.respondida);
+      upd('con-stat-archivada', stats.archivada);
+
+      if (!consultas || !consultas.length) return;
+
+      // Si todavía muestra el mensaje vacío, crear la tabla
+      const cardBody = document.getElementById('consultas-card-body');
+      if (!document.getElementById('tabla-consultas')) {
+        const emptyEl = document.getElementById('consultas-empty');
+        if (emptyEl) emptyEl.remove();
+        cardBody.insertAdjacentHTML('beforeend', `
+          <table id="tabla-consultas">
+            <thead><tr>
+              <th>#</th><th>Nombre</th><th>Email</th><th>Asunto</th>
+              <th>Mensaje</th><th>Fecha</th><th>Estado</th><th>Acciones</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>`);
+      }
+
+      const tbody = document.querySelector('#tabla-consultas tbody');
+      if (!tbody) return;
+      let nuevas = 0;
+      consultas.forEach(c => {
+        if (document.getElementById(`con-row-${c.id}`)) return;
+        const asuntoTxt = c.asunto ? (c.asunto.length > 50 ? esc(c.asunto.substring(0,50))+'…' : esc(c.asunto)) : '—';
+        const msgTxt    = c.mensaje.length > 80 ? esc(c.mensaje.substring(0,80))+'…' : esc(c.mensaje);
+        tbody.insertAdjacentHTML('afterbegin', `
+          <tr id="con-row-${c.id}" class="${CON_ROW[c.estado]} fila-nueva">
+            <td>${c.id}</td>
+            <td><strong>${esc(c.nombre)}</strong></td>
+            <td>${esc(c.email)}</td>
+            <td>${asuntoTxt}</td>
+            <td><span class="comentario-txt">${msgTxt}</span></td>
+            <td style="white-space:nowrap">${c.fecha}</td>
+            <td id="con-estado-${c.id}"><span class="estado-badge estado-${CON_BADGE[c.estado]}">${CON_LABELS[c.estado]}</span></td>
+            <td><div class="acciones" id="con-acc-${c.id}">${buildBotonesConsulta(c.id, c.estado)}</div></td>
+          </tr>`);
+        nuevas++;
+      });
+      if (nuevas > 0) mostrarToast(nuevas === 1 ? 'Nueva consulta de contacto recibida' : `${nuevas} nuevas consultas de contacto`);
+    } catch { /* reintentar */ }
   }
 </script>
 

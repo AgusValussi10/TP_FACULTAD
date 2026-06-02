@@ -1043,20 +1043,21 @@
         <div>
           <strong style="display:block; margin-bottom:.6rem; font-size:.85rem; color:var(--verde);">Redes Sociales</strong>
           <div class="redes">
-            <a href="#" class="red-btn">📘 Facebook</a>
-            <a href="#" class="red-btn">📸 Instagram</a>
-            <a href="#" class="red-btn">💬 WhatsApp</a>
+            <a href="https://www.facebook.com/ColegioIntegralPiacentini" target="_blank" rel="noopener" class="red-btn">📘 Facebook</a>
+            <a href="https://www.instagram.com/colegiopiacentini/" target="_blank" rel="noopener" class="red-btn">📸 Instagram</a>
+            <a href="https://wa.link/rdnjw2" target="_blank" rel="noopener" class="red-btn">💬 WhatsApp</a>
           </div>
         </div>
       </div>
       <div>
         <div style="background:var(--blanco); border-radius:16px; padding:2rem; box-shadow:var(--sombra);">
           <h3 style="font-size:1rem; font-weight:800; margin-bottom:1.2rem; color:var(--verde);">📩 Envianos un mensaje</h3>
-          <div class="form-group"><label>Nombre *</label><input type="text" placeholder="Tu nombre completo"></div>
-          <div class="form-group"><label>Email *</label><input type="email" placeholder="tu@email.com"></div>
-          <div class="form-group"><label>Asunto</label><input type="text" placeholder="¿En qué podemos ayudarte?"></div>
-          <div class="form-group"><label>Mensaje *</label><textarea style="width:100%;padding:.7rem .9rem;border:2px solid var(--borde);border-radius:10px;font-family:inherit;font-size:.9rem;resize:vertical;min-height:100px;" placeholder="Escribí tu consulta..."></textarea></div>
-          <button class="btn-submit" onclick="alert(&#39;Mensaje enviado. Te responderemos a la brevedad.&#39;)">Enviar mensaje</button>
+          <div class="form-group"><label>Nombre *</label><input type="text" id="con-nombre" placeholder="Tu nombre completo" maxlength="100"></div>
+          <div class="form-group"><label>Email *</label><input type="email" id="con-email" placeholder="tu@email.com" maxlength="150"></div>
+          <div class="form-group"><label>Asunto</label><input type="text" id="con-asunto" placeholder="¿En qué podemos ayudarte?" maxlength="200"></div>
+          <div class="form-group"><label>Mensaje *</label><textarea id="con-mensaje" style="width:100%;padding:.7rem .9rem;border:2px solid var(--borde);border-radius:10px;font-family:inherit;font-size:.9rem;resize:vertical;min-height:100px;" placeholder="Escribí tu consulta..." maxlength="3000"></textarea></div>
+          <div id="con-msg" style="font-size:.84rem;font-weight:700;min-height:1.2rem;margin-bottom:.6rem;"></div>
+          <button class="btn-submit" id="btn-con-submit" onclick="enviarConsulta()">Enviar mensaje</button>
         </div>
       </div>
     </div>
@@ -1088,8 +1089,8 @@
         <a href="https://maps.app.goo.gl/zYqJPZpXhPmCktAF7">📍 Resistencia, Chaco</a>
         <a href="https://wa.link/rdnjw2">📞 +54 362 456-4187</a>
         <a href="">✉️ info@educar.edu.ar</a>
-        <a href="#">📘 Facebook</a>
-        <a href="#">📸 Instagram</a>
+        <a href="https://www.facebook.com/ColegioIntegralPiacentini" target="_blank" rel="noopener">📘 Facebook</a>
+        <a href="https://www.instagram.com/colegiopiacentini/" target="_blank" rel="noopener">📸 Instagram</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -1749,6 +1750,51 @@
     } finally {
       btn.disabled = false;
       btn.textContent = 'Enviar opinión';
+    }
+  }
+
+  async function enviarConsulta() {
+    const nombre  = document.getElementById('con-nombre').value.trim();
+    const email   = document.getElementById('con-email').value.trim();
+    const asunto  = document.getElementById('con-asunto').value.trim();
+    const mensaje = document.getElementById('con-mensaje').value.trim();
+    const msgEl   = document.getElementById('con-msg');
+    const btn     = document.getElementById('btn-con-submit');
+
+    msgEl.style.color = '#DC2626';
+    msgEl.textContent = '';
+
+    if (nombre.length < 2)        { msgEl.textContent = '⚠️ Ingresá tu nombre completo.'; return; }
+    if (!/\S+@\S+\.\S+/.test(email)) { msgEl.textContent = '⚠️ Ingresá un email válido.'; return; }
+    if (mensaje.length < 10)      { msgEl.textContent = '⚠️ El mensaje debe tener al menos 10 caracteres.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+      const body = new FormData();
+      body.append('nombre',  nombre);
+      body.append('email',   email);
+      body.append('asunto',  asunto);
+      body.append('mensaje', mensaje);
+      const res = await fetch('consultas/guardar.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('con-nombre').value  = '';
+        document.getElementById('con-email').value   = '';
+        document.getElementById('con-asunto').value  = '';
+        document.getElementById('con-mensaje').value = '';
+        msgEl.style.color  = '#059669';
+        msgEl.textContent  = '✅ ' + data.message;
+      } else {
+        msgEl.textContent = '⚠️ ' + data.message;
+      }
+    } catch {
+      msgEl.textContent = '⚠️ No se pudo alcanzar el servidor. Verificá tu conexión.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Enviar mensaje';
     }
   }
 

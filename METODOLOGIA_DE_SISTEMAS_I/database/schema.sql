@@ -56,3 +56,13 @@ CREATE TABLE IF NOT EXISTS opiniones (
     estado     ENUM('pendiente','aprobado','rechazado') NOT NULL DEFAULT 'pendiente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS consultas (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    nombre     VARCHAR(100) NOT NULL,
+    email      VARCHAR(150) NOT NULL,
+    asunto     VARCHAR(200) NOT NULL DEFAULT '',
+    mensaje    TEXT NOT NULL,
+    estado     ENUM('pendiente','leida','respondida','archivada') NOT NULL DEFAULT 'pendiente',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
