@@ -461,21 +461,29 @@
     .opinion-msg { font-size: .85rem; font-weight: 700; margin: .5rem 0; min-height: 1.2rem; }
     .opinion-msg--ok    { color: #059669; }
     .opinion-msg--error { color: #DC2626; }
-    .opiniones-lista { display: flex; flex-direction: column; gap: 1rem; }
+    /* ── Layout opiniones ── */
+    .op-layout { display: grid; grid-template-columns: 1fr 1.6fr; gap: 2.5rem; align-items: start; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .op-layout { grid-template-columns: 1fr; } }
+    .op-lista-titulo { font-size:.95rem; font-weight:800; color:#374151; margin-bottom:1rem; }
+    .opiniones-grid { display: flex; flex-direction: column; gap: .85rem; }
+    .op-loading, .op-empty { color: #9CA3AF; font-size: .88rem; font-style: italic; padding: .5rem 0; }
     .opinion-card {
-      background: var(--blanco); border: 2px solid var(--borde); border-radius: 12px;
-      padding: 1.2rem 1.5rem;
+      background: var(--blanco); border-radius: 14px;
+      padding: 1.1rem 1.3rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      border-left: 4px solid var(--verde);
+      transition: transform .15s;
     }
-    .opinion-header { display: flex; align-items: center; gap: .6rem; margin-bottom: .5rem; }
+    .opinion-card:hover { transform: translateY(-2px); }
+    .opinion-header { display: flex; align-items: center; gap: .65rem; margin-bottom: .55rem; }
     .opinion-avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--verde); color: var(--blanco);
+      width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: .85rem; flex-shrink: 0;
+      font-weight: 900; font-size: .88rem; flex-shrink: 0; color: #fff;
     }
-    .opinion-author { font-weight: 800; font-size: .88rem; }
-    .opinion-date { font-size: .75rem; color: #9CA3AF; }
-    .opinion-text { font-size: .88rem; color: #4A5568; line-height: 1.6; }
+    .opinion-author { font-weight: 800; font-size: .9rem; color: #1F2937; }
+    .opinion-date { font-size: .75rem; color: #9CA3AF; margin-top: .1rem; }
+    .opinion-text { font-size: .87rem; color: #4B5563; line-height: 1.65; }
 
     /* ======= CONTACTO ======= */
     .contacto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
@@ -803,17 +811,30 @@
 </section>
 
 <!-- ======= OPINIONES ======= -->
-<section style="padding: 3.5rem 1.5rem;">
-  <div class="section-inner" style="max-width: 780px;">
-    <span class="section-label">Opiniones</span>
+<section id="opiniones" style="padding: 3.5rem 1.5rem; background: #F9FAFB;">
+  <div class="section-inner" style="max-width: 980px;">
+    <span class="section-label">Comunidad</span>
     <h2 class="section-title">¿Qué opinan de nosotros?</h2>
-    <p class="section-sub">Podés dejar tu opinión sin necesidad de estar logueado. ¡Nos importa tu voz!</p>
-    <div class="opiniones-form">
-      <h3>💬 Dejá tu opinión</h3>
-      <input type="text" id="opinion-nombre" placeholder="Tu nombre (opcional)" maxlength="100">
-      <textarea id="opinion-texto" placeholder="Escribí tu opinión o experiencia con el centro educativo..." maxlength="2000"></textarea>
-      <div id="opinion-msg" class="opinion-msg"></div>
-      <button class="btn-opinion" id="btn-enviar-opinion" onclick="enviarOpinion()">Enviar opinión</button>
+    <p class="section-sub">Compartí tu experiencia. Las opiniones son revisadas antes de publicarse.</p>
+    <div class="op-layout">
+
+      <!-- Formulario -->
+      <div class="opiniones-form">
+        <h3>💬 Dejá tu opinión</h3>
+        <input type="text" id="opinion-nombre" placeholder="Tu nombre (opcional)" maxlength="100">
+        <textarea id="opinion-texto" placeholder="Escribí tu opinión o experiencia con el centro educativo..." maxlength="2000"></textarea>
+        <div id="opinion-msg" class="opinion-msg"></div>
+        <button class="btn-opinion" id="btn-enviar-opinion" onclick="enviarOpinion()">Enviar opinión</button>
+      </div>
+
+      <!-- Opiniones aprobadas -->
+      <div>
+        <p class="op-lista-titulo">Lo que dice nuestra comunidad</p>
+        <div id="opiniones-grid" class="opiniones-grid">
+          <p class="op-loading">Cargando opiniones...</p>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
@@ -1425,6 +1446,44 @@
       c.innerHTML = contenidos[i].map(x => `<div class="bienestar-item"><div class="bi-icon">${x.icon}</div><span>${x.label}</span></div>`).join('');
     });
   });
+
+  // Colores de avatar para opiniones
+  const OP_COLORS = ['#F97316','#8B5CF6','#059669','#0EA5E9','#EC4899','#D97706','#DC2626','#0891B2'];
+  const MESES_ES  = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                     'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  async function cargarOpiniones() {
+    const grid = document.getElementById('opiniones-grid');
+    if (!grid) return;
+    try {
+      const res   = await fetch('opiniones/listar.php');
+      const items = await res.json();
+      if (!items.length) {
+        grid.innerHTML = '<p class="op-empty">Aún no hay opiniones publicadas.</p>';
+        return;
+      }
+      grid.innerHTML = items.map((op, i) => {
+        const initials = op.nombre.split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase() || '?';
+        const color    = OP_COLORS[i % OP_COLORS.length];
+        const periodo  = MESES_ES[parseInt(op.mes)] + ' ' + op.anio;
+        return `
+          <div class="opinion-card">
+            <div class="opinion-header">
+              <div class="opinion-avatar" style="background:${color}">${initials}</div>
+              <div>
+                <div class="opinion-author">${op.nombre}</div>
+                <div class="opinion-date">${periodo}</div>
+              </div>
+            </div>
+            <p class="opinion-text">${op.texto}</p>
+          </div>`;
+      }).join('');
+    } catch {
+      grid.innerHTML = '<p class="op-empty">No se pudieron cargar las opiniones.</p>';
+    }
+  }
+
+  cargarOpiniones();
 
   // Opiniones
   async function enviarOpinion() {

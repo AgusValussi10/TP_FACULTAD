@@ -31,7 +31,8 @@ if ($res2) {
 $opiniones = [];
 $res3 = $conn->query(
     "SELECT id, nombre, texto, mes, anio, estado,
-            DATE_FORMAT(created_at,'%d/%m/%Y %H:%i') AS fecha
+            DATE_FORMAT(created_at,'%d/%m/%Y %H:%i') AS fecha,
+            UNIX_TIMESTAMP(created_at) AS ts
      FROM opiniones
      ORDER BY FIELD(estado,'pendiente','aprobado','rechazado'), created_at DESC"
 );
@@ -168,6 +169,22 @@ $conn->close();
     .texto-opinion { font-size:.84rem; color:#4B5563; max-width:320px; line-height:1.5; }
     .nombre-opinion { font-weight:800; font-size:.88rem; }
     .mes-anio { font-size:.78rem; color:#9CA3AF; }
+
+    /* ── Toggle ON/OFF ── */
+    .toggle-wrap { display:flex; align-items:center; gap:.5rem; }
+    .toggle-switch { position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-track { position:absolute; cursor:pointer; inset:0; background:#D1D5DB; border-radius:26px; transition:.25s; }
+    .toggle-track::before { content:''; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.25s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .toggle-switch input:checked + .toggle-track { background:#059669; }
+    .toggle-switch input:checked + .toggle-track::before { transform:translateX(20px); }
+    .toggle-switch input:disabled + .toggle-track { opacity:.6; cursor:default; }
+    .toggle-lbl { font-size:.82rem; font-weight:800; min-width:28px; }
+    .toggle-lbl.on  { color:#059669; }
+    .toggle-lbl.off { color:#9CA3AF; }
+
+    /* ── Sort activo ── */
+    .sort-btn.activo { background:#DBEAFE; color:#1E40AF; }
 
     /* ── Tabs ── */
     .tabs-nav {
@@ -351,6 +368,14 @@ $conn->close();
         <?php if (empty($opiniones)): ?>
           <p class="empty-msg">No hay opiniones registradas aún.</p>
         <?php else: ?>
+
+        <!-- Barra de ordenamiento -->
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap;">
+          <span style="font-size:.83rem;font-weight:700;color:#6B7280;">Ordenar:</span>
+          <button class="btn-accion sort-btn activo" id="sort-desc" onclick="sortOpiniones('desc')">↓ Más nuevas</button>
+          <button class="btn-accion sort-btn" id="sort-asc"  onclick="sortOpiniones('asc')">↑ Más antiguas</button>
+        </div>
+
         <table id="tabla-opiniones">
           <thead>
             <tr>
@@ -359,8 +384,7 @@ $conn->close();
               <th>Opinión</th>
               <th>Período</th>
               <th>Fecha envío</th>
-              <th>Estado</th>
-              <th>Acciones</th>
+              <th>Visible en web</th>
             </tr>
           </thead>
           <tbody>
@@ -368,30 +392,27 @@ $conn->close();
             $meses_es = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
             foreach ($opiniones as $o):
+              $isOn    = $o['estado'] === 'aprobado';
               $periodo = $meses_es[(int)$o['mes']] . ' ' . $o['anio'];
+              $rowCls  = $isOn ? 'row-admitido' : ($o['estado'] === 'rechazado' ? 'row-rechazado' : '');
             ?>
-            <tr id="op-row-<?= $o['id'] ?>" class="row-<?= $o['estado'] === 'aprobado' ? 'admitido' : $o['estado'] ?>">
+            <tr id="op-row-<?= $o['id'] ?>" class="<?= $rowCls ?>" data-ts="<?= $o['ts'] ?>">
               <td><?= $o['id'] ?></td>
               <td><span class="nombre-opinion"><?= htmlspecialchars($o['nombre']) ?></span></td>
               <td><span class="texto-opinion"><?= htmlspecialchars(mb_strimwidth($o['texto'], 0, 120, '…')) ?></span></td>
               <td><span class="mes-anio"><?= $periodo ?></span></td>
               <td style="white-space:nowrap"><?= $o['fecha'] ?></td>
-              <td id="op-estado-<?= $o['id'] ?>">
-                <span class="estado-badge estado-<?= $o['estado'] === 'aprobado' ? 'admitido' : $o['estado'] ?>">
-                  <?= $o['estado'] === 'aprobado' ? 'Aprobada' : ucfirst($o['estado']) ?>
-                </span>
-              </td>
               <td>
-                <div class="acciones" id="op-acciones-<?= $o['id'] ?>">
-                  <?php if ($o['estado'] !== 'aprobado'): ?>
-                    <button class="btn-accion btn-admitido" onclick="opinionAccion(<?= $o['id'] ?>,'aprobado')">Aprobar</button>
-                  <?php endif; ?>
-                  <?php if ($o['estado'] !== 'rechazado'): ?>
-                    <button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $o['id'] ?>,'rechazado')">Rechazar</button>
-                  <?php endif; ?>
-                  <?php if ($o['estado'] !== 'pendiente'): ?>
-                    <button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $o['id'] ?>,'pendiente')">↩ Pendiente</button>
-                  <?php endif; ?>
+                <div class="toggle-wrap">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="op-chk-<?= $o['id'] ?>"
+                           <?= $isOn ? 'checked' : '' ?>
+                           onchange="toggleOpinion(<?= $o['id'] ?>, this.checked)">
+                    <span class="toggle-track"></span>
+                  </label>
+                  <span class="toggle-lbl <?= $isOn ? 'on' : 'off' ?>" id="op-lbl-<?= $o['id'] ?>">
+                    <?= $isOn ? 'ON' : 'OFF' ?>
+                  </span>
                 </div>
               </td>
             </tr>
@@ -713,10 +734,11 @@ $conn->close();
 
   setInterval(pollingActualizar, 20000);
 
-  // ── Gestión de opiniones ────────────────────────────────────────────
-  async function opinionAccion(id, estado) {
-    const btns = document.querySelectorAll(`#op-acciones-${id} button`);
-    btns.forEach(b => b.disabled = true);
+  // ── Gestión de opiniones (toggle ON/OFF) ──────────────────────────
+  async function toggleOpinion(id, isOn) {
+    const estado = isOn ? 'aprobado' : 'rechazado';
+    const chk    = document.getElementById(`op-chk-${id}`);
+    chk.disabled = true;
 
     try {
       const body = new FormData();
@@ -726,42 +748,48 @@ $conn->close();
       const data = await res.json();
 
       if (data.success) {
-        // Actualizar color de fila
         const row = document.getElementById(`op-row-${id}`);
-        const colorClass = estado === 'aprobado' ? 'admitido' : estado;
-        row.className = `row-${colorClass}`;
+        row.className = isOn ? 'row-admitido' : 'row-rechazado';
+        row.dataset.ts = row.dataset.ts; // mantener para sort
 
-        // Actualizar badge
-        const labels = { aprobado: 'Aprobada', rechazado: 'Rechazado', pendiente: 'Pendiente' };
-        const badgeClass = estado === 'aprobado' ? 'admitido' : estado;
-        document.getElementById(`op-estado-${id}`).innerHTML =
-          `<span class="estado-badge estado-${badgeClass}">${labels[estado]}</span>`;
+        const lbl = document.getElementById(`op-lbl-${id}`);
+        lbl.textContent = isOn ? 'ON' : 'OFF';
+        lbl.className   = `toggle-lbl ${isOn ? 'on' : 'off'}`;
 
-        // Reconstruir botones
-        let btnsHtml = '';
-        if (estado !== 'aprobado')  btnsHtml += `<button class="btn-accion btn-admitido"  onclick="opinionAccion(${id},'aprobado')">Aprobar</button>`;
-        if (estado !== 'rechazado') btnsHtml += `<button class="btn-accion btn-rechazado" onclick="opinionAccion(${id},'rechazado')">Rechazar</button>`;
-        if (estado !== 'pendiente') btnsHtml += `<button class="btn-accion btn-pendiente" onclick="opinionAccion(${id},'pendiente')">↩ Pendiente</button>`;
-        document.getElementById(`op-acciones-${id}`).innerHTML = btnsHtml;
-
-        // Actualizar contadores
         actualizarStatsOpiniones();
       } else {
         alert(data.message || 'Error al actualizar.');
-        btns.forEach(b => b.disabled = false);
+        chk.checked = !isOn; // revertir visualmente
       }
     } catch {
       alert('No se pudo conectar con el servidor.');
-      btns.forEach(b => b.disabled = false);
+      chk.checked = !isOn;
+    } finally {
+      chk.disabled = false;
     }
+  }
+
+  function sortOpiniones(dir) {
+    const tbody = document.querySelector('#tabla-opiniones tbody');
+    if (!tbody) return;
+    const rows = [...tbody.querySelectorAll('tr')];
+    rows.sort((a, b) => {
+      const at = parseInt(a.dataset.ts || 0);
+      const bt = parseInt(b.dataset.ts || 0);
+      return dir === 'desc' ? bt - at : at - bt;
+    });
+    rows.forEach(r => tbody.appendChild(r));
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('activo'));
+    document.getElementById(`sort-${dir}`).classList.add('activo');
   }
 
   function actualizarStatsOpiniones() {
     const conteos = { total: 0, pendiente: 0, aprobado: 0, rechazado: 0 };
     document.querySelectorAll('#tabla-opiniones tbody tr').forEach(row => {
       const cls = [...row.classList].find(c => c.startsWith('row-'))?.replace('row-', '');
-      if (cls === 'admitido') { conteos.aprobado++; conteos.total++; }
-      else if (cls === 'pendiente' || cls === 'rechazado') { conteos[cls]++; conteos.total++; }
+      if (cls === 'admitido')  { conteos.aprobado++;  conteos.total++; }
+      else if (cls === 'rechazado') { conteos.rechazado++; conteos.total++; }
+      else                          { conteos.pendiente++; conteos.total++; }
     });
     const grid = document.querySelector('#panel-opiniones .stats-grid');
     if (!grid) return;

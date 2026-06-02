@@ -40,6 +40,13 @@ CREATE TABLE IF NOT EXISTS opiniones (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Opiniones de ejemplo (admin puede aprobar/rechazar desde el panel)
+INSERT IGNORE INTO opiniones (nombre, texto, mes, anio, estado) VALUES
+('María González',  'Excelente propuesta educativa. La integración de deportes, idiomas y tecnología en la currícula es exactamente lo que las familias de Resistencia necesitaban. Esperamos con ansias el inicio en 2027.', 4, 2026, 'pendiente'),
+('Carlos Ramírez',  'La jornada extendida es una gran ventaja. La propuesta de bienestar estudiantil y el apoyo pedagógico individualizado marcan una diferencia real.', 3, 2026, 'pendiente'),
+('Laura Fernández', 'Me parece muy completa la oferta académica. El hecho de que incluya nivel inicial, primario y secundario en el mismo centro hace todo mucho más cómodo para las familias.', 5, 2026, 'pendiente'),
+('Roberto Díaz',    'La infraestructura que están planificando es impresionante. Piscina, gimnasio, sala de computación moderna... claramente pensaron en el desarrollo integral de los chicos.', 2, 2026, 'pendiente');
+
 -- Solicitudes de inscripción enviadas desde el formulario público
 CREATE TABLE IF NOT EXISTS solicitudes_inscripcion (
     id               INT AUTO_INCREMENT PRIMARY KEY,
