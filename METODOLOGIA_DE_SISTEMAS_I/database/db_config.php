@@ -14,3 +14,5 @@ if ($conn->connect_error) {
 }
 
 $conn->set_charset('utf8');
+$conn->query("SET time_zone = '-03:00'");
+date_default_timezone_set('America/Argentina/Buenos_Aires');

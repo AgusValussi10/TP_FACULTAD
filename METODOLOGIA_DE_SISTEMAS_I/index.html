@@ -972,12 +972,12 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.2rem;">
       <div class="modal-field" style="margin:0">
         <label>Nombre *</label>
-        <input type="text" id="post-nombre" placeholder="Tu nombre" maxlength="100">
+        <input type="text" id="post-nombre" placeholder="Tu nombre" maxlength="100" oninput="this.value=this.value.replace(/[0-9]/g,'')">
         <span class="campo-error-msg" id="err-post-nombre"></span>
       </div>
       <div class="modal-field" style="margin:0">
         <label>Apellido *</label>
-        <input type="text" id="post-apellido" placeholder="Tu apellido" maxlength="100">
+        <input type="text" id="post-apellido" placeholder="Tu apellido" maxlength="100" oninput="this.value=this.value.replace(/[0-9]/g,'')">
         <span class="campo-error-msg" id="err-post-apellido"></span>
       </div>
       <div class="modal-field" style="margin:0">

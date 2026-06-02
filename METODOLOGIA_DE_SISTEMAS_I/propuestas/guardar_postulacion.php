@@ -18,8 +18,10 @@ $exp_anios = (int) ($_POST['experiencia_anios'] ?? 0);
 $exp_desc  = trim($_POST['experiencia_descripcion'] ?? '');
 
 if ($puesto_id <= 0)          { echo json_encode(['success'=>false,'message'=>'Puesto no válido.']);              exit; }
-if (strlen($nombre)   < 2)    { echo json_encode(['success'=>false,'message'=>'Ingresá tu nombre.']);             exit; }
-if (strlen($apellido) < 2)    { echo json_encode(['success'=>false,'message'=>'Ingresá tu apellido.']);           exit; }
+if (strlen($nombre)   < 2)              { echo json_encode(['success'=>false,'message'=>'Ingresá tu nombre.']);             exit; }
+if (preg_match('/[0-9]/', $nombre))    { echo json_encode(['success'=>false,'message'=>'El nombre no puede contener números.']); exit; }
+if (strlen($apellido) < 2)             { echo json_encode(['success'=>false,'message'=>'Ingresá tu apellido.']);           exit; }
+if (preg_match('/[0-9]/', $apellido))  { echo json_encode(['success'=>false,'message'=>'El apellido no puede contener números.']); exit; }
 if (strlen($dni)      < 7)    { echo json_encode(['success'=>false,'message'=>'DNI inválido.']);                  exit; }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { echo json_encode(['success'=>false,'message'=>'Email inválido.']); exit; }
 if (strlen($telefono) < 7)    { echo json_encode(['success'=>false,'message'=>'Teléfono inválido.']);             exit; }
