@@ -21,3 +21,13 @@ CREATE TABLE IF NOT EXISTS solicitudes_inscripcion (
     estado           ENUM('pendiente','contactado','admitido','rechazado') NOT NULL DEFAULT 'pendiente',
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS opiniones (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    nombre     VARCHAR(100) NOT NULL DEFAULT 'Anónimo',
+    texto      TEXT NOT NULL,
+    mes        TINYINT UNSIGNED NOT NULL,
+    anio       SMALLINT UNSIGNED NOT NULL,
+    estado     ENUM('pendiente','aprobado','rechazado') NOT NULL DEFAULT 'pendiente',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

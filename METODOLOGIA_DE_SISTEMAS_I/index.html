@@ -457,6 +457,10 @@
       margin-top: .5rem; transition: background .2s;
     }
     .btn-opinion:hover { background: var(--verde-claro); }
+    .btn-opinion:disabled { opacity: .6; cursor: default; }
+    .opinion-msg { font-size: .85rem; font-weight: 700; margin: .5rem 0; min-height: 1.2rem; }
+    .opinion-msg--ok    { color: #059669; }
+    .opinion-msg--error { color: #DC2626; }
     .opiniones-lista { display: flex; flex-direction: column; gap: 1rem; }
     .opinion-card {
       background: var(--blanco); border: 2px solid var(--borde); border-radius: 12px;
@@ -806,26 +810,10 @@
     <p class="section-sub">Podés dejar tu opinión sin necesidad de estar logueado. ¡Nos importa tu voz!</p>
     <div class="opiniones-form">
       <h3>💬 Dejá tu opinión</h3>
-      <input type="text" id="opinion-nombre" placeholder="Tu nombre (opcional)">
-      <textarea id="opinion-texto" placeholder="Escribí tu opinión o experiencia con el centro educativo..."></textarea>
-      <br>
-      <button class="btn-opinion" onclick="enviarOpinion()">Enviar opinión</button>
-    </div>
-    <div class="opiniones-lista" id="opiniones-lista">
-      <div class="opinion-card">
-        <div class="opinion-header">
-          <div class="opinion-avatar">MG</div>
-          <div><div class="opinion-author">María González</div><div class="opinion-date">Abril 2026</div></div>
-        </div>
-        <p class="opinion-text">Excelente propuesta educativa. La integración de deportes, idiomas y tecnología en la currícula es exactamente lo que las familias de Resistencia necesitaban. Esperamos con ansias el inicio en 2027.</p>
-      </div>
-      <div class="opinion-card">
-        <div class="opinion-header">
-          <div class="opinion-avatar">CR</div>
-          <div><div class="opinion-author">Carlos Ramírez</div><div class="opinion-date">Marzo 2026</div></div>
-        </div>
-        <p class="opinion-text">La jornada extendida es una gran ventaja. La propuesta de bienestar estudiantil y el apoyo pedagógico individualizado marcan una diferencia real.</p>
-      </div>
+      <input type="text" id="opinion-nombre" placeholder="Tu nombre (opcional)" maxlength="100">
+      <textarea id="opinion-texto" placeholder="Escribí tu opinión o experiencia con el centro educativo..." maxlength="2000"></textarea>
+      <div id="opinion-msg" class="opinion-msg"></div>
+      <button class="btn-opinion" id="btn-enviar-opinion" onclick="enviarOpinion()">Enviar opinión</button>
     </div>
   </div>
 </section>
@@ -1013,9 +1001,9 @@
       </div>
       <div class="footer-col">
         <h4>Contacto</h4>
-        <a href="#">📍 Resistencia, Chaco</a>
+        <a href="https://maps.app.goo.gl/zYqJPZpXhPmCktAF7">📍 Resistencia, Chaco</a>
         <a href="https://wa.link/rdnjw2">📞 +54 362 456-4187</a>
-        <a href="#">✉️ info@educar.edu.ar</a>
+        <a href="">✉️ info@educar.edu.ar</a>
         <a href="#">📘 Facebook</a>
         <a href="#">📸 Instagram</a>
       </div>
@@ -1439,18 +1427,47 @@
   });
 
   // Opiniones
-  function enviarOpinion() {
-    const nombre = document.getElementById('opinion-nombre').value.trim() || 'Visitante Anónimo';
-    const texto = document.getElementById('opinion-texto').value.trim();
-    if (!texto) { alert('Por favor, escribí tu opinión.'); return; }
-    const lista = document.getElementById('opiniones-lista');
-    const initials = nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-    const card = document.createElement('div');
-    card.className = 'opinion-card';
-    card.innerHTML = `<div class="opinion-header"><div class="opinion-avatar">${initials}</div><div><div class="opinion-author">${nombre}</div><div class="opinion-date">Mayo 2026</div></div></div><p class="opinion-text">${texto}</p>`;
-    lista.insertBefore(card, lista.firstChild);
-    document.getElementById('opinion-nombre').value = '';
-    document.getElementById('opinion-texto').value = '';
+  async function enviarOpinion() {
+    const nombre  = document.getElementById('opinion-nombre').value.trim();
+    const texto   = document.getElementById('opinion-texto').value.trim();
+    const msgEl   = document.getElementById('opinion-msg');
+    const btn     = document.getElementById('btn-enviar-opinion');
+
+    msgEl.textContent = '';
+    msgEl.className   = 'opinion-msg';
+
+    if (texto.length < 10) {
+      msgEl.textContent = 'La opinión debe tener al menos 10 caracteres.';
+      msgEl.classList.add('opinion-msg--error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+      const body = new FormData();
+      body.append('nombre', nombre);
+      body.append('texto',  texto);
+      const res  = await fetch('opiniones/guardar.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('opinion-nombre').value = '';
+        document.getElementById('opinion-texto').value  = '';
+        msgEl.textContent = '✅ ' + data.message;
+        msgEl.classList.add('opinion-msg--ok');
+      } else {
+        msgEl.textContent = '⚠️ ' + data.message;
+        msgEl.classList.add('opinion-msg--error');
+      }
+    } catch {
+      msgEl.textContent = '⚠️ No se pudo conectar con el servidor. Intentá nuevamente.';
+      msgEl.classList.add('opinion-msg--error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Enviar opinión';
+    }
   }
 
   // Smooth nav highlight
