@@ -467,6 +467,11 @@
     .op-lista-titulo { font-size:.95rem; font-weight:800; color:#374151; margin-bottom:1rem; }
     .opiniones-grid { display: flex; flex-direction: column; gap: .85rem; }
     .op-loading, .op-empty { color: #9CA3AF; font-size: .88rem; font-style: italic; padding: .5rem 0; }
+    .op-paginador { display:flex; align-items:center; justify-content:center; gap:.75rem; margin-top:1rem; flex-wrap:wrap; }
+    .op-pag-btn { background:var(--blanco); border:2px solid var(--borde); border-radius:20px; padding:.35rem .9rem; font-size:.83rem; font-weight:800; cursor:pointer; font-family:inherit; color:#374151; transition:border-color .2s, color .2s; }
+    .op-pag-btn:hover:not(:disabled) { border-color:var(--verde); color:var(--verde); }
+    .op-pag-btn:disabled { opacity:.35; cursor:default; }
+    .op-pag-info { font-size:.82rem; font-weight:700; color:#6B7280; }
     .opinion-card {
       background: var(--blanco); border-radius: 14px;
       padding: 1.1rem 1.3rem;
@@ -832,6 +837,11 @@
         <p class="op-lista-titulo">Lo que dice nuestra comunidad</p>
         <div id="opiniones-grid" class="opiniones-grid">
           <p class="op-loading">Cargando opiniones...</p>
+        </div>
+        <div id="op-paginador" class="op-paginador" style="display:none;">
+          <button class="op-pag-btn" id="op-prev" onclick="opCambiarPagina(-1)">← Anterior</button>
+          <span class="op-pag-info" id="op-info"></span>
+          <button class="op-pag-btn" id="op-next" onclick="opCambiarPagina(1)">Siguiente →</button>
         </div>
       </div>
 
@@ -1447,37 +1457,68 @@
     });
   });
 
-  // Colores de avatar para opiniones
-  const OP_COLORS = ['#F97316','#8B5CF6','#059669','#0EA5E9','#EC4899','#D97706','#DC2626','#0891B2'];
-  const MESES_ES  = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                     'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  // Opiniones — paginación client-side
+  const OP_COLORS  = ['#F97316','#8B5CF6','#059669','#0EA5E9','#EC4899','#D97706','#DC2626','#0891B2'];
+  const MESES_ES   = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                      'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const OP_POR_PAG = 3;
+  let opData   = [];
+  let opPagina = 0;
+
+  function opRenderizar() {
+    const grid  = document.getElementById('opiniones-grid');
+    const pag   = document.getElementById('op-paginador');
+    const total = Math.ceil(opData.length / OP_POR_PAG);
+    const desde = opPagina * OP_POR_PAG;
+    const hasta = desde + OP_POR_PAG;
+    const slice = opData.slice(desde, hasta);
+
+    grid.innerHTML = slice.map((op, i) => {
+      const idx      = desde + i;
+      const initials = op.nombre.split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase() || '?';
+      const color    = OP_COLORS[idx % OP_COLORS.length];
+      const periodo  = MESES_ES[parseInt(op.mes)] + ' ' + op.anio;
+      return `
+        <div class="opinion-card">
+          <div class="opinion-header">
+            <div class="opinion-avatar" style="background:${color}">${initials}</div>
+            <div>
+              <div class="opinion-author">${op.nombre}</div>
+              <div class="opinion-date">${periodo}</div>
+            </div>
+          </div>
+          <p class="opinion-text">${op.texto}</p>
+        </div>`;
+    }).join('');
+
+    if (total > 1) {
+      pag.style.display = 'flex';
+      document.getElementById('op-info').textContent = `${opPagina + 1} / ${total}`;
+      document.getElementById('op-prev').disabled = opPagina === 0;
+      document.getElementById('op-next').disabled = opPagina >= total - 1;
+    } else {
+      pag.style.display = 'none';
+    }
+  }
+
+  function opCambiarPagina(dir) {
+    opPagina = Math.max(0, Math.min(opPagina + dir, Math.ceil(opData.length / OP_POR_PAG) - 1));
+    opRenderizar();
+    document.getElementById('opiniones-grid').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 
   async function cargarOpiniones() {
     const grid = document.getElementById('opiniones-grid');
     if (!grid) return;
     try {
-      const res   = await fetch('opiniones/listar.php');
-      const items = await res.json();
-      if (!items.length) {
+      const res = await fetch('opiniones/listar.php');
+      opData    = await res.json();
+      if (!opData.length) {
         grid.innerHTML = '<p class="op-empty">Aún no hay opiniones publicadas.</p>';
         return;
       }
-      grid.innerHTML = items.map((op, i) => {
-        const initials = op.nombre.split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase() || '?';
-        const color    = OP_COLORS[i % OP_COLORS.length];
-        const periodo  = MESES_ES[parseInt(op.mes)] + ' ' + op.anio;
-        return `
-          <div class="opinion-card">
-            <div class="opinion-header">
-              <div class="opinion-avatar" style="background:${color}">${initials}</div>
-              <div>
-                <div class="opinion-author">${op.nombre}</div>
-                <div class="opinion-date">${periodo}</div>
-              </div>
-            </div>
-            <p class="opinion-text">${op.texto}</p>
-          </div>`;
-      }).join('');
+      opPagina = 0;
+      opRenderizar();
     } catch {
       grid.innerHTML = '<p class="op-empty">No se pudieron cargar las opiniones.</p>';
     }
