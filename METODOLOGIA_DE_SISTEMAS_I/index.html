@@ -1064,7 +1064,32 @@
     <div class="form-group"><label>Contraseña</label><input type="password" id="modal-password" placeholder="Ingresá tu contraseña" autocomplete="current-password"></div>
     <div id="login-mensaje" style="font-size:.82rem;text-align:center;min-height:1.2rem;margin-bottom:.4rem;font-weight:700;"></div>
     <button class="btn-login" id="btn-login" onclick="realizarLogin()">Ingresar</button>
-    <p style="font-size:.77rem;color:#9CA3AF;text-align:center;margin-top:.8rem;">¿Olvidaste tu contraseña? <a href="#" style="color:var(--verde);">Recuperar acceso</a></p>
+    <p style="font-size:.77rem;color:#9CA3AF;text-align:center;margin-top:.8rem;">¿Olvidaste tu contraseña? <a href="#" onclick="abrirRecuperar(event)" style="color:var(--verde);">Recuperar acceso</a></p>
+  </div>
+</div>
+
+<!-- ======= MODAL RECUPERAR ACCESO ======= -->
+<div class="overlay" id="overlay-recuperar" onclick="cerrarRecuperar(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('overlay-recuperar').classList.remove('open')">✕</button>
+    <div class="modal-icon">🔐</div>
+    <h3>Recuperar Acceso</h3>
+
+    <div id="rec-paso1">
+      <p style="font-size:.82rem;color:#9CA3AF;text-align:center;margin-bottom:1rem;">Ingresá tu usuario y tu nombre completo tal como fue registrado en el sistema.</p>
+      <div class="form-group"><label>Usuario</label><input type="text" id="rec-usuario" placeholder="Tu nombre de usuario" autocomplete="username"></div>
+      <div class="form-group"><label>Nombre completo</label><input type="text" id="rec-nombre" placeholder="Como aparece en el sistema" autocomplete="name"></div>
+      <div id="rec-mensaje1" style="font-size:.82rem;text-align:center;min-height:1.2rem;margin-bottom:.4rem;font-weight:700;"></div>
+      <button class="btn-login" id="btn-rec-verificar" onclick="verificarIdentidad()">Verificar identidad</button>
+    </div>
+
+    <div id="rec-paso2" style="display:none;">
+      <p style="font-size:.82rem;color:#6EE7B7;text-align:center;margin-bottom:1rem;">Identidad verificada. Ingresá tu nueva contraseña.</p>
+      <div class="form-group"><label>Nueva contraseña</label><input type="password" id="rec-nueva-pwd" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></div>
+      <div class="form-group"><label>Confirmar contraseña</label><input type="password" id="rec-confirmar-pwd" placeholder="Repetí la contraseña" autocomplete="new-password"></div>
+      <div id="rec-mensaje2" style="font-size:.82rem;text-align:center;min-height:1.2rem;margin-bottom:.4rem;font-weight:700;"></div>
+      <button class="btn-login" id="btn-rec-cambiar" onclick="cambiarPassword()">Cambiar contraseña</button>
+    </div>
   </div>
 </div>
 
@@ -1272,6 +1297,112 @@
       msgDiv.textContent = 'No se pudo conectar con el servidor. ¿Está corriendo XAMPP?';
     } finally {
       btn.textContent = 'Ingresar';
+      btn.disabled = false;
+    }
+  }
+
+  // Recuperar acceso
+  function abrirRecuperar(e) {
+    e.preventDefault();
+    document.getElementById('rec-paso1').style.display = '';
+    document.getElementById('rec-paso2').style.display = 'none';
+    document.getElementById('rec-usuario').value = '';
+    document.getElementById('rec-nombre').value = '';
+    document.getElementById('rec-nueva-pwd').value = '';
+    document.getElementById('rec-confirmar-pwd').value = '';
+    document.getElementById('rec-mensaje1').textContent = '';
+    document.getElementById('rec-mensaje2').textContent = '';
+    document.getElementById('overlay-recuperar').classList.add('open');
+  }
+  function cerrarRecuperar(e) {
+    if (e.target === document.getElementById('overlay-recuperar'))
+      document.getElementById('overlay-recuperar').classList.remove('open');
+  }
+
+  async function verificarIdentidad() {
+    const usuario = document.getElementById('rec-usuario').value.trim();
+    const nombre  = document.getElementById('rec-nombre').value.trim();
+    const msgDiv  = document.getElementById('rec-mensaje1');
+    const btn     = document.getElementById('btn-rec-verificar');
+
+    msgDiv.style.color = '#e53e3e';
+
+    if (!usuario || !nombre) {
+      msgDiv.textContent = 'Completá todos los campos.';
+      return;
+    }
+
+    btn.textContent = 'Verificando...';
+    btn.disabled = true;
+    msgDiv.textContent = '';
+
+    try {
+      const body = new FormData();
+      body.append('accion', 'verificar');
+      body.append('usuario', usuario);
+      body.append('nombre', nombre);
+
+      const res  = await fetch('auth/recuperar.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('rec-paso1').style.display = 'none';
+        document.getElementById('rec-paso2').style.display = '';
+      } else {
+        msgDiv.textContent = data.message;
+      }
+    } catch {
+      msgDiv.textContent = 'No se pudo conectar con el servidor.';
+    } finally {
+      btn.textContent = 'Verificar identidad';
+      btn.disabled = false;
+    }
+  }
+
+  async function cambiarPassword() {
+    const usuario   = document.getElementById('rec-usuario').value.trim();
+    const nuevaPwd  = document.getElementById('rec-nueva-pwd').value;
+    const confirmar = document.getElementById('rec-confirmar-pwd').value;
+    const msgDiv    = document.getElementById('rec-mensaje2');
+    const btn       = document.getElementById('btn-rec-cambiar');
+
+    msgDiv.style.color = '#e53e3e';
+
+    if (nuevaPwd.length < 6) {
+      msgDiv.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      return;
+    }
+    if (nuevaPwd !== confirmar) {
+      msgDiv.textContent = 'Las contraseñas no coinciden.';
+      return;
+    }
+
+    btn.textContent = 'Cambiando...';
+    btn.disabled = true;
+    msgDiv.textContent = '';
+
+    try {
+      const body = new FormData();
+      body.append('accion', 'cambiar');
+      body.append('usuario', usuario);
+      body.append('nueva_password', nuevaPwd);
+
+      const res  = await fetch('auth/recuperar.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        msgDiv.style.color = '#2e7d32';
+        msgDiv.textContent = data.message;
+        setTimeout(() => {
+          document.getElementById('overlay-recuperar').classList.remove('open');
+        }, 2000);
+      } else {
+        msgDiv.textContent = data.message;
+      }
+    } catch {
+      msgDiv.textContent = 'No se pudo conectar con el servidor.';
+    } finally {
+      btn.textContent = 'Cambiar contraseña';
       btn.disabled = false;
     }
   }
