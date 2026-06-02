@@ -822,15 +822,15 @@
     <p class="section-sub">Completá el formulario y nos comunicaremos con vos para informarte sobre el proceso de admisión para el ciclo lectivo 2027.</p>
     <div class="inscripcion-form">
       <div class="form-row">
-        <div class="form-group"><label>Nombre del alumno *</label><input id="insc-nombre" type="text" placeholder="Nombre"></div>
-        <div class="form-group"><label>Apellido del alumno *</label><input id="insc-apellido" type="text" placeholder="Apellido"></div>
-        <div class="form-group"><label>Fecha de nacimiento *</label><input id="insc-fecha" type="date"></div>
+        <div class="form-group"><label>Nombre del alumno *</label><input id="insc-nombre" type="text" placeholder="Nombre" maxlength="50"></div>
+        <div class="form-group"><label>Apellido del alumno *</label><input id="insc-apellido" type="text" placeholder="Apellido" maxlength="50"></div>
+        <div class="form-group"><label>Fecha de nacimiento *</label><input id="insc-fecha" type="date" min="1920-01-01" max="2025-12-31"></div>
         <div class="form-group"><label>Nivel educativo solicitado *</label>
           <select id="insc-nivel"><option value="">— Seleccioná —</option><option>Inicial</option><option>Primario</option><option>Secundario</option></select>
         </div>
-        <div class="form-group"><label>Nombre del padre/tutor *</label><input id="insc-tutor" type="text" placeholder="Nombre completo"></div>
-        <div class="form-group"><label>Teléfono de contacto *</label><input id="insc-telefono" type="tel" placeholder="+54 362 ..."></div>
-        <div class="form-group form-full"><label>Correo electrónico *</label><input id="insc-email" type="email" placeholder="ejemplo@mail.com"></div>
+        <div class="form-group"><label>Nombre del padre/tutor *</label><input id="insc-tutor" type="text" placeholder="Nombre completo" maxlength="100"></div>
+        <div class="form-group"><label>Teléfono de contacto *</label><input id="insc-telefono" type="tel" placeholder="+54 362 ..." maxlength="20"></div>
+        <div class="form-group form-full"><label>Correo electrónico *</label><input id="insc-email" type="email" placeholder="ejemplo@mail.com" maxlength="100"></div>
         <div class="form-group form-full"><label>Consultas o comentarios</label><textarea id="insc-comentarios" placeholder="¿Tenés alguna pregunta o comentario adicional?"></textarea></div>
       </div>
       <button id="btn-insc-submit" class="btn-submit" onclick="enviarInscripcion()">Enviar solicitud 📋</button>
@@ -1085,6 +1085,41 @@
 
     if (!nombre || !apellido || !fecha || !nivel || !tutor || !telefono || !email) {
       msg.textContent = 'Completá todos los campos obligatorios.';
+      return;
+    }
+
+    const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]{2,50}$/;
+    if (!soloLetras.test(nombre)) {
+      msg.textContent = 'El nombre del alumno solo puede contener letras (2 a 50 caracteres).';
+      return;
+    }
+    if (!soloLetras.test(apellido)) {
+      msg.textContent = 'El apellido del alumno solo puede contener letras (2 a 50 caracteres).';
+      return;
+    }
+
+    const fechaDate = new Date(fecha + 'T00:00:00');
+    const anioNac = fechaDate.getFullYear();
+    if (isNaN(fechaDate.getTime()) || anioNac < 1920 || anioNac > 2025) {
+      msg.textContent = 'La fecha de nacimiento debe estar entre 1920 y 2025.';
+      return;
+    }
+
+    const soloLetrasTutor = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]{2,100}$/;
+    if (!soloLetrasTutor.test(tutor)) {
+      msg.textContent = 'El nombre del tutor solo puede contener letras (2 a 100 caracteres).';
+      return;
+    }
+
+    const telefonoRegex = /^\+?[\d\s\-\(\)]{8,20}$/;
+    if (!telefonoRegex.test(telefono)) {
+      msg.textContent = 'El teléfono no es válido (ej: +54 362 4123456, mínimo 8 dígitos).';
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) {
+      msg.textContent = 'El correo electrónico no es válido.';
       return;
     }
 
