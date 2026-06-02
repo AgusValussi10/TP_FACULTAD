@@ -1449,8 +1449,11 @@
       const body = new FormData();
       body.append('nombre', nombre);
       body.append('texto',  texto);
-      const res  = await fetch('opiniones/guardar.php', { method: 'POST', body });
-      const data = await res.json();
+      const res = await fetch('opiniones/guardar.php', { method: 'POST', body });
+      const raw = await res.text();
+      let data;
+      try { data = JSON.parse(raw); }
+      catch { data = { success: false, message: 'Respuesta inesperada del servidor (código ' + res.status + ').' }; }
 
       if (data.success) {
         document.getElementById('opinion-nombre').value = '';
@@ -1462,7 +1465,7 @@
         msgEl.classList.add('opinion-msg--error');
       }
     } catch {
-      msgEl.textContent = '⚠️ No se pudo conectar con el servidor. Intentá nuevamente.';
+      msgEl.textContent = '⚠️ No se pudo alcanzar el servidor. Verificá tu conexión.';
       msgEl.classList.add('opinion-msg--error');
     } finally {
       btn.disabled = false;
