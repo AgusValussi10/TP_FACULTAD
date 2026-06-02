@@ -22,6 +22,31 @@ CREATE TABLE IF NOT EXISTS solicitudes_inscripcion (
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS puestos_vacantes (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    titulo      VARCHAR(150) NOT NULL,
+    descripcion TEXT NOT NULL,
+    tipo        VARCHAR(50)  NOT NULL DEFAULT 'Tiempo completo',
+    urgente     TINYINT(1)   NOT NULL DEFAULT 0,
+    activo      TINYINT(1)   NOT NULL DEFAULT 1,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS postulaciones (
+    id                      INT AUTO_INCREMENT PRIMARY KEY,
+    puesto_id               INT NOT NULL,
+    nombre                  VARCHAR(100) NOT NULL,
+    apellido                VARCHAR(100) NOT NULL,
+    dni                     VARCHAR(20)  NOT NULL,
+    email                   VARCHAR(150) NOT NULL,
+    telefono                VARCHAR(30)  NOT NULL,
+    experiencia_anios       TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    experiencia_descripcion TEXT NOT NULL,
+    estado                  ENUM('pendiente','revisado','seleccionado','rechazado') NOT NULL DEFAULT 'pendiente',
+    created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (puesto_id) REFERENCES puestos_vacantes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE IF NOT EXISTS opiniones (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     nombre     VARCHAR(100) NOT NULL DEFAULT 'Anónimo',

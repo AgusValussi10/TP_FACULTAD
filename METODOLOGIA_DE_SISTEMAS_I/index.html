@@ -907,62 +907,59 @@
     <span class="section-label">Trabajá con Nosotros</span>
     <h2 class="section-title">Oportunidades de Empleo</h2>
     <p class="section-sub">Buscamos profesionales apasionados por la educación para sumarse a nuestro equipo fundador.</p>
-    <div class="empleo-list">
-      <div class="empleo-item">
-        <div class="empleo-info">
-          <h4>Docente de Nivel Inicial</h4>
-          <p>Formación en educación inicial, experiencia mínima 2 años.</p>
-          <div class="empleo-tags">
-            <span class="empleo-tag">Tiempo completo</span>
-            <span class="empleo-tag urgente">Búsqueda activa</span>
-          </div>
-        </div>
-        <button class="btn-postular" onclick="alert(&#39;¡Muchas gracias! Envíanos tu CV a empleo@educar.edu.ar&#39;)">Postularme</button>
-      </div>
-      <div class="empleo-item">
-        <div class="empleo-info">
-          <h4>Profesor/a de Inglés</h4>
-          <p>Certificación internacional requerida (IELTS / TOEFL / Cambridge).</p>
-          <div class="empleo-tags">
-            <span class="empleo-tag">Part-time</span>
-            <span class="empleo-tag urgente">Búsqueda activa</span>
-          </div>
-        </div>
-        <button class="btn-postular" onclick="alert(&#39;¡Muchas gracias! Envíanos tu CV a empleo@educar.edu.ar&#39;)">Postularme</button>
-      </div>
-      <div class="empleo-item">
-        <div class="empleo-info">
-          <h4>Coordinador/a Deportivo</h4>
-          <p>Licenciatura en Educación Física, experiencia en gestión deportiva.</p>
-          <div class="empleo-tags">
-            <span class="empleo-tag">Tiempo completo</span>
-          </div>
-        </div>
-        <button class="btn-postular" onclick="alert(&#39;¡Muchas gracias! Envíanos tu CV a empleo@educar.edu.ar&#39;)">Postularme</button>
-      </div>
-      <div class="empleo-item">
-        <div class="empleo-info">
-          <h4>Psicopedagogo/a</h4>
-          <p>Para el Servicio de Apoyo Estudiantil. Matrícula profesional vigente.</p>
-          <div class="empleo-tags">
-            <span class="empleo-tag">Tiempo completo</span>
-          </div>
-        </div>
-        <button class="btn-postular" onclick="alert(&#39;¡Muchas gracias! Envíanos tu CV a empleo@educar.edu.ar&#39;)">Postularme</button>
-      </div>
-      <div class="empleo-item">
-        <div class="empleo-info">
-          <h4>Personal de Enfermería</h4>
-          <p>Licenciado/a en Enfermería con habilitación provincial vigente.</p>
-          <div class="empleo-tags">
-            <span class="empleo-tag">Tiempo completo</span>
-          </div>
-        </div>
-        <button class="btn-postular" onclick="alert(&#39;¡Muchas gracias! Envíanos tu CV a empleo@educar.edu.ar&#39;)">Postularme</button>
-      </div>
+    <div class="empleo-list" id="empleo-list">
+      <p style="color:#9CA3AF;font-size:.9rem;">Cargando puestos disponibles...</p>
     </div>
   </div>
 </section>
+
+<!-- Modal postulación -->
+<div class="overlay" id="overlay-postular" onclick="cerrarPostular(event)">
+  <div class="modal-box" style="max-width:520px;">
+    <h3 style="color:#F97316;">💼 Postularme al puesto</h3>
+    <p class="modal-sub" id="postular-puesto-nombre"></p>
+    <input type="hidden" id="postular-puesto-id">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem;">
+      <div class="modal-field" style="margin:0">
+        <label>Nombre *</label>
+        <input type="text" id="post-nombre" placeholder="Tu nombre" maxlength="100">
+      </div>
+      <div class="modal-field" style="margin:0">
+        <label>Apellido *</label>
+        <input type="text" id="post-apellido" placeholder="Tu apellido" maxlength="100">
+      </div>
+      <div class="modal-field" style="margin:0">
+        <label>DNI *</label>
+        <input type="text" id="post-dni" placeholder="Sin puntos" maxlength="20">
+      </div>
+      <div class="modal-field" style="margin:0">
+        <label>Teléfono *</label>
+        <input type="tel" id="post-telefono" placeholder="+54 362 ..." maxlength="30">
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label>Email *</label>
+      <input type="email" id="post-email" placeholder="tu@email.com" maxlength="150">
+    </div>
+    <div class="modal-field">
+      <label>Años de experiencia en el área *</label>
+      <input type="number" id="post-exp-anios" min="0" max="50" value="0">
+    </div>
+    <div class="modal-field">
+      <label>Describí tu experiencia y motivación * <span style="font-weight:400;color:#9CA3AF">(mín. 20 caracteres)</span></label>
+      <textarea id="post-exp-desc" rows="3" placeholder="Contanos sobre tu trayectoria y por qué te interesa sumarte..." maxlength="1000"
+        style="width:100%;padding:.65rem .9rem;border:2px solid #E5E7EB;border-radius:10px;font-size:.88rem;font-family:inherit;resize:vertical;"></textarea>
+    </div>
+
+    <p class="modal-error" id="postular-error"></p>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="document.getElementById('overlay-postular').classList.remove('open')">Cancelar</button>
+      <button class="btn-confirmar" id="btn-postular-confirmar" onclick="enviarPostulacion()" style="background:#F97316;">Enviar postulación</button>
+    </div>
+  </div>
+</div>
 
 <!-- ======= CONTACTO ======= -->
 <section id="contacto" class="bg-gris section-anchor">
@@ -1525,6 +1522,95 @@
   }
 
   cargarOpiniones();
+
+  // ── Empleo dinámico ───────────────────────────────────────────────
+  async function cargarPuestos() {
+    const list = document.getElementById('empleo-list');
+    if (!list) return;
+    try {
+      const res    = await fetch('propuestas/listar_puestos.php');
+      const puestos = await res.json();
+      if (!puestos.length) {
+        list.innerHTML = '<p style="color:#9CA3AF;font-size:.9rem;text-align:center;padding:1rem 0;">No hay puestos disponibles en este momento.</p>';
+        return;
+      }
+      list.innerHTML = puestos.map(p => {
+        const urgTag = p.urgente == '1'
+          ? '<span class="empleo-tag urgente">Búsqueda activa</span>' : '';
+        return `
+          <div class="empleo-item">
+            <div class="empleo-info">
+              <h4>${p.titulo}</h4>
+              <p>${p.descripcion}</p>
+              <div class="empleo-tags">
+                <span class="empleo-tag">${p.tipo}</span>${urgTag}
+              </div>
+            </div>
+            <button class="btn-postular" onclick="abrirPostular(${p.id}, '${p.titulo.replace(/'/g,"\\'")}')">Postularme</button>
+          </div>`;
+      }).join('');
+    } catch {
+      list.innerHTML = '<p style="color:#9CA3AF;font-size:.9rem;">No se pudieron cargar los puestos.</p>';
+    }
+  }
+  cargarPuestos();
+
+  function abrirPostular(id, titulo) {
+    document.getElementById('postular-puesto-id').value         = id;
+    document.getElementById('postular-puesto-nombre').textContent = titulo;
+    ['post-nombre','post-apellido','post-dni','post-telefono','post-email','post-exp-desc'].forEach(f => {
+      document.getElementById(f).value = '';
+    });
+    document.getElementById('post-exp-anios').value = '0';
+    document.getElementById('postular-error').textContent = '';
+    document.getElementById('btn-postular-confirmar').disabled = false;
+    document.getElementById('btn-postular-confirmar').textContent = 'Enviar postulación';
+    document.getElementById('overlay-postular').classList.add('open');
+  }
+
+  function cerrarPostular(e) {
+    if (e.target === document.getElementById('overlay-postular'))
+      document.getElementById('overlay-postular').classList.remove('open');
+  }
+
+  async function enviarPostulacion() {
+    const errEl = document.getElementById('postular-error');
+    const btn   = document.getElementById('btn-postular-confirmar');
+    errEl.textContent = '';
+
+    const body = new FormData();
+    body.append('puesto_id',                document.getElementById('postular-puesto-id').value);
+    body.append('nombre',                   document.getElementById('post-nombre').value.trim());
+    body.append('apellido',                 document.getElementById('post-apellido').value.trim());
+    body.append('dni',                      document.getElementById('post-dni').value.trim());
+    body.append('email',                    document.getElementById('post-email').value.trim());
+    body.append('telefono',                 document.getElementById('post-telefono').value.trim());
+    body.append('experiencia_anios',        document.getElementById('post-exp-anios').value);
+    body.append('experiencia_descripcion',  document.getElementById('post-exp-desc').value.trim());
+
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    try {
+      const res  = await fetch('propuestas/guardar_postulacion.php', { method:'POST', body });
+      const raw  = await res.text();
+      let data;
+      try { data = JSON.parse(raw); } catch { data = { success:false, message:'Error del servidor.' }; }
+
+      if (data.success) {
+        document.getElementById('overlay-postular').classList.remove('open');
+        const ok = document.createElement('div');
+        ok.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:#059669;color:#fff;border-radius:12px;padding:.75rem 1.2rem;font-weight:700;font-size:.9rem;box-shadow:0 4px 20px rgba(0,0,0,.2)';
+        ok.textContent = '✅ ' + data.message;
+        document.body.appendChild(ok);
+        setTimeout(() => ok.remove(), 5000);
+      } else {
+        errEl.textContent = data.message || 'Error al enviar.';
+        btn.disabled = false; btn.textContent = 'Enviar postulación';
+      }
+    } catch {
+      errEl.textContent = 'Error de conexión. Intentá nuevamente.';
+      btn.disabled = false; btn.textContent = 'Enviar postulación';
+    }
+  }
 
   // Opiniones
   async function enviarOpinion() {

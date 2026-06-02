@@ -40,6 +40,22 @@ if ($res3) {
     while ($r = $res3->fetch_assoc()) $opiniones[] = $r;
 }
 
+$puestos = [];
+$res4 = $conn->query("SELECT id, titulo, descripcion, tipo, urgente, activo FROM puestos_vacantes ORDER BY created_at ASC");
+if ($res4) while ($r = $res4->fetch_assoc()) $puestos[] = $r;
+
+$postulaciones = [];
+$res5 = $conn->query(
+    "SELECT p.id, p.nombre, p.apellido, p.dni, p.email, p.telefono,
+            p.experiencia_anios, p.experiencia_descripcion, p.estado,
+            DATE_FORMAT(p.created_at,'%d/%m/%Y %H:%i') AS fecha,
+            v.titulo AS puesto_titulo
+     FROM postulaciones p
+     JOIN puestos_vacantes v ON v.id = p.puesto_id
+     ORDER BY FIELD(p.estado,'pendiente','revisado','seleccionado','rechazado'), p.created_at DESC"
+);
+if ($res5) while ($r = $res5->fetch_assoc()) $postulaciones[] = $r;
+
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -185,6 +201,24 @@ $conn->close();
 
     /* ── Sort activo ── */
     .sort-btn.activo { background:#DBEAFE; color:#1E40AF; }
+
+    /* ── Propuestas ── */
+    .puesto-tag { display:inline-block; border-radius:20px; padding:.15rem .6rem; font-size:.73rem; font-weight:800; margin-right:.3rem; }
+    .puesto-tag.full     { background:#EDE9FE; color:#5B21B6; }
+    .puesto-tag.part     { background:#DBEAFE; color:#1E40AF; }
+    .puesto-tag.medio    { background:#FEF3C7; color:#92400E; }
+    .puesto-tag.urgente  { background:#FEE2E2; color:#991B1B; }
+    .puesto-tag.activo   { background:#D1FAE5; color:#065F46; }
+    .puesto-tag.inactivo { background:#F3F4F6; color:#6B7280; }
+    .add-puesto-form { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:1.2rem; padding-top:1.2rem; border-top:2px solid var(--borde); }
+    .add-puesto-form input, .add-puesto-form select, .add-puesto-form textarea { width:100%; padding:.6rem .8rem; border:2px solid #E5E7EB; border-radius:10px; font-size:.88rem; font-family:inherit; }
+    .add-puesto-form input:focus, .add-puesto-form select:focus, .add-puesto-form textarea:focus { outline:none; border-color:var(--verde); }
+    .add-puesto-form .span2 { grid-column: 1 / -1; }
+    .btn-agregar { background:var(--verde); color:#fff; border:none; border-radius:10px; padding:.6rem 1.4rem; font-weight:800; cursor:pointer; font-family:inherit; font-size:.88rem; transition:opacity .2s; }
+    .btn-agregar:hover { opacity:.85; }
+    .estado-revisado    { background:#EDE9FE; color:#5B21B6; }
+    .estado-seleccionado{ background:#D1FAE5; color:#065F46; }
+    .exp-txt { font-size:.82rem; color:#4B5563; max-width:280px; line-height:1.4; }
 
     /* ── Tabs ── */
     .tabs-nav {
@@ -427,15 +461,137 @@ $conn->close();
 
   <!-- ══ TAB: PROPUESTAS DE TRABAJO ══ -->
   <div class="tab-panel" id="panel-propuestas">
+
+    <!-- ── Puestos vacantes ── -->
     <div class="card" style="margin-top:2rem;">
       <div class="card-header">
         <span class="icon">💼</span>
-        <h2>Gestión de Propuestas de Trabajo</h2>
+        <h2>Puestos Vacantes</h2>
       </div>
       <div class="card-body">
-        <p class="empty-msg">Próximamente: administración de puestos vacantes y postulaciones.</p>
+        <table id="tabla-puestos">
+          <thead>
+            <tr><th>#</th><th>Puesto</th><th>Descripción</th><th>Tipo</th><th>Visible en web</th></tr>
+          </thead>
+          <tbody>
+          <?php foreach ($puestos as $p): ?>
+            <tr id="puesto-row-<?= $p['id'] ?>" class="<?= $p['activo'] ? 'row-admitido' : '' ?>">
+              <td><?= $p['id'] ?></td>
+              <td>
+                <strong><?= htmlspecialchars($p['titulo']) ?></strong>
+                <?php if ($p['urgente']): ?><span class="puesto-tag urgente">Urgente</span><?php endif; ?>
+              </td>
+              <td><span class="exp-txt"><?= htmlspecialchars($p['descripcion']) ?></span></td>
+              <td>
+                <?php $tipoCls = $p['tipo'] === 'Part-time' ? 'part' : ($p['tipo'] === 'Medio turno' ? 'medio' : 'full'); ?>
+                <span class="puesto-tag <?= $tipoCls ?>"><?= htmlspecialchars($p['tipo']) ?></span>
+              </td>
+              <td>
+                <div class="toggle-wrap">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="puesto-chk-<?= $p['id'] ?>"
+                           <?= $p['activo'] ? 'checked' : '' ?>
+                           onchange="togglePuesto(<?= $p['id'] ?>, this.checked)">
+                    <span class="toggle-track"></span>
+                  </label>
+                  <span class="toggle-lbl <?= $p['activo'] ? 'on' : 'off' ?>" id="puesto-lbl-<?= $p['id'] ?>">
+                    <?= $p['activo'] ? 'ON' : 'OFF' ?>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+
+        <!-- Formulario agregar puesto -->
+        <div class="add-puesto-form">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Título del puesto *</label>
+            <input type="text" id="new-titulo" placeholder="ej: Docente de Matemáticas" maxlength="150">
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Tipo *</label>
+            <select id="new-tipo">
+              <option value="Tiempo completo">Tiempo completo</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Medio turno">Medio turno</option>
+            </select>
+          </div>
+          <div class="span2">
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Descripción / Requisitos *</label>
+            <textarea id="new-desc" rows="2" placeholder="Requisitos y descripción del puesto..." maxlength="500"></textarea>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <input type="checkbox" id="new-urgente" style="width:auto;">
+            <label for="new-urgente" style="font-size:.84rem;font-weight:700;">Marcar como urgente</label>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn-agregar" onclick="agregarPuesto()">+ Agregar puesto</button>
+          </div>
+          <p id="new-puesto-msg" class="span2" style="font-size:.84rem;font-weight:700;min-height:1.1rem;"></p>
+        </div>
       </div>
     </div>
+
+    <!-- ── Postulaciones recibidas ── -->
+    <div class="card" style="margin-top:1.5rem;">
+      <div class="card-header">
+        <span class="icon">📨</span>
+        <h2>Postulaciones recibidas</h2>
+      </div>
+      <div class="card-body">
+        <?php if (empty($postulaciones)): ?>
+          <p class="empty-msg">No hay postulaciones registradas aún.</p>
+        <?php else: ?>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Puesto</th><th>Nombre</th><th>DNI</th>
+              <th>Email</th><th>Teléfono</th><th>Exp.</th>
+              <th>Descripción exp.</th><th>Fecha</th><th>Estado</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php foreach ($postulaciones as $p):
+            $rowCls = match($p['estado']) {
+                'seleccionado' => 'row-admitido',
+                'rechazado'    => 'row-rechazado',
+                'revisado'     => 'row-contactado',
+                default        => ''
+            };
+          ?>
+            <tr id="post-row-<?= $p['id'] ?>" class="<?= $rowCls ?>">
+              <td><?= $p['id'] ?></td>
+              <td style="white-space:nowrap"><strong><?= htmlspecialchars($p['puesto_titulo']) ?></strong></td>
+              <td><?= htmlspecialchars($p['apellido'].', '.$p['nombre']) ?></td>
+              <td><?= htmlspecialchars($p['dni']) ?></td>
+              <td><?= htmlspecialchars($p['email']) ?></td>
+              <td><?= htmlspecialchars($p['telefono']) ?></td>
+              <td style="text-align:center"><?= $p['experiencia_anios'] ?> año<?= $p['experiencia_anios'] !== '1' ? 's' : '' ?></td>
+              <td><span class="exp-txt"><?= htmlspecialchars(mb_strimwidth($p['experiencia_descripcion'], 0, 100, '…')) ?></span></td>
+              <td style="white-space:nowrap"><?= $p['fecha'] ?></td>
+              <td id="post-estado-<?= $p['id'] ?>">
+                <span class="estado-badge estado-<?= $p['estado'] === 'seleccionado' ? 'admitido' : ($p['estado'] === 'revisado' ? 'contactado' : $p['estado']) ?>">
+                  <?= ucfirst($p['estado']) ?>
+                </span>
+              </td>
+              <td>
+                <div class="acciones" id="post-acc-<?= $p['id'] ?>">
+                  <?php if ($p['estado'] !== 'revisado'):    ?><button class="btn-accion btn-contactado" onclick="postAccion(<?= $p['id'] ?>,'revisado')">Revisado</button><?php endif; ?>
+                  <?php if ($p['estado'] !== 'seleccionado'):?><button class="btn-accion btn-admitido"   onclick="postAccion(<?= $p['id'] ?>,'seleccionado')">Seleccionar</button><?php endif; ?>
+                  <?php if ($p['estado'] !== 'rechazado'):   ?><button class="btn-accion btn-rechazado"  onclick="postAccion(<?= $p['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
+                  <?php if ($p['estado'] !== 'pendiente'):   ?><button class="btn-accion btn-pendiente"  onclick="postAccion(<?= $p['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                </div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+        <?php endif; ?>
+      </div>
+    </div>
+
   </div><!-- /panel-propuestas -->
 
 </div>
@@ -733,6 +889,101 @@ $conn->close();
   }
 
   setInterval(pollingActualizar, 20000);
+
+  // ── Puestos vacantes ──────────────────────────────────────────────
+  async function togglePuesto(id, isOn) {
+    const chk = document.getElementById(`puesto-chk-${id}`);
+    chk.disabled = true;
+    const body = new FormData();
+    body.append('id', id);
+    body.append('activo', isOn ? '1' : '0');
+    try {
+      const res  = await fetch('../propuestas/cambiar_estado_puesto.php', { method:'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById(`puesto-row-${id}`).className = isOn ? 'row-admitido' : '';
+        const lbl = document.getElementById(`puesto-lbl-${id}`);
+        lbl.textContent = isOn ? 'ON' : 'OFF';
+        lbl.className   = `toggle-lbl ${isOn ? 'on' : 'off'}`;
+      } else { chk.checked = !isOn; alert(data.message || 'Error.'); }
+    } catch { chk.checked = !isOn; alert('Error de conexión.'); }
+    finally  { chk.disabled = false; }
+  }
+
+  async function agregarPuesto() {
+    const titulo = document.getElementById('new-titulo').value.trim();
+    const desc   = document.getElementById('new-desc').value.trim();
+    const tipo   = document.getElementById('new-tipo').value;
+    const urg    = document.getElementById('new-urgente').checked ? '1' : '0';
+    const msg    = document.getElementById('new-puesto-msg');
+    msg.style.color = '#DC2626'; msg.textContent = '';
+
+    if (titulo.length < 3)  { msg.textContent = 'Ingresá un título válido.';   return; }
+    if (desc.length   < 10) { msg.textContent = 'Ingresá una descripción.';    return; }
+
+    const body = new FormData();
+    body.append('titulo', titulo); body.append('descripcion', desc);
+    body.append('tipo', tipo);     body.append('urgente', urg);
+    try {
+      const res  = await fetch('../propuestas/agregar_puesto.php', { method:'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        msg.style.color = '#059669';
+        msg.textContent = `✅ Puesto "${titulo}" agregado correctamente.`;
+        document.getElementById('new-titulo').value = '';
+        document.getElementById('new-desc').value   = '';
+        document.getElementById('new-urgente').checked = false;
+        // Insertar fila en tabla
+        const tbody = document.querySelector('#tabla-puestos tbody');
+        const tipoCls = tipo === 'Part-time' ? 'part' : (tipo === 'Medio turno' ? 'medio' : 'full');
+        const urgTag  = urg === '1' ? '<span class="puesto-tag urgente">Urgente</span>' : '';
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr id="puesto-row-${data.id}" class="row-admitido">
+            <td>${data.id}</td>
+            <td><strong>${esc(data.titulo)}</strong> ${urgTag}</td>
+            <td><span class="exp-txt">${esc(data.descripcion)}</span></td>
+            <td><span class="puesto-tag ${tipoCls}">${esc(data.tipo)}</span></td>
+            <td>
+              <div class="toggle-wrap">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="puesto-chk-${data.id}" checked onchange="togglePuesto(${data.id}, this.checked)">
+                  <span class="toggle-track"></span>
+                </label>
+                <span class="toggle-lbl on" id="puesto-lbl-${data.id}">ON</span>
+              </div>
+            </td>
+          </tr>`);
+      } else { msg.textContent = data.message || 'Error al guardar.'; }
+    } catch { msg.textContent = 'Error de conexión.'; }
+  }
+
+  // ── Postulaciones ─────────────────────────────────────────────────
+  const POST_LABELS = { pendiente:'Pendiente', revisado:'Revisado', seleccionado:'Seleccionado', rechazado:'Rechazado' };
+  const POST_BADGE  = { pendiente:'pendiente', revisado:'contactado', seleccionado:'admitido', rechazado:'rechazado' };
+  const POST_ROW    = { pendiente:'', revisado:'row-contactado', seleccionado:'row-admitido', rechazado:'row-rechazado' };
+
+  async function postAccion(id, estado) {
+    const btns = document.querySelectorAll(`#post-acc-${id} button`);
+    btns.forEach(b => b.disabled = true);
+    const body = new FormData();
+    body.append('id', id); body.append('estado', estado);
+    try {
+      const res  = await fetch('../propuestas/cambiar_estado_postulacion.php', { method:'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById(`post-row-${id}`).className = POST_ROW[estado];
+        document.getElementById(`post-estado-${id}`).innerHTML =
+          `<span class="estado-badge estado-${POST_BADGE[estado]}">${POST_LABELS[estado]}</span>`;
+        const todos = ['revisado','seleccionado','rechazado','pendiente'];
+        document.getElementById(`post-acc-${id}`).innerHTML = todos
+          .filter(e => e !== estado)
+          .map(e => {
+            const cls = { revisado:'btn-contactado', seleccionado:'btn-admitido', rechazado:'btn-rechazado', pendiente:'btn-pendiente' }[e];
+            return `<button class="btn-accion ${cls}" onclick="postAccion(${id},'${e}')">${POST_LABELS[e]}</button>`;
+          }).join('');
+      } else { alert(data.message||'Error.'); btns.forEach(b=>b.disabled=false); }
+    } catch { alert('Error de conexión.'); btns.forEach(b=>b.disabled=false); }
+  }
 
   // ── Gestión de opiniones (toggle ON/OFF) ──────────────────────────
   async function toggleOpinion(id, isOn) {

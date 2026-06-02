@@ -40,6 +40,14 @@ CREATE TABLE IF NOT EXISTS opiniones (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Puestos vacantes iniciales
+INSERT IGNORE INTO puestos_vacantes (titulo, descripcion, tipo, urgente) VALUES
+('Docente de Nivel Inicial',  'Formación en educación inicial, experiencia mínima 2 años.', 'Tiempo completo', 1),
+('Profesor/a de Inglés',      'Certificación internacional requerida (IELTS / TOEFL / Cambridge).', 'Part-time', 1),
+('Coordinador/a Deportivo',   'Licenciatura en Educación Física, experiencia en gestión deportiva.', 'Tiempo completo', 0),
+('Psicopedagogo/a',           'Para el Servicio de Apoyo Estudiantil. Matrícula profesional vigente.', 'Tiempo completo', 0),
+('Personal de Enfermería',    'Licenciado/a en Enfermería con habilitación provincial vigente.', 'Tiempo completo', 0);
+
 -- Opiniones de ejemplo (admin puede aprobar/rechazar desde el panel)
 INSERT IGNORE INTO opiniones (nombre, texto, mes, anio, estado) VALUES
 ('María González',  'Excelente propuesta educativa. La integración de deportes, idiomas y tecnología en la currícula es exactamente lo que las familias de Resistencia necesitaban. Esperamos con ansias el inicio en 2027.', 4, 2026, 'pendiente'),

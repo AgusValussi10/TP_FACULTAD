@@ -42,14 +42,18 @@ if ($sesion_activa) {
   </div>
 </div>
 <script>
-  (function(){
+  document.addEventListener("DOMContentLoaded", function(){
     var b=document.getElementById("sesion-activa-banner");
     if(!b) return;
-    var h=b.offsetHeight;
-    document.body.style.paddingTop=h+"px";
-    var hdr=document.querySelector("header");
-    if(hdr) hdr.style.top=h+"px";
-  })();
+    function aplicarOffset(){
+      var h=b.offsetHeight;
+      document.body.style.paddingTop=h+"px";
+      var hdr=document.querySelector("header");
+      if(hdr) hdr.style.top=h+"px";
+    }
+    aplicarOffset();
+    window.addEventListener("resize", aplicarOffset);
+  });
 </script>
 ';
 
