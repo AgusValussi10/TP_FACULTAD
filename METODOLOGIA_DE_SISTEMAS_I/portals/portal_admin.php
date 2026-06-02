@@ -889,6 +889,100 @@ $conn->close();
   }
 
   setInterval(pollingActualizar, 20000);
+  setInterval(pollingOpiniones,  20000);
+  setInterval(pollingPropuestas, 20000);
+
+  // ── Polling opiniones ────────────────────────────────────────────
+  async function pollingOpiniones() {
+    try {
+      const res = await fetch('../opiniones/polling.php', { credentials:'same-origin' });
+      if (!res.ok) return;
+      const { stats, opiniones } = await res.json();
+
+      // Actualizar stats del tab
+      const grid = document.querySelector('#panel-opiniones .stats-grid');
+      if (grid) {
+        const nums = grid.querySelectorAll('.stat-num');
+        const vals = [stats.total, stats.pendiente, stats.aprobado, stats.rechazado];
+        nums.forEach((n, i) => { if (vals[i] !== undefined && n.textContent !== String(vals[i])) n.textContent = vals[i]; });
+      }
+
+      if (!opiniones || !opiniones.length) return;
+      const tbody = document.querySelector('#tabla-opiniones tbody');
+      if (!tbody) return;
+
+      const mesesEs = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      let nuevas = 0;
+      opiniones.forEach(o => {
+        if (document.getElementById(`op-row-${o.id}`)) return;
+        const isOn    = o.estado === 'aprobado';
+        const rowCls  = isOn ? 'row-admitido' : (o.estado === 'rechazado' ? 'row-rechazado' : '');
+        const periodo = mesesEs[parseInt(o.mes)] + ' ' + o.anio;
+        const txt     = o.texto.length > 120 ? esc(o.texto.substring(0,120)) + '…' : esc(o.texto);
+        tbody.insertAdjacentHTML('afterbegin', `
+          <tr id="op-row-${o.id}" class="${rowCls} fila-nueva" data-ts="${o.ts}">
+            <td>${o.id}</td>
+            <td><span class="nombre-opinion">${esc(o.nombre)}</span></td>
+            <td><span class="texto-opinion">${txt}</span></td>
+            <td><span class="mes-anio">${periodo}</span></td>
+            <td style="white-space:nowrap">${o.fecha}</td>
+            <td><div class="toggle-wrap">
+              <label class="toggle-switch">
+                <input type="checkbox" id="op-chk-${o.id}" ${isOn?'checked':''} onchange="toggleOpinion(${o.id}, this.checked)">
+                <span class="toggle-track"></span>
+              </label>
+              <span class="toggle-lbl ${isOn?'on':'off'}" id="op-lbl-${o.id}">${isOn?'ON':'OFF'}</span>
+            </div></td>
+          </tr>`);
+        nuevas++;
+      });
+      if (nuevas > 0) mostrarToast(nuevas === 1 ? 'Nueva opinión recibida' : `${nuevas} nuevas opiniones`);
+    } catch { /* reintentar */ }
+  }
+
+  // ── Polling propuestas ────────────────────────────────────────────
+  async function pollingPropuestas() {
+    try {
+      const res = await fetch('../propuestas/polling.php', { credentials:'same-origin' });
+      if (!res.ok) return;
+      const { postulaciones } = await res.json();
+      if (!postulaciones || !postulaciones.length) return;
+
+      const tabla = document.querySelector('#panel-propuestas .card:last-child table');
+      if (!tabla) return;
+      const tbody = tabla.querySelector('tbody');
+      if (!tbody) return;
+
+      let nuevas = 0;
+      postulaciones.forEach(p => {
+        if (document.getElementById(`post-row-${p.id}`)) return;
+        const rowCls  = POST_ROW[p.estado]  || '';
+        const badgeCls= POST_BADGE[p.estado]|| p.estado;
+        const expTxt  = p.experiencia_descripcion.length > 100 ? esc(p.experiencia_descripcion.substring(0,100)) + '…' : esc(p.experiencia_descripcion);
+        const todos   = ['revisado','seleccionado','rechazado','pendiente'];
+        const btns    = todos.filter(e => e !== p.estado).map(e => {
+          const cls = {revisado:'btn-contactado',seleccionado:'btn-admitido',rechazado:'btn-rechazado',pendiente:'btn-pendiente'}[e];
+          return `<button class="btn-accion ${cls}" onclick="postAccion(${p.id},'${e}')">${POST_LABELS[e]}</button>`;
+        }).join('');
+        tbody.insertAdjacentHTML('afterbegin', `
+          <tr id="post-row-${p.id}" class="${rowCls} fila-nueva">
+            <td>${p.id}</td>
+            <td style="white-space:nowrap"><strong>${esc(p.puesto_titulo)}</strong></td>
+            <td>${esc(p.apellido)}, ${esc(p.nombre)}</td>
+            <td>${esc(p.dni)}</td>
+            <td>${esc(p.email)}</td>
+            <td>${esc(p.telefono)}</td>
+            <td style="text-align:center">${p.experiencia_anios} año${p.experiencia_anios != 1 ? 's' : ''}</td>
+            <td><span class="exp-txt">${expTxt}</span></td>
+            <td style="white-space:nowrap">${p.fecha}</td>
+            <td id="post-estado-${p.id}"><span class="estado-badge estado-${badgeCls}">${POST_LABELS[p.estado]}</span></td>
+            <td><div class="acciones" id="post-acc-${p.id}">${btns}</div></td>
+          </tr>`);
+        nuevas++;
+      });
+      if (nuevas > 0) mostrarToast(nuevas === 1 ? 'Nueva postulación de trabajo recibida' : `${nuevas} nuevas postulaciones`);
+    } catch { /* reintentar */ }
+  }
 
   // ── Puestos vacantes ──────────────────────────────────────────────
   async function togglePuesto(id, isOn) {
@@ -987,7 +1081,7 @@ $conn->close();
 
   // ── Gestión de opiniones (toggle ON/OFF) ──────────────────────────
   async function toggleOpinion(id, isOn) {
-    const estado = isOn ? 'aprobado' : 'rechazado';
+    const estado = isOn ? 'aprobado' : 'pendiente';
     const chk    = document.getElementById(`op-chk-${id}`);
     chk.disabled = true;
 
@@ -1000,7 +1094,7 @@ $conn->close();
 
       if (data.success) {
         const row = document.getElementById(`op-row-${id}`);
-        row.className = isOn ? 'row-admitido' : 'row-rechazado';
+        row.className = isOn ? 'row-admitido' : '';
         row.dataset.ts = row.dataset.ts; // mantener para sort
 
         const lbl = document.getElementById(`op-lbl-${id}`);

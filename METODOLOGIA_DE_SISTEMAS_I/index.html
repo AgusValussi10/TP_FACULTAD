@@ -402,8 +402,10 @@
     }
     .campo-error-msg {
       display: block; color: #e53e3e; font-size: .78rem;
-      font-weight: 600; margin-top: .25rem;
+      font-weight: 600; margin-top: .25rem; min-height: 1rem;
     }
+    input.campo-error, select.campo-error, textarea.campo-error { border-color: #e53e3e !important; background: #fff5f5; }
+    input.campo-ok,    select.campo-ok,    textarea.campo-ok    { border-color: #2e7d32 !important; background: #f0faf0; }
 
     /* ======= INSCRIPCION ======= */
     .inscripcion-form {
@@ -967,37 +969,44 @@
     <p class="modal-sub" id="postular-puesto-nombre"></p>
     <input type="hidden" id="postular-puesto-id">
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.2rem;">
       <div class="modal-field" style="margin:0">
         <label>Nombre *</label>
         <input type="text" id="post-nombre" placeholder="Tu nombre" maxlength="100">
+        <span class="campo-error-msg" id="err-post-nombre"></span>
       </div>
       <div class="modal-field" style="margin:0">
         <label>Apellido *</label>
         <input type="text" id="post-apellido" placeholder="Tu apellido" maxlength="100">
+        <span class="campo-error-msg" id="err-post-apellido"></span>
       </div>
       <div class="modal-field" style="margin:0">
         <label>DNI *</label>
         <input type="text" id="post-dni" placeholder="Sin puntos" maxlength="20">
+        <span class="campo-error-msg" id="err-post-dni"></span>
       </div>
       <div class="modal-field" style="margin:0">
         <label>Teléfono *</label>
         <input type="tel" id="post-telefono" placeholder="+54 362 ..." maxlength="30">
+        <span class="campo-error-msg" id="err-post-telefono"></span>
       </div>
     </div>
 
     <div class="modal-field">
       <label>Email *</label>
       <input type="email" id="post-email" placeholder="tu@email.com" maxlength="150">
+      <span class="campo-error-msg" id="err-post-email"></span>
     </div>
     <div class="modal-field">
       <label>Años de experiencia en el área *</label>
       <input type="number" id="post-exp-anios" min="0" max="50" value="0">
+      <span class="campo-error-msg" id="err-post-exp-anios"></span>
     </div>
     <div class="modal-field">
       <label>Describí tu experiencia y motivación * <span style="font-weight:400;color:#9CA3AF">(mín. 20 caracteres)</span></label>
       <textarea id="post-exp-desc" rows="3" placeholder="Contanos sobre tu trayectoria y por qué te interesa sumarte..." maxlength="1000"
         style="width:100%;padding:.65rem .9rem;border:2px solid #E5E7EB;border-radius:10px;font-size:.88rem;font-family:inherit;resize:vertical;"></textarea>
+      <span class="campo-error-msg" id="err-post-exp-desc"></span>
     </div>
 
     <p class="modal-error" id="postular-error"></p>
@@ -1602,12 +1611,47 @@
   }
   cargarPuestos();
 
+  // ── Validación campos del modal de postulación ───────────────────
+  function _pCampoErr(id, errId, msg) {
+    const el = document.getElementById(id);
+    el.classList.add('campo-error'); el.classList.remove('campo-ok');
+    document.getElementById(errId).textContent = msg;
+    return false;
+  }
+  function _pCampoOk(id, errId) {
+    const el = document.getElementById(id);
+    el.classList.remove('campo-error'); el.classList.add('campo-ok');
+    document.getElementById(errId).textContent = '';
+    return true;
+  }
+  function _pvNombre()   { const v = document.getElementById('post-nombre').value.trim();   return v.length >= 2 ? _pCampoOk('post-nombre','err-post-nombre') : _pCampoErr('post-nombre','err-post-nombre','Ingresá tu nombre (mín. 2 letras).'); }
+  function _pvApellido() { const v = document.getElementById('post-apellido').value.trim(); return v.length >= 2 ? _pCampoOk('post-apellido','err-post-apellido') : _pCampoErr('post-apellido','err-post-apellido','Ingresá tu apellido (mín. 2 letras).'); }
+  function _pvDni()      { const v = document.getElementById('post-dni').value.trim();      return /^\d{7,10}$/.test(v) ? _pCampoOk('post-dni','err-post-dni') : _pCampoErr('post-dni','err-post-dni','DNI inválido (solo números, 7-10 dígitos).'); }
+  function _pvTelefono() { const v = document.getElementById('post-telefono').value.trim(); return /^\+?[\d\s\-\(\)]{7,20}$/.test(v) ? _pCampoOk('post-telefono','err-post-telefono') : _pCampoErr('post-telefono','err-post-telefono','Formato inválido (ej: +54 362 4123456).'); }
+  function _pvEmail()    { const v = document.getElementById('post-email').value.trim();    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? _pCampoOk('post-email','err-post-email') : _pCampoErr('post-email','err-post-email','Email inválido.'); }
+  function _pvExpAnios() { const v = parseInt(document.getElementById('post-exp-anios').value); return (!isNaN(v) && v >= 0 && v <= 50) ? _pCampoOk('post-exp-anios','err-post-exp-anios') : _pCampoErr('post-exp-anios','err-post-exp-anios','Valor entre 0 y 50 años.'); }
+  function _pvExpDesc()  { const v = document.getElementById('post-exp-desc').value.trim(); return v.length >= 20 ? _pCampoOk('post-exp-desc','err-post-exp-desc') : _pCampoErr('post-exp-desc','err-post-exp-desc','Mínimo 20 caracteres.'); }
+
+  document.getElementById('post-nombre').addEventListener('blur',    _pvNombre);
+  document.getElementById('post-apellido').addEventListener('blur',  _pvApellido);
+  document.getElementById('post-dni').addEventListener('blur',       _pvDni);
+  document.getElementById('post-telefono').addEventListener('blur',  _pvTelefono);
+  document.getElementById('post-email').addEventListener('blur',     _pvEmail);
+  document.getElementById('post-exp-anios').addEventListener('blur', _pvExpAnios);
+  document.getElementById('post-exp-anios').addEventListener('change',_pvExpAnios);
+  document.getElementById('post-exp-desc').addEventListener('blur',  _pvExpDesc);
+
   function abrirPostular(id, titulo) {
     document.getElementById('postular-puesto-id').value         = id;
     document.getElementById('postular-puesto-nombre').textContent = titulo;
     ['post-nombre','post-apellido','post-dni','post-telefono','post-email','post-exp-desc'].forEach(f => {
-      document.getElementById(f).value = '';
+      const el = document.getElementById(f);
+      el.value = ''; el.classList.remove('campo-ok','campo-error');
     });
+    ['err-post-nombre','err-post-apellido','err-post-dni','err-post-telefono','err-post-email','err-post-exp-anios','err-post-exp-desc'].forEach(id => {
+      document.getElementById(id).textContent = '';
+    });
+    document.getElementById('post-exp-anios').classList.remove('campo-ok','campo-error');
     document.getElementById('post-exp-anios').value = '0';
     document.getElementById('postular-error').textContent = '';
     document.getElementById('btn-postular-confirmar').disabled = false;
@@ -1624,6 +1668,8 @@
     const errEl = document.getElementById('postular-error');
     const btn   = document.getElementById('btn-postular-confirmar');
     errEl.textContent = '';
+    const ok = [_pvNombre(), _pvApellido(), _pvDni(), _pvTelefono(), _pvEmail(), _pvExpAnios(), _pvExpDesc()].every(Boolean);
+    if (!ok) { errEl.textContent = 'Corregí los campos marcados en rojo antes de continuar.'; return; }
 
     const body = new FormData();
     body.append('puesto_id',                document.getElementById('postular-puesto-id').value);
