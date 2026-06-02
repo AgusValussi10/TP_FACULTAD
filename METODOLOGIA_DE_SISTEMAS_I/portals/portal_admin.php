@@ -151,6 +151,25 @@ $conn->close();
       pointer-events: none;
     }
     .toast-notif.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Tabs ── */
+    .tabs-nav {
+      display: flex; gap: .5rem;
+      background: var(--blanco); border-bottom: 2px solid var(--borde);
+      padding: 0 1.5rem; position: sticky; top: 65px; z-index: 90;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+    .tab-btn {
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      font-size: .9rem; font-weight: 700; color: #6B7280;
+      padding: .9rem 1.2rem; border-bottom: 3px solid transparent;
+      margin-bottom: -2px; transition: color .2s, border-color .2s;
+      white-space: nowrap; display: flex; align-items: center; gap: .4rem;
+    }
+    .tab-btn:hover { color: var(--verde); }
+    .tab-btn.active { color: var(--verde); border-bottom-color: var(--verde); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
   </style>
 </head>
 <body>
@@ -171,11 +190,21 @@ $conn->close();
 
 <div class="welcome">
   <h1>Panel de Administración</h1>
-  <p>Gestión de solicitudes de inscripción</p>
+  <p>Gestión integral del centro educativo</p>
   <span class="rol-badge">Administrador</span>
 </div>
 
+<!-- Navegación por pestañas -->
+<nav class="tabs-nav">
+  <button class="tab-btn active" data-tab="inscripciones">📋 Inscripciones</button>
+  <button class="tab-btn" data-tab="opiniones">💬 Opiniones</button>
+  <button class="tab-btn" data-tab="propuestas">💼 Propuestas de Trabajo</button>
+</nav>
+
 <div class="container">
+
+  <!-- ══ TAB: INSCRIPCIONES ══ -->
+  <div class="tab-panel active" id="panel-inscripciones">
 
   <!-- ESTADÍSTICAS -->
   <div class="stats-grid">
@@ -264,6 +293,34 @@ $conn->close();
     </div>
   </div>
 
+  </div><!-- /panel-inscripciones -->
+
+  <!-- ══ TAB: OPINIONES ══ -->
+  <div class="tab-panel" id="panel-opiniones">
+    <div class="card" style="margin-top:2rem;">
+      <div class="card-header">
+        <span class="icon">💬</span>
+        <h2>Gestión de Opiniones</h2>
+      </div>
+      <div class="card-body">
+        <p class="empty-msg">Próximamente: aprobación de opiniones para la sección de noticias.</p>
+      </div>
+    </div>
+  </div><!-- /panel-opiniones -->
+
+  <!-- ══ TAB: PROPUESTAS DE TRABAJO ══ -->
+  <div class="tab-panel" id="panel-propuestas">
+    <div class="card" style="margin-top:2rem;">
+      <div class="card-header">
+        <span class="icon">💼</span>
+        <h2>Gestión de Propuestas de Trabajo</h2>
+      </div>
+      <div class="card-body">
+        <p class="empty-msg">Próximamente: administración de puestos vacantes y postulaciones.</p>
+      </div>
+    </div>
+  </div><!-- /panel-propuestas -->
+
 </div>
 
 <!-- Modal admisión -->
@@ -293,6 +350,16 @@ $conn->close();
 </div>
 
 <script>
+  // ── Navegación por tabs ──────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
   const BOTONES = {
     contactado: '<button class="btn-accion btn-contactado" onclick="cambiarEstado(ID,\'contactado\')">Contactado</button>',
     admitido:   '<button class="btn-accion btn-admitido"   onclick="abrirModalAdmitir(ID)">Admitir</button>',
