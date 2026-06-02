@@ -134,6 +134,23 @@ $conn->close();
     .btn-confirmar:disabled { opacity:.5; cursor:default; }
 
     @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    @keyframes nuevaFila {
+      0%   { background-color: #FEF9C3; }
+      70%  { background-color: #FFFBEB; }
+      100% { background-color: transparent; }
+    }
+    .fila-nueva { animation: nuevaFila 4s ease-out; }
+
+    .toast-notif {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 300;
+      background: #D97706; color: #fff; border-radius: 12px;
+      padding: .75rem 1.2rem; font-weight: 700; font-size: .9rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2);
+      opacity: 0; transform: translateY(10px); transition: opacity .3s ease, transform .3s ease;
+      pointer-events: none;
+    }
+    .toast-notif.visible { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body>
@@ -409,6 +426,129 @@ $conn->close();
       if (el) el.textContent = conteos[k];
     });
   }
+
+  // ── Polling automático ──────────────────────────────────────────────
+
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str ?? '';
+    return d.innerHTML;
+  }
+
+  function capitalizar(str) {
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+  }
+
+  function buildRow(s) {
+    const id = s.id;
+    const todos = ['contactado', 'admitido', 'rechazado', 'pendiente'];
+    const botones = todos
+      .filter(e => e !== s.estado)
+      .map(e => BOTONES[e].replaceAll('ID', id))
+      .join('');
+    const comentario = s.comentarios
+      ? esc(s.comentarios.length > 60 ? s.comentarios.substring(0, 60) + '…' : s.comentarios)
+      : '—';
+    return `<tr id="row-${id}" class="row-${s.estado} fila-nueva"
+                data-nombre="${esc(s.nombre_alumno)}" data-apellido="${esc(s.apellido_alumno)}">
+      <td>${id}</td>
+      <td><strong>${esc(s.apellido_alumno)}, ${esc(s.nombre_alumno)}</strong></td>
+      <td>${esc(s.nivel_educativo)}</td>
+      <td>${esc(s.nombre_tutor)}</td>
+      <td>${esc(s.telefono)}</td>
+      <td>${esc(s.email)}</td>
+      <td><span class="comentario-txt">${comentario}</span></td>
+      <td style="white-space:nowrap">${s.fecha}</td>
+      <td id="estado-${id}"><span class="estado-badge estado-${s.estado}">${capitalizar(s.estado)}</span></td>
+      <td><div class="acciones" id="acciones-${id}">${botones}</div></td>
+    </tr>`;
+  }
+
+  function asegurarTabla() {
+    if (!document.getElementById('tabla-solicitudes')) {
+      document.querySelector('.card-body').innerHTML = `
+        <table id="tabla-solicitudes">
+          <thead><tr>
+            <th>#</th><th>Alumno</th><th>Nivel</th><th>Tutor</th>
+            <th>Teléfono</th><th>Email</th><th>Comentarios</th>
+            <th>Fecha</th><th>Estado</th><th>Acciones</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>`;
+    }
+  }
+
+  function mostrarToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notif';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('visible'));
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 400);
+    }, 4000);
+  }
+
+  async function pollingActualizar() {
+    try {
+      const res = await fetch('../inscripciones/polling.php', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const { stats, solicitudes } = await res.json();
+
+      // Actualizar stats desde el servidor
+      ['total','pendiente','contactado','admitido','rechazado'].forEach(k => {
+        const el = document.querySelector(`.stat-card.${k} .stat-num`);
+        if (el && el.textContent !== String(stats[k])) el.textContent = stats[k];
+      });
+
+      if (!solicitudes.length) return;
+
+      asegurarTabla();
+      const tbody = document.querySelector('#tabla-solicitudes tbody');
+      let nuevas = 0;
+
+      solicitudes.forEach(s => {
+        const existingRow = document.getElementById(`row-${s.id}`);
+        if (!existingRow) {
+          // Fila nueva: insertar al inicio (pendiente, más reciente)
+          const tpl = document.createElement('template');
+          tpl.innerHTML = buildRow(s);
+          tbody.insertBefore(tpl.content.firstChild, tbody.firstChild);
+          nuevas++;
+        } else {
+          // Fila existente: actualizar si cambió el estado
+          const estadoActual = [...existingRow.classList]
+            .find(c => c.startsWith('row-'))?.replace('row-', '');
+          if (estadoActual !== s.estado) {
+            // No actualizar si el modal de admisión está abierto para esta fila
+            const modalAbierto = document.getElementById('overlay-admitir')?.classList.contains('open');
+            const modalId = document.getElementById('modal-id')?.value;
+            if (modalAbierto && String(modalId) === String(s.id)) return;
+
+            existingRow.className = `row-${s.estado}`;
+            document.getElementById(`estado-${s.id}`).innerHTML =
+              `<span class="estado-badge estado-${s.estado}">${capitalizar(s.estado)}</span>`;
+            const todos = ['contactado','admitido','rechazado','pendiente'];
+            document.getElementById(`acciones-${s.id}`).innerHTML = todos
+              .filter(e => e !== s.estado)
+              .map(e => BOTONES[e].replaceAll('ID', s.id))
+              .join('');
+          }
+        }
+      });
+
+      if (nuevas > 0) {
+        mostrarToast(nuevas === 1
+          ? 'Nueva solicitud de inscripción recibida'
+          : `${nuevas} nuevas solicitudes de inscripción`);
+      }
+    } catch {
+      // Error de red — reintentar en el siguiente ciclo
+    }
+  }
+
+  setInterval(pollingActualizar, 20000);
 </script>
 
 </body>

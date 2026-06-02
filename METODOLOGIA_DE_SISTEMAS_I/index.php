@@ -27,7 +27,7 @@ if ($sesion_activa) {
   box-shadow:0 3px 14px rgba(0,0,0,.4);
   flex-wrap:wrap;text-align:center;
 ">
-  <span>🔒 Estás en una sesión activa como <strong>' . $nombre . '</strong> &mdash; ' . $rol_nombre . '. Cerrá sesión para poder navegar el inicio.</span>
+  <span>🔒 Estás en una sesión activa como <strong>' . $nombre . '</strong> &mdash; ' . $rol_nombre . '.</span>
   <div style="display:flex;gap:.5rem;flex-shrink:0;">
     <a href="' . $portal_url . '" style="
       background:#F97316;color:#fff !important;border-radius:20px;
