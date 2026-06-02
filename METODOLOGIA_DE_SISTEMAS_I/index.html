@@ -342,6 +342,22 @@
     }
     .btn-login:hover { background: var(--verde-claro); }
 
+    /* ======= VALIDACION EN TIEMPO REAL ======= */
+    .form-group input.campo-error,
+    .form-group select.campo-error {
+      border-color: #e53e3e !important;
+      background: #fff5f5;
+    }
+    .form-group input.campo-ok,
+    .form-group select.campo-ok {
+      border-color: #2e7d32 !important;
+      background: #f0faf0;
+    }
+    .campo-error-msg {
+      display: block; color: #e53e3e; font-size: .78rem;
+      font-weight: 600; margin-top: .25rem;
+    }
+
     /* ======= INSCRIPCION ======= */
     .inscripcion-form {
       background: var(--blanco); border-radius: 20px; padding: 2.5rem;
@@ -822,15 +838,41 @@
     <p class="section-sub">Completá el formulario y nos comunicaremos con vos para informarte sobre el proceso de admisión para el ciclo lectivo 2027.</p>
     <div class="inscripcion-form">
       <div class="form-row">
-        <div class="form-group"><label>Nombre del alumno *</label><input id="insc-nombre" type="text" placeholder="Nombre" maxlength="50"></div>
-        <div class="form-group"><label>Apellido del alumno *</label><input id="insc-apellido" type="text" placeholder="Apellido" maxlength="50"></div>
-        <div class="form-group"><label>Fecha de nacimiento *</label><input id="insc-fecha" type="date" min="1920-01-01" max="2025-12-31"></div>
-        <div class="form-group"><label>Nivel educativo solicitado *</label>
-          <select id="insc-nivel"><option value="">— Seleccioná —</option><option>Inicial</option><option>Primario</option><option>Secundario</option></select>
+        <div class="form-group">
+          <label>Nombre del alumno *</label>
+          <input id="insc-nombre" type="text" placeholder="Nombre" maxlength="50">
+          <span class="campo-error-msg" id="err-nombre"></span>
         </div>
-        <div class="form-group"><label>Nombre del padre/tutor *</label><input id="insc-tutor" type="text" placeholder="Nombre completo" maxlength="100"></div>
-        <div class="form-group"><label>Teléfono de contacto *</label><input id="insc-telefono" type="tel" placeholder="+54 362 ..." maxlength="20"></div>
-        <div class="form-group form-full"><label>Correo electrónico *</label><input id="insc-email" type="email" placeholder="ejemplo@mail.com" maxlength="100"></div>
+        <div class="form-group">
+          <label>Apellido del alumno *</label>
+          <input id="insc-apellido" type="text" placeholder="Apellido" maxlength="50">
+          <span class="campo-error-msg" id="err-apellido"></span>
+        </div>
+        <div class="form-group">
+          <label>Fecha de nacimiento *</label>
+          <input id="insc-fecha" type="date" min="1920-01-01" max="2025-12-31">
+          <span class="campo-error-msg" id="err-fecha"></span>
+        </div>
+        <div class="form-group">
+          <label>Nivel educativo solicitado *</label>
+          <select id="insc-nivel"><option value="">— Seleccioná —</option><option>Inicial</option><option>Primario</option><option>Secundario</option></select>
+          <span class="campo-error-msg" id="err-nivel"></span>
+        </div>
+        <div class="form-group">
+          <label>Nombre del padre/tutor *</label>
+          <input id="insc-tutor" type="text" placeholder="Nombre completo" maxlength="100">
+          <span class="campo-error-msg" id="err-tutor"></span>
+        </div>
+        <div class="form-group">
+          <label>Teléfono de contacto *</label>
+          <input id="insc-telefono" type="tel" placeholder="+54 362 ..." maxlength="20">
+          <span class="campo-error-msg" id="err-telefono"></span>
+        </div>
+        <div class="form-group form-full">
+          <label>Correo electrónico *</label>
+          <input id="insc-email" type="email" placeholder="ejemplo@mail.com" maxlength="100">
+          <span class="campo-error-msg" id="err-email"></span>
+        </div>
         <div class="form-group form-full"><label>Consultas o comentarios</label><textarea id="insc-comentarios" placeholder="¿Tenés alguna pregunta o comentario adicional?"></textarea></div>
       </div>
       <button id="btn-insc-submit" class="btn-submit" onclick="enviarInscripcion()">Enviar solicitud 📋</button>
@@ -1068,75 +1110,104 @@
   }
   function cerrarLogin(e) { if (e.target === document.getElementById('overlay')) document.getElementById('overlay').classList.remove('open'); }
 
-  // Login contra la base de datos
-  async function enviarInscripcion() {
-    const btn    = document.getElementById('btn-insc-submit');
-    const msg    = document.getElementById('insc-mensaje');
-    const nombre   = document.getElementById('insc-nombre').value.trim();
-    const apellido = document.getElementById('insc-apellido').value.trim();
-    const fecha    = document.getElementById('insc-fecha').value;
-    const nivel    = document.getElementById('insc-nivel').value;
-    const tutor    = document.getElementById('insc-tutor').value.trim();
-    const telefono = document.getElementById('insc-telefono').value.trim();
-    const email    = document.getElementById('insc-email').value.trim();
-    const comentarios = document.getElementById('insc-comentarios').value.trim();
+  // ── Validación de inscripción por campo ──────────────────────────────────
+  const _RE_LETRAS       = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]{2,50}$/;
+  const _RE_LETRAS_TUTOR = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]{2,100}$/;
+  const _RE_TELEFONO     = /^\+?[\d\s\-\(\)]{8,20}$/;
+  const _RE_EMAIL        = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+  function _campoError(inputId, errId, msg) {
+    const el = document.getElementById(inputId);
+    el.classList.add('campo-error'); el.classList.remove('campo-ok');
+    document.getElementById(errId).textContent = msg;
+    return false;
+  }
+  function _campoOk(inputId, errId) {
+    const el = document.getElementById(inputId);
+    el.classList.remove('campo-error'); el.classList.add('campo-ok');
+    document.getElementById(errId).textContent = '';
+    return true;
+  }
+
+  function _validarNombre() {
+    const v = document.getElementById('insc-nombre').value.trim();
+    if (!v) return _campoError('insc-nombre','err-nombre','Este campo es obligatorio.');
+    if (!_RE_LETRAS.test(v)) return _campoError('insc-nombre','err-nombre','Solo letras, entre 2 y 50 caracteres.');
+    return _campoOk('insc-nombre','err-nombre');
+  }
+  function _validarApellido() {
+    const v = document.getElementById('insc-apellido').value.trim();
+    if (!v) return _campoError('insc-apellido','err-apellido','Este campo es obligatorio.');
+    if (!_RE_LETRAS.test(v)) return _campoError('insc-apellido','err-apellido','Solo letras, entre 2 y 50 caracteres.');
+    return _campoOk('insc-apellido','err-apellido');
+  }
+  function _validarFecha() {
+    const v = document.getElementById('insc-fecha').value;
+    if (!v) return _campoError('insc-fecha','err-fecha','Este campo es obligatorio.');
+    const d = new Date(v + 'T00:00:00'); const y = d.getFullYear();
+    if (isNaN(d.getTime()) || y < 1920 || y > 2025)
+      return _campoError('insc-fecha','err-fecha','La fecha debe estar entre 1920 y 2025.');
+    return _campoOk('insc-fecha','err-fecha');
+  }
+  function _validarNivel() {
+    const v = document.getElementById('insc-nivel').value;
+    if (!v) return _campoError('insc-nivel','err-nivel','Seleccioná un nivel educativo.');
+    return _campoOk('insc-nivel','err-nivel');
+  }
+  function _validarTutor() {
+    const v = document.getElementById('insc-tutor').value.trim();
+    if (!v) return _campoError('insc-tutor','err-tutor','Este campo es obligatorio.');
+    if (!_RE_LETRAS_TUTOR.test(v)) return _campoError('insc-tutor','err-tutor','Solo letras, entre 2 y 100 caracteres.');
+    return _campoOk('insc-tutor','err-tutor');
+  }
+  function _validarTelefono() {
+    const v = document.getElementById('insc-telefono').value.trim();
+    if (!v) return _campoError('insc-telefono','err-telefono','Este campo es obligatorio.');
+    if (!_RE_TELEFONO.test(v)) return _campoError('insc-telefono','err-telefono','Formato no válido (ej: +54 362 4123456).');
+    return _campoOk('insc-telefono','err-telefono');
+  }
+  function _validarEmail() {
+    const v = document.getElementById('insc-email').value.trim();
+    if (!v) return _campoError('insc-email','err-email','Este campo es obligatorio.');
+    if (!_RE_EMAIL.test(v)) return _campoError('insc-email','err-email','El correo no es válido.');
+    return _campoOk('insc-email','err-email');
+  }
+
+  // Activar validación al salir de cada campo
+  document.getElementById('insc-nombre').addEventListener('blur',   _validarNombre);
+  document.getElementById('insc-apellido').addEventListener('blur',  _validarApellido);
+  document.getElementById('insc-fecha').addEventListener('blur',    _validarFecha);
+  document.getElementById('insc-fecha').addEventListener('change',  _validarFecha);
+  document.getElementById('insc-nivel').addEventListener('change',  _validarNivel);
+  document.getElementById('insc-tutor').addEventListener('blur',    _validarTutor);
+  document.getElementById('insc-telefono').addEventListener('blur', _validarTelefono);
+  document.getElementById('insc-email').addEventListener('blur',    _validarEmail);
+
+  async function enviarInscripcion() {
+    const btn = document.getElementById('btn-insc-submit');
+    const msg = document.getElementById('insc-mensaje');
     msg.style.color = '#e53e3e';
 
-    if (!nombre || !apellido || !fecha || !nivel || !tutor || !telefono || !email) {
-      msg.textContent = 'Completá todos los campos obligatorios.';
-      return;
-    }
+    // Validar todos los campos y mostrar errores en los que fallen
+    const ok = [_validarNombre(), _validarApellido(), _validarFecha(),
+                 _validarNivel(), _validarTutor(), _validarTelefono(), _validarEmail()]
+               .every(Boolean);
+    if (!ok) { msg.textContent = 'Corregí los campos marcados en rojo.'; return; }
 
-    const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]{2,50}$/;
-    if (!soloLetras.test(nombre)) {
-      msg.textContent = 'El nombre del alumno solo puede contener letras (2 a 50 caracteres).';
-      return;
-    }
-    if (!soloLetras.test(apellido)) {
-      msg.textContent = 'El apellido del alumno solo puede contener letras (2 a 50 caracteres).';
-      return;
-    }
-
-    const fechaDate = new Date(fecha + 'T00:00:00');
-    const anioNac = fechaDate.getFullYear();
-    if (isNaN(fechaDate.getTime()) || anioNac < 1920 || anioNac > 2025) {
-      msg.textContent = 'La fecha de nacimiento debe estar entre 1920 y 2025.';
-      return;
-    }
-
-    const soloLetrasTutor = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]{2,100}$/;
-    if (!soloLetrasTutor.test(tutor)) {
-      msg.textContent = 'El nombre del tutor solo puede contener letras (2 a 100 caracteres).';
-      return;
-    }
-
-    const telefonoRegex = /^\+?[\d\s\-\(\)]{8,20}$/;
-    if (!telefonoRegex.test(telefono)) {
-      msg.textContent = 'El teléfono no es válido (ej: +54 362 4123456, mínimo 8 dígitos).';
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    if (!emailRegex.test(email)) {
-      msg.textContent = 'El correo electrónico no es válido.';
-      return;
-    }
-
+    msg.textContent = '';
     btn.textContent = 'Enviando...';
     btn.disabled = true;
-    msg.textContent = '';
 
     try {
       const body = new FormData();
-      body.append('nombre_alumno',    nombre);
-      body.append('apellido_alumno',  apellido);
-      body.append('fecha_nacimiento', fecha);
-      body.append('nivel_educativo',  nivel);
-      body.append('nombre_tutor',     tutor);
-      body.append('telefono',         telefono);
-      body.append('email',            email);
-      body.append('comentarios',      comentarios);
+      body.append('nombre_alumno',    document.getElementById('insc-nombre').value.trim());
+      body.append('apellido_alumno',  document.getElementById('insc-apellido').value.trim());
+      body.append('fecha_nacimiento', document.getElementById('insc-fecha').value);
+      body.append('nivel_educativo',  document.getElementById('insc-nivel').value);
+      body.append('nombre_tutor',     document.getElementById('insc-tutor').value.trim());
+      body.append('telefono',         document.getElementById('insc-telefono').value.trim());
+      body.append('email',            document.getElementById('insc-email').value.trim());
+      body.append('comentarios',      document.getElementById('insc-comentarios').value.trim());
 
       const res  = await fetch('inscripciones/guardar.php', { method: 'POST', body });
       const data = await res.json();
@@ -1144,9 +1215,14 @@
       if (data.success) {
         msg.style.color = '#2e7d32';
         msg.textContent = data.message;
-        // Limpiar el formulario
         ['insc-nombre','insc-apellido','insc-fecha','insc-nivel','insc-tutor','insc-telefono','insc-email','insc-comentarios']
-          .forEach(id => { document.getElementById(id).value = ''; });
+          .forEach(id => {
+            const el = document.getElementById(id);
+            el.value = '';
+            el.classList.remove('campo-ok','campo-error');
+          });
+        ['err-nombre','err-apellido','err-fecha','err-nivel','err-tutor','err-telefono','err-email']
+          .forEach(id => { document.getElementById(id).textContent = ''; });
       } else {
         msg.textContent = data.message;
       }
