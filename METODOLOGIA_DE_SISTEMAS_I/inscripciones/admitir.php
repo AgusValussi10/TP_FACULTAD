@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once '../auth/session.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if (($_SESSION['rol'] ?? '') !== 'admin') {

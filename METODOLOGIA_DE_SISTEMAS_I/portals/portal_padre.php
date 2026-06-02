@@ -1,5 +1,10 @@
 <?php
-$nombre = htmlspecialchars($_GET['nombre'] ?? 'Padre/Tutor');
+require_once '../auth/session.php';
+if (($_SESSION['rol'] ?? '') !== 'padre') {
+    header('Location: /');
+    exit;
+}
+$nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
 ?>
 <!DOCTYPE html>
 <html lang="es">

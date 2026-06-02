@@ -1,5 +1,10 @@
 <?php
-$nombre = htmlspecialchars($_GET['nombre'] ?? 'Docente');
+require_once '../auth/session.php';
+if (($_SESSION['rol'] ?? '') !== 'docente') {
+    header('Location: /');
+    exit;
+}
+$nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
 
 require_once '../database/db_config.php';
 
