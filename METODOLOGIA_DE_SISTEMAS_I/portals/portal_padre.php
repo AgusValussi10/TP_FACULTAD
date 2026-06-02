@@ -12,6 +12,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portal Familias – Educar para Transformar</title>
+  <link rel="icon" href="../assets/logo.avif">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Merriweather:wght@700&display=swap" rel="stylesheet">
   <style>
     :root {
