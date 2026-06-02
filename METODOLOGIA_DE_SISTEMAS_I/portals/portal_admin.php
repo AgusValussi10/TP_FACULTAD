@@ -27,6 +27,18 @@ $res2 = $conn->query(
 if ($res2) {
     while ($r = $res2->fetch_assoc()) $solicitudes[] = $r;
 }
+
+$opiniones = [];
+$res3 = $conn->query(
+    "SELECT id, nombre, texto, mes, anio, estado,
+            DATE_FORMAT(created_at,'%d/%m/%Y %H:%i') AS fecha
+     FROM opiniones
+     ORDER BY FIELD(estado,'pendiente','aprobado','rechazado'), created_at DESC"
+);
+if ($res3) {
+    while ($r = $res3->fetch_assoc()) $opiniones[] = $r;
+}
+
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -151,6 +163,11 @@ $conn->close();
       pointer-events: none;
     }
     .toast-notif.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Texto largo truncado ── */
+    .texto-opinion { font-size:.84rem; color:#4B5563; max-width:320px; line-height:1.5; }
+    .nombre-opinion { font-weight:800; font-size:.88rem; }
+    .mes-anio { font-size:.78rem; color:#9CA3AF; }
 
     /* ── Tabs ── */
     .tabs-nav {
@@ -297,15 +314,94 @@ $conn->close();
 
   <!-- ══ TAB: OPINIONES ══ -->
   <div class="tab-panel" id="panel-opiniones">
-    <div class="card" style="margin-top:2rem;">
-      <div class="card-header">
-        <span class="icon">💬</span>
-        <h2>Gestión de Opiniones</h2>
+
+    <!-- Stats opiniones -->
+    <?php
+      $op_stats = ['total'=>0,'pendiente'=>0,'aprobado'=>0,'rechazado'=>0];
+      foreach ($opiniones as $o) {
+          $op_stats[$o['estado']]++;
+          $op_stats['total']++;
+      }
+    ?>
+    <div class="stats-grid" style="margin-top:2rem;">
+      <div class="stat-card total">
+        <div class="stat-num"><?= $op_stats['total'] ?></div>
+        <div class="stat-label">Total</div>
       </div>
-      <div class="card-body">
-        <p class="empty-msg">Próximamente: aprobación de opiniones para la sección de noticias.</p>
+      <div class="stat-card pendiente">
+        <div class="stat-num"><?= $op_stats['pendiente'] ?></div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+      <div class="stat-card admitido">
+        <div class="stat-num"><?= $op_stats['aprobado'] ?></div>
+        <div class="stat-label">Aprobadas</div>
+      </div>
+      <div class="stat-card rechazado">
+        <div class="stat-num"><?= $op_stats['rechazado'] ?></div>
+        <div class="stat-label">Rechazadas</div>
       </div>
     </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="icon">💬</span>
+        <h2>Opiniones recibidas</h2>
+      </div>
+      <div class="card-body">
+        <?php if (empty($opiniones)): ?>
+          <p class="empty-msg">No hay opiniones registradas aún.</p>
+        <?php else: ?>
+        <table id="tabla-opiniones">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Opinión</th>
+              <th>Período</th>
+              <th>Fecha envío</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+            $meses_es = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                         'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            foreach ($opiniones as $o):
+              $periodo = $meses_es[(int)$o['mes']] . ' ' . $o['anio'];
+            ?>
+            <tr id="op-row-<?= $o['id'] ?>" class="row-<?= $o['estado'] === 'aprobado' ? 'admitido' : $o['estado'] ?>">
+              <td><?= $o['id'] ?></td>
+              <td><span class="nombre-opinion"><?= htmlspecialchars($o['nombre']) ?></span></td>
+              <td><span class="texto-opinion"><?= htmlspecialchars(mb_strimwidth($o['texto'], 0, 120, '…')) ?></span></td>
+              <td><span class="mes-anio"><?= $periodo ?></span></td>
+              <td style="white-space:nowrap"><?= $o['fecha'] ?></td>
+              <td id="op-estado-<?= $o['id'] ?>">
+                <span class="estado-badge estado-<?= $o['estado'] === 'aprobado' ? 'admitido' : $o['estado'] ?>">
+                  <?= $o['estado'] === 'aprobado' ? 'Aprobada' : ucfirst($o['estado']) ?>
+                </span>
+              </td>
+              <td>
+                <div class="acciones" id="op-acciones-<?= $o['id'] ?>">
+                  <?php if ($o['estado'] !== 'aprobado'): ?>
+                    <button class="btn-accion btn-admitido" onclick="opinionAccion(<?= $o['id'] ?>,'aprobado')">Aprobar</button>
+                  <?php endif; ?>
+                  <?php if ($o['estado'] !== 'rechazado'): ?>
+                    <button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $o['id'] ?>,'rechazado')">Rechazar</button>
+                  <?php endif; ?>
+                  <?php if ($o['estado'] !== 'pendiente'): ?>
+                    <button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $o['id'] ?>,'pendiente')">↩ Pendiente</button>
+                  <?php endif; ?>
+                </div>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+        <?php endif; ?>
+      </div>
+    </div>
+
   </div><!-- /panel-opiniones -->
 
   <!-- ══ TAB: PROPUESTAS DE TRABAJO ══ -->
@@ -616,6 +712,65 @@ $conn->close();
   }
 
   setInterval(pollingActualizar, 20000);
+
+  // ── Gestión de opiniones ────────────────────────────────────────────
+  async function opinionAccion(id, estado) {
+    const btns = document.querySelectorAll(`#op-acciones-${id} button`);
+    btns.forEach(b => b.disabled = true);
+
+    try {
+      const body = new FormData();
+      body.append('id', id);
+      body.append('estado', estado);
+      const res  = await fetch('../opiniones/cambiar_estado.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        // Actualizar color de fila
+        const row = document.getElementById(`op-row-${id}`);
+        const colorClass = estado === 'aprobado' ? 'admitido' : estado;
+        row.className = `row-${colorClass}`;
+
+        // Actualizar badge
+        const labels = { aprobado: 'Aprobada', rechazado: 'Rechazado', pendiente: 'Pendiente' };
+        const badgeClass = estado === 'aprobado' ? 'admitido' : estado;
+        document.getElementById(`op-estado-${id}`).innerHTML =
+          `<span class="estado-badge estado-${badgeClass}">${labels[estado]}</span>`;
+
+        // Reconstruir botones
+        let btnsHtml = '';
+        if (estado !== 'aprobado')  btnsHtml += `<button class="btn-accion btn-admitido"  onclick="opinionAccion(${id},'aprobado')">Aprobar</button>`;
+        if (estado !== 'rechazado') btnsHtml += `<button class="btn-accion btn-rechazado" onclick="opinionAccion(${id},'rechazado')">Rechazar</button>`;
+        if (estado !== 'pendiente') btnsHtml += `<button class="btn-accion btn-pendiente" onclick="opinionAccion(${id},'pendiente')">↩ Pendiente</button>`;
+        document.getElementById(`op-acciones-${id}`).innerHTML = btnsHtml;
+
+        // Actualizar contadores
+        actualizarStatsOpiniones();
+      } else {
+        alert(data.message || 'Error al actualizar.');
+        btns.forEach(b => b.disabled = false);
+      }
+    } catch {
+      alert('No se pudo conectar con el servidor.');
+      btns.forEach(b => b.disabled = false);
+    }
+  }
+
+  function actualizarStatsOpiniones() {
+    const conteos = { total: 0, pendiente: 0, aprobado: 0, rechazado: 0 };
+    document.querySelectorAll('#tabla-opiniones tbody tr').forEach(row => {
+      const cls = [...row.classList].find(c => c.startsWith('row-'))?.replace('row-', '');
+      if (cls === 'admitido') { conteos.aprobado++; conteos.total++; }
+      else if (cls === 'pendiente' || cls === 'rechazado') { conteos[cls]++; conteos.total++; }
+    });
+    const grid = document.querySelector('#panel-opiniones .stats-grid');
+    if (!grid) return;
+    const nums = grid.querySelectorAll('.stat-num');
+    if (nums[0]) nums[0].textContent = conteos.total;
+    if (nums[1]) nums[1].textContent = conteos.pendiente;
+    if (nums[2]) nums[2].textContent = conteos.aprobado;
+    if (nums[3]) nums[3].textContent = conteos.rechazado;
+  }
 </script>
 
 </body>
