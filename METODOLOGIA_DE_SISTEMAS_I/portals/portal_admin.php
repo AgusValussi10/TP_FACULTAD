@@ -309,6 +309,35 @@ $conn->close();
     .stat-card.borrador   .stat-num { color:#D97706; }
     .stat-card.publicada  .stat-num { color:#059669; }
     .stat-card.archivada  .stat-num { color:#9CA3AF; }
+
+    /* ── Barra de filtros de noticias ── */
+    .not-filtros-bar {
+      display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
+      padding: .85rem 1.5rem; background: var(--verde-bg);
+      border-bottom: 2px solid var(--borde);
+    }
+    .not-filtros-label {
+      font-size: .75rem; font-weight: 800; color: #6B7280;
+      text-transform: uppercase; letter-spacing: .09em; white-space: nowrap;
+    }
+    .not-filtro-btn {
+      padding: .28rem .8rem; border-radius: 20px;
+      border: 2px solid var(--borde); background: var(--blanco);
+      font-size: .8rem; font-weight: 700; color: #374151;
+      cursor: pointer; transition: all .18s; font-family: inherit;
+    }
+    .not-filtro-btn:hover:not(.activo) { border-color: var(--verde); color: var(--verde); }
+    .not-filtro-btn.activo { background: var(--verde); color: #fff; border-color: var(--verde); }
+    .not-filtro-btn[data-val="publicada"].activo  { background:#059669; border-color:#059669; }
+    .not-filtro-btn[data-val="borrador"].activo   { background:#D97706; border-color:#D97706; }
+    .not-filtro-btn[data-val="archivada"].activo  { background:#9CA3AF; border-color:#9CA3AF; }
+    .not-filtro-btn[data-val="institucional"].activo { background:#1E40AF; border-color:#1E40AF; }
+    .not-filtro-btn[data-val="academica"].activo     { background:#5B21B6; border-color:#5B21B6; }
+    .not-filtro-btn[data-val="deportiva"].activo     { background:#065F46; border-color:#065F46; }
+    .not-filtro-btn[data-val="cultural"].activo      { background:#92400E; border-color:#92400E; }
+    .not-filtro-btn[data-val="general"].activo       { background:#374151; border-color:#374151; }
+    .not-filtro-sep { width: 1.5px; height: 22px; background: var(--borde); flex-shrink: 0; margin: 0 .15rem; align-self: center; }
+    .not-filtros-count { margin-left: auto; font-size: .78rem; font-weight: 700; color: #9CA3AF; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -791,11 +820,11 @@ $conn->close();
           <div>
             <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Categoría *</label>
             <select id="not-categoria">
-              <option value="institucional">Institucional</option>
-              <option value="academica">Académica</option>
-              <option value="deportiva">Deportiva</option>
-              <option value="cultural">Cultural</option>
-              <option value="general" selected>General</option>
+              <option value="institucional">🏫 Institucional</option>
+              <option value="academica">📚 Académica</option>
+              <option value="deportiva">⚽ Deportiva</option>
+              <option value="cultural">🎭 Cultural</option>
+              <option value="general" selected>📰 General</option>
             </select>
           </div>
           <div class="span2">
@@ -830,6 +859,25 @@ $conn->close();
         <span class="icon">📰</span>
         <h2>Noticias y Novedades</h2>
       </div>
+
+      <!-- Barra de filtros -->
+      <div class="not-filtros-bar" id="not-filtros-bar">
+        <span class="not-filtros-label">Estado:</span>
+        <button class="not-filtro-btn activo" data-grp="estado" data-val="todos"     onclick="notFiltrar(this)">Todas</button>
+        <button class="not-filtro-btn"        data-grp="estado" data-val="publicada" onclick="notFiltrar(this)">✅ Publicadas</button>
+        <button class="not-filtro-btn"        data-grp="estado" data-val="borrador"  onclick="notFiltrar(this)">📝 Borradores</button>
+        <button class="not-filtro-btn"        data-grp="estado" data-val="archivada" onclick="notFiltrar(this)">📦 Archivadas</button>
+        <span class="not-filtro-sep"></span>
+        <span class="not-filtros-label">Categoría:</span>
+        <button class="not-filtro-btn activo" data-grp="cat" data-val="todas"         onclick="notFiltrar(this)">🗂️ Todas</button>
+        <button class="not-filtro-btn"        data-grp="cat" data-val="institucional" onclick="notFiltrar(this)">🏫 Institucional</button>
+        <button class="not-filtro-btn"        data-grp="cat" data-val="academica"     onclick="notFiltrar(this)">📚 Académica</button>
+        <button class="not-filtro-btn"        data-grp="cat" data-val="deportiva"     onclick="notFiltrar(this)">⚽ Deportiva</button>
+        <button class="not-filtro-btn"        data-grp="cat" data-val="cultural"      onclick="notFiltrar(this)">🎭 Cultural</button>
+        <button class="not-filtro-btn"        data-grp="cat" data-val="general"       onclick="notFiltrar(this)">📰 General</button>
+        <span class="not-filtros-count" id="not-filtros-count"></span>
+      </div>
+
       <div class="card-body" id="not-card-body">
         <?php if (empty($noticias)): ?>
           <p class="empty-msg" id="not-empty">No hay noticias registradas aún.</p>
@@ -936,11 +984,11 @@ $conn->close();
       <div>
         <label>Categoría *</label>
         <select id="edit-not-categoria">
-          <option value="institucional">Institucional</option>
-          <option value="academica">Académica</option>
-          <option value="deportiva">Deportiva</option>
-          <option value="cultural">Cultural</option>
-          <option value="general">General</option>
+          <option value="institucional">🏫 Institucional</option>
+          <option value="academica">📚 Académica</option>
+          <option value="deportiva">⚽ Deportiva</option>
+          <option value="cultural">🎭 Cultural</option>
+          <option value="general">📰 General</option>
         </select>
       </div>
       <div>
@@ -1706,6 +1754,7 @@ $conn->close();
         tbody.insertBefore(tpl.content.firstChild, tbody.firstChild);
         document.querySelector('#tabla-noticias tbody tr').classList.add('fila-nueva');
         actualizarStatsNoticias();
+        notAplicarVisibilidad();
       } else {
         msg.textContent = data.message || 'Error al guardar.';
       }
@@ -1794,6 +1843,7 @@ $conn->close();
           document.getElementById(`not-acc-${id}`).innerHTML = notBuildBotones(id, estado);
         }
         actualizarStatsNoticias();
+        notAplicarVisibilidad();
       } else {
         errorEl.textContent = data.message || 'Error al actualizar.';
         btn.disabled = false;
@@ -1827,6 +1877,7 @@ $conn->close();
           document.getElementById(`not-acc-${id}`).innerHTML = notBuildBotones(id, estado);
         }
         actualizarStatsNoticias();
+        notAplicarVisibilidad();
       } else {
         alert(data.message || 'Error al cambiar el estado.');
         btns.forEach(b => b.disabled = false);
@@ -1919,6 +1970,52 @@ $conn->close();
     upd('not-stat-publicada', c.publicada);
     upd('not-stat-borrador', c.borrador);
     upd('not-stat-archivada', c.archivada);
+  }
+
+  // ── Filtros de noticias ───────────────────────────────────────────────
+  let _notFiltroEstado = 'todos';
+  let _notFiltroCat    = 'todas';
+
+  function notFiltrar(btn) {
+    const grp = btn.dataset.grp;
+    const val = btn.dataset.val;
+    document.querySelectorAll(`#not-filtros-bar [data-grp="${grp}"]`).forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    if (grp === 'estado') _notFiltroEstado = val;
+    else _notFiltroCat = val;
+    notAplicarVisibilidad();
+  }
+
+  function notAplicarVisibilidad() {
+    const tabla = document.getElementById('tabla-noticias');
+    if (!tabla) return;
+    let visibles = 0;
+    tabla.querySelectorAll('tbody tr').forEach(row => {
+      const catTag = row.querySelector('.cat-tag');
+      const estadoEl = row.querySelector('[class*="estado-badge"]');
+      let rowCat = '';
+      if (catTag) {
+        for (const cls of catTag.classList) {
+          if (cls.startsWith('cat-') && cls !== 'cat-tag') { rowCat = cls.replace('cat-', ''); break; }
+        }
+      }
+      let rowEstado = '';
+      if (estadoEl) {
+        for (const cls of estadoEl.classList) {
+          if (cls.startsWith('estado-') && cls !== 'estado-badge') { rowEstado = cls.replace('estado-', ''); break; }
+        }
+      }
+      const okEstado = _notFiltroEstado === 'todos'  || rowEstado === _notFiltroEstado;
+      const okCat    = _notFiltroCat    === 'todas'  || rowCat    === _notFiltroCat;
+      const visible  = okEstado && okCat;
+      row.style.display = visible ? '' : 'none';
+      if (visible) visibles++;
+    });
+    const countEl = document.getElementById('not-filtros-count');
+    if (countEl) {
+      const total = tabla.querySelectorAll('tbody tr').length;
+      countEl.textContent = visibles < total ? `${visibles} de ${total}` : '';
+    }
   }
 </script>
 
