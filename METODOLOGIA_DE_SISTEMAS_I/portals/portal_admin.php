@@ -128,7 +128,7 @@ $conn->close();
     .welcome p  { opacity: .85; font-size: .95rem; }
     .rol-badge  { display: inline-block; margin-top: .8rem; background: rgba(249,115,22,.25); border: 1px solid rgba(249,115,22,.5); color: #F97316; border-radius: 20px; padding: .25rem .9rem; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
 
-    .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem 3rem; }
+    .container { max-width: 1600px; margin: 2rem auto; padding: 0 1.5rem 3rem; }
 
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .stat-card { background: var(--blanco); border-radius: 14px; box-shadow: var(--sombra); padding: 1.2rem 1.5rem; text-align: center; }
