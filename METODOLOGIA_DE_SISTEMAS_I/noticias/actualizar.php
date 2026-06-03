@@ -43,7 +43,7 @@ if (!in_array($categoria, $categorias_validas)) $categoria = 'general';
 $estados_validos = ['borrador', 'publicada', 'archivada'];
 if (!in_array($estado, $estados_validos)) $estado = 'borrador';
 
-if ($imagen_url !== '' && !filter_var($imagen_url, FILTER_VALIDATE_URL)) {
+if ($imagen_url !== '' && !filter_var($imagen_url, FILTER_VALIDATE_URL) && !preg_match('/^assets\/[a-zA-Z0-9._-]+$/', $imagen_url)) {
     echo json_encode(['success' => false, 'message' => 'La URL de imagen no es válida.']);
     exit;
 }
