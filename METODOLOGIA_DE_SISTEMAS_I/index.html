@@ -316,6 +316,13 @@
     .acceso-btn:hover { background: rgba(255,255,255,.35); }
 
     /* ======= MODAL POSTULACIÓN ======= */
+    .modal-close-btn {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none; font-size: 1.5rem; line-height: 1;
+      color: #9CA3AF; cursor: pointer; padding: .2rem .5rem; border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .modal-close-btn:hover { color: #374151; background: #F3F4F6; }
     .modal-box {
       background: var(--blanco); border-radius: 20px; padding: 2rem 2.2rem;
       width: min(520px, 92vw); max-height: 90vh; overflow-y: auto;
@@ -981,8 +988,9 @@
 </section>
 
 <!-- Modal postulación -->
-<div class="overlay" id="overlay-postular" onclick="cerrarPostular(event)">
+<div class="overlay" id="overlay-postular">
   <div class="modal-box" style="max-width:520px;">
+    <button class="modal-close-btn" onclick="cerrarPostularModal()" aria-label="Cerrar">&times;</button>
     <h3 style="color:#F97316;">💼 Postularme al puesto</h3>
     <p class="modal-sub" id="postular-puesto-nombre"></p>
     <input type="hidden" id="postular-puesto-id">
@@ -1029,7 +1037,7 @@
 
     <p class="modal-error" id="postular-error"></p>
     <div class="modal-btns">
-      <button class="btn-cancelar" onclick="document.getElementById('overlay-postular').classList.remove('open')">Cancelar</button>
+      <button class="btn-cancelar" onclick="cerrarPostularModal()">Cancelar</button>
       <button class="btn-confirmar" id="btn-postular-confirmar" onclick="enviarPostulacion()" style="background:#F97316;">Enviar postulación</button>
     </div>
   </div>
@@ -1070,10 +1078,10 @@
       <div>
         <div style="background:var(--blanco); border-radius:16px; padding:2rem; box-shadow:var(--sombra);">
           <h3 style="font-size:1rem; font-weight:800; margin-bottom:1.2rem; color:var(--verde);">📩 Envianos un mensaje</h3>
-          <div class="form-group"><label>Nombre *</label><input type="text" id="con-nombre" placeholder="Tu nombre completo" maxlength="100"></div>
-          <div class="form-group"><label>Email *</label><input type="email" id="con-email" placeholder="tu@email.com" maxlength="150"></div>
+          <div class="form-group"><label>Nombre *</label><input type="text" id="con-nombre" placeholder="Tu nombre completo" maxlength="100"><span class="campo-error-msg" id="err-con-nombre"></span></div>
+          <div class="form-group"><label>Email *</label><input type="email" id="con-email" placeholder="tu@email.com" maxlength="150"><span class="campo-error-msg" id="err-con-email"></span></div>
           <div class="form-group"><label>Asunto</label><input type="text" id="con-asunto" placeholder="¿En qué podemos ayudarte?" maxlength="200"></div>
-          <div class="form-group"><label>Mensaje *</label><textarea id="con-mensaje" style="width:100%;padding:.7rem .9rem;border:2px solid var(--borde);border-radius:10px;font-family:inherit;font-size:.9rem;resize:vertical;min-height:100px;" placeholder="Escribí tu consulta..." maxlength="3000"></textarea></div>
+          <div class="form-group"><label>Mensaje *</label><textarea id="con-mensaje" style="width:100%;padding:.7rem .9rem;border:2px solid var(--borde);border-radius:10px;font-family:inherit;font-size:.9rem;resize:vertical;min-height:100px;" placeholder="Escribí tu consulta..." maxlength="3000"></textarea><span class="campo-error-msg" id="err-con-mensaje"></span></div>
           <div id="con-msg" style="font-size:.84rem;font-weight:700;min-height:1.2rem;margin-bottom:.6rem;"></div>
           <button class="btn-submit" id="btn-con-submit" onclick="enviarConsulta()">Enviar mensaje</button>
         </div>
@@ -1739,6 +1747,16 @@
   document.getElementById('post-exp-anios').addEventListener('change',_pvExpAnios);
   document.getElementById('post-exp-desc').addEventListener('blur',  _pvExpDesc);
 
+  function cerrarPostularModal() {
+    document.getElementById('overlay-postular').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('overlay-postular').classList.contains('open'))
+      cerrarPostularModal();
+  });
+
   function abrirPostular(id, titulo) {
     document.getElementById('postular-puesto-id').value         = id;
     document.getElementById('postular-puesto-nombre').textContent = titulo;
@@ -1755,11 +1773,7 @@
     document.getElementById('btn-postular-confirmar').disabled = false;
     document.getElementById('btn-postular-confirmar').textContent = 'Enviar postulación';
     document.getElementById('overlay-postular').classList.add('open');
-  }
-
-  function cerrarPostular(e) {
-    if (e.target === document.getElementById('overlay-postular'))
-      document.getElementById('overlay-postular').classList.remove('open');
+    document.body.style.overflow = 'hidden';
   }
 
   async function enviarPostulacion() {
@@ -1787,7 +1801,7 @@
       try { data = JSON.parse(raw); } catch { data = { success:false, message:'Error del servidor.' }; }
 
       if (data.success) {
-        document.getElementById('overlay-postular').classList.remove('open');
+        cerrarPostularModal();
         const ok = document.createElement('div');
         ok.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:#059669;color:#fff;border-radius:12px;padding:.75rem 1.2rem;font-weight:700;font-size:.9rem;box-shadow:0 4px 20px rgba(0,0,0,.2)';
         ok.textContent = '✅ ' + data.message;
@@ -1850,40 +1864,76 @@
     }
   }
 
+  // ── Validación de campos del formulario de contacto ────────────────────────
+  function _conCampoErr(id, errId, msg) {
+    const el = document.getElementById(id);
+    el.classList.add('campo-error'); el.classList.remove('campo-ok');
+    document.getElementById(errId).textContent = msg;
+    return false;
+  }
+  function _conCampoOk(id, errId) {
+    const el = document.getElementById(id);
+    el.classList.remove('campo-error'); el.classList.add('campo-ok');
+    document.getElementById(errId).textContent = '';
+    return true;
+  }
+
+  function _conValidarNombre() {
+    const v = document.getElementById('con-nombre').value.trim();
+    if (!v) return _conCampoErr('con-nombre', 'err-con-nombre', 'Este campo es obligatorio.');
+    if (v.length < 2) return _conCampoErr('con-nombre', 'err-con-nombre', 'Ingresá al menos 2 caracteres.');
+    return _conCampoOk('con-nombre', 'err-con-nombre');
+  }
+  function _conValidarEmail() {
+    const v = document.getElementById('con-email').value.trim();
+    if (!v) return _conCampoErr('con-email', 'err-con-email', 'Este campo es obligatorio.');
+    if (!_RE_EMAIL.test(v)) return _conCampoErr('con-email', 'err-con-email', 'El correo no es válido.');
+    return _conCampoOk('con-email', 'err-con-email');
+  }
+  function _conValidarMensaje() {
+    const v = document.getElementById('con-mensaje').value.trim();
+    if (!v) return _conCampoErr('con-mensaje', 'err-con-mensaje', 'Este campo es obligatorio.');
+    if (v.length < 10) return _conCampoErr('con-mensaje', 'err-con-mensaje', 'El mensaje debe tener al menos 10 caracteres.');
+    return _conCampoOk('con-mensaje', 'err-con-mensaje');
+  }
+
+  document.getElementById('con-nombre').addEventListener('blur',  _conValidarNombre);
+  document.getElementById('con-email').addEventListener('blur',   _conValidarEmail);
+  document.getElementById('con-mensaje').addEventListener('blur', _conValidarMensaje);
+
   async function enviarConsulta() {
-    const nombre  = document.getElementById('con-nombre').value.trim();
-    const email   = document.getElementById('con-email').value.trim();
-    const asunto  = document.getElementById('con-asunto').value.trim();
-    const mensaje = document.getElementById('con-mensaje').value.trim();
-    const msgEl   = document.getElementById('con-msg');
-    const btn     = document.getElementById('btn-con-submit');
+    const msgEl = document.getElementById('con-msg');
+    const btn   = document.getElementById('btn-con-submit');
 
     msgEl.style.color = '#DC2626';
     msgEl.textContent = '';
 
-    if (nombre.length < 2)        { msgEl.textContent = '⚠️ Ingresá tu nombre completo.'; return; }
-    if (!/\S+@\S+\.\S+/.test(email)) { msgEl.textContent = '⚠️ Ingresá un email válido.'; return; }
-    if (mensaje.length < 10)      { msgEl.textContent = '⚠️ El mensaje debe tener al menos 10 caracteres.'; return; }
+    const ok = [_conValidarNombre(), _conValidarEmail(), _conValidarMensaje()].every(Boolean);
+    if (!ok) { msgEl.textContent = '⚠️ Corregí los campos marcados en rojo.'; return; }
 
     btn.disabled = true;
     btn.textContent = 'Enviando...';
 
     try {
       const body = new FormData();
-      body.append('nombre',  nombre);
-      body.append('email',   email);
-      body.append('asunto',  asunto);
-      body.append('mensaje', mensaje);
-      const res = await fetch('consultas/guardar.php', { method: 'POST', body });
+      body.append('nombre',  document.getElementById('con-nombre').value.trim());
+      body.append('email',   document.getElementById('con-email').value.trim());
+      body.append('asunto',  document.getElementById('con-asunto').value.trim());
+      body.append('mensaje', document.getElementById('con-mensaje').value.trim());
+      const res  = await fetch('consultas/guardar.php', { method: 'POST', body });
       const data = await res.json();
 
       if (data.success) {
-        document.getElementById('con-nombre').value  = '';
-        document.getElementById('con-email').value   = '';
-        document.getElementById('con-asunto').value  = '';
-        document.getElementById('con-mensaje').value = '';
-        msgEl.style.color  = '#059669';
-        msgEl.textContent  = '✅ ' + data.message;
+        ['con-nombre','con-email','con-asunto','con-mensaje'].forEach(id => {
+          const el = document.getElementById(id);
+          el.value = '';
+          el.classList.remove('campo-ok','campo-error');
+        });
+        ['err-con-nombre','err-con-email','err-con-mensaje'].forEach(id => {
+          document.getElementById(id).textContent = '';
+        });
+        msgEl.style.color = '#059669';
+        msgEl.textContent = '✅ ' + data.message;
       } else {
         msgEl.textContent = '⚠️ ' + data.message;
       }
