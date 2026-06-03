@@ -1824,16 +1824,10 @@ $conn->close();
 
     const body = new FormData();
     body.append('id', id);
-    body.append('titulo',    _notData[id]?.titulo    || '');
-    body.append('resumen',   _notData[id]?.resumen   || '');
-    body.append('contenido', _notData[id]?.contenido || '');
-    body.append('categoria', _notData[id]?.categoria || 'general');
-    body.append('imagen_url',_notData[id]?.imagen_url|| '');
     body.append('estado', estado);
-    body.append('fecha_pub', _notData[id]?.fecha_pub || '');
 
     try {
-      const res  = await fetch('../noticias/actualizar.php', { method: 'POST', body });
+      const res  = await fetch('../noticias/cambiar_estado.php', { method: 'POST', body });
       const data = await res.json();
       if (data.success) {
         if (_notData[id]) _notData[id].estado = estado;
