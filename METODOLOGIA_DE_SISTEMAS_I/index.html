@@ -178,6 +178,30 @@
       font-size: .75rem; font-weight: 700; padding: .25rem .7rem; border-radius: 20px;
     }
 
+    /* ======= INSCRIPCION ======= */
+    .inscripcion-form {
+      background: var(--blanco); border-radius: 20px; padding: 2.5rem;
+      box-shadow: var(--sombra); max-width: 720px; margin: 0 auto;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-full { grid-column: 1 / -1; }
+    .inscripcion-form textarea {
+      width: 100%; padding: .7rem .9rem; border: 2px solid var(--borde);
+      border-radius: 10px; font-size: .9rem; font-family: inherit;
+      resize: vertical; min-height: 90px;
+      transition: border-color .2s;
+    }
+    .inscripcion-form textarea:focus { outline: none; border-color: var(--naranja-claro); }
+    .btn-submit {
+      background: var(--naranja); color: var(--blanco);
+      padding: .85rem 2.5rem; border-radius: 30px;
+      border: none; font-size: 1rem; font-weight: 800;
+      cursor: pointer; font-family: inherit; margin-top: .5rem;
+      transition: background .2s, transform .15s;
+    }
+    .btn-submit:hover { background: var(--naranja-claro); transform: translateY(-1px); }
+    .form-note { font-size: .78rem; color: #9CA3AF; margin-top: .4rem; }
+
     /* ======= BIENESTAR ======= */
     .bienestar-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 2rem; }
     .bienestar-tab {
@@ -427,30 +451,6 @@
     }
     input.campo-error, select.campo-error, textarea.campo-error { border-color: #e53e3e !important; background: #fff5f5; }
     input.campo-ok,    select.campo-ok,    textarea.campo-ok    { border-color: #2e7d32 !important; background: #f0faf0; }
-
-    /* ======= INSCRIPCION ======= */
-    .inscripcion-form {
-      background: var(--blanco); border-radius: 20px; padding: 2.5rem;
-      box-shadow: var(--sombra); max-width: 720px; margin: 0 auto;
-    }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .form-full { grid-column: 1 / -1; }
-    .inscripcion-form textarea {
-      width: 100%; padding: .7rem .9rem; border: 2px solid var(--borde);
-      border-radius: 10px; font-size: .9rem; font-family: inherit;
-      resize: vertical; min-height: 90px;
-      transition: border-color .2s;
-    }
-    .inscripcion-form textarea:focus { outline: none; border-color: var(--naranja-claro); }
-    .btn-submit {
-      background: var(--naranja); color: var(--blanco);
-      padding: .85rem 2.5rem; border-radius: 30px;
-      border: none; font-size: 1rem; font-weight: 800;
-      cursor: pointer; font-family: inherit; margin-top: .5rem;
-      transition: background .2s, transform .15s;
-    }
-    .btn-submit:hover { background: var(--naranja-claro); transform: translateY(-1px); }
-    .form-note { font-size: .78rem; color: #9CA3AF; margin-top: .4rem; }
 
     /* ======= EMPLEO ======= */
     .empleo-list { display: flex; flex-direction: column; gap: 1rem; max-width: 780px; margin: 0 auto; }
