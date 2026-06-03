@@ -807,21 +807,6 @@ $conn->close();
             <textarea id="not-contenido" rows="4" placeholder="Escribí el cuerpo completo de la noticia..." maxlength="5000"></textarea>
           </div>
           <div>
-            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Imagen (opcional)</label>
-            <select id="not-imagen">
-              <option value="">— Sin imagen —</option>
-              <option value="assets/edificio.avif">🏫 Edificio</option>
-              <option value="assets/laboratorio.avif">🔬 Laboratorio</option>
-              <option value="assets/campofutbol.avif">⚽ Campo de fútbol</option>
-              <option value="assets/piscina.avif">🏊 Piscina / Natatorio</option>
-              <option value="assets/gimnasio.avif">🏋️ Gimnasio</option>
-              <option value="assets/inscripciones2027.avif">📋 Inscripciones</option>
-              <option value="assets/salacomputacion.avif">💻 Sala de computación</option>
-              <option value="assets/nuevosprofesores.avif">👩‍🏫 Docentes</option>
-              <option value="assets/nuevosprofesores2.jpg">👨‍🏫 Docentes 2</option>
-            </select>
-          </div>
-          <div>
             <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Fecha de publicación (opcional)</label>
             <input type="date" id="not-fecha-pub">
           </div>
@@ -869,7 +854,7 @@ $conn->close();
                 default     => ''
               };
               $catCls = 'cat-' . $n['categoria'];
-              $catLabel = ['institucional'=>'Institucional','academica'=>'Académica','deportiva'=>'Deportiva','cultural'=>'Cultural','general'=>'General'][$n['categoria']] ?? ucfirst($n['categoria']);
+              $catLabel = ['institucional'=>'🏫 Institucional','academica'=>'📚 Académica','deportiva'=>'⚽ Deportiva','cultural'=>'🎭 Cultural','general'=>'📰 General'][$n['categoria']] ?? ucfirst($n['categoria']);
             ?>
             <tr id="not-row-<?= $n['id'] ?>" class="<?= $rowCls ?>">
               <td><?= $n['id'] ?></td>
@@ -973,21 +958,6 @@ $conn->close();
       <div class="span2">
         <label>Contenido *</label>
         <textarea id="edit-not-contenido" rows="5" maxlength="5000"></textarea>
-      </div>
-      <div>
-        <label>Imagen (opcional)</label>
-        <select id="edit-not-imagen">
-          <option value="">— Sin imagen —</option>
-          <option value="assets/edificio.avif">🏫 Edificio</option>
-          <option value="assets/laboratorio.avif">🔬 Laboratorio</option>
-          <option value="assets/campofutbol.avif">⚽ Campo de fútbol</option>
-          <option value="assets/piscina.avif">🏊 Piscina / Natatorio</option>
-          <option value="assets/gimnasio.avif">🏋️ Gimnasio</option>
-          <option value="assets/inscripciones2027.avif">📋 Inscripciones</option>
-          <option value="assets/salacomputacion.avif">💻 Sala de computación</option>
-          <option value="assets/nuevosprofesores.avif">👩‍🏫 Docentes</option>
-          <option value="assets/nuevosprofesores2.jpg">👨‍🏫 Docentes 2</option>
-        </select>
       </div>
       <div>
         <label>Fecha de publicación (opcional)</label>
@@ -1645,8 +1615,8 @@ $conn->close();
   // ── Noticias ──────────────────────────────────────────────────────────
 
   const NOT_CAT_LABEL = {
-    institucional: 'Institucional', academica: 'Académica',
-    deportiva: 'Deportiva', cultural: 'Cultural', general: 'General'
+    institucional: '🏫 Institucional', academica: '📚 Académica',
+    deportiva: '⚽ Deportiva', cultural: '🎭 Cultural', general: '📰 General'
   };
 
   function notBuildRow(n) {
@@ -1683,7 +1653,6 @@ $conn->close();
     resumen:    <?= json_encode($n['resumen']) ?>,
     contenido:  <?= json_encode($n['contenido']) ?>,
     categoria:  <?= json_encode($n['categoria']) ?>,
-    imagen_url: <?= json_encode($n['imagen_url']) ?>,
     estado:     <?= json_encode($n['estado']) ?>,
     fecha_pub:  <?= json_encode($n['fecha_pub_raw'] ?? '') ?>
   };
@@ -1694,7 +1663,6 @@ $conn->close();
     const resumen   = document.getElementById('not-resumen').value.trim();
     const contenido = document.getElementById('not-contenido').value.trim();
     const categoria = document.getElementById('not-categoria').value;
-    const imagen    = document.getElementById('not-imagen').value.trim();
     const estado    = document.getElementById('not-estado').value;
     const fechaPub  = document.getElementById('not-fecha-pub').value;
     const msg       = document.getElementById('not-msg');
@@ -1709,7 +1677,6 @@ $conn->close();
     body.append('resumen', resumen);
     body.append('contenido', contenido);
     body.append('categoria', categoria);
-    body.append('imagen_url', imagen);
     body.append('estado', estado);
     body.append('fecha_pub', fechaPub);
 
@@ -1722,14 +1689,13 @@ $conn->close();
         document.getElementById('not-titulo').value    = '';
         document.getElementById('not-resumen').value   = '';
         document.getElementById('not-contenido').value = '';
-        document.getElementById('not-imagen').value    = '';
         document.getElementById('not-fecha-pub').value = '';
         document.getElementById('not-estado').value    = 'borrador';
 
         const n = data.noticia;
         _notData[n.id] = {
           titulo: n.titulo, resumen: n.resumen, contenido: n.contenido,
-          categoria: n.categoria, imagen_url: n.imagen_url,
+          categoria: n.categoria,
           estado: n.estado, fecha_pub: n.fecha_pub || ''
         };
 
@@ -1770,7 +1736,6 @@ $conn->close();
     document.getElementById('edit-not-contenido').value = d.contenido;
     document.getElementById('edit-not-categoria').value = d.categoria;
     document.getElementById('edit-not-estado').value   = d.estado;
-    document.getElementById('edit-not-imagen').value   = d.imagen_url;
     document.getElementById('edit-not-fecha-pub').value = d.fecha_pub || '';
     document.getElementById('edit-not-error').textContent = '';
     document.getElementById('btn-guardar-edicion').disabled = false;
@@ -1790,7 +1755,6 @@ $conn->close();
     const contenido = document.getElementById('edit-not-contenido').value.trim();
     const categoria = document.getElementById('edit-not-categoria').value;
     const estado    = document.getElementById('edit-not-estado').value;
-    const imagen    = document.getElementById('edit-not-imagen').value.trim();
     const fechaPub  = document.getElementById('edit-not-fecha-pub').value;
     const errorEl   = document.getElementById('edit-not-error');
     const btn       = document.getElementById('btn-guardar-edicion');
@@ -1805,7 +1769,7 @@ $conn->close();
     const body = new FormData();
     body.append('id', id); body.append('titulo', titulo);
     body.append('resumen', resumen); body.append('contenido', contenido);
-    body.append('categoria', categoria); body.append('imagen_url', imagen);
+    body.append('categoria', categoria);
     body.append('estado', estado); body.append('fecha_pub', fechaPub);
 
     try {
@@ -1814,7 +1778,7 @@ $conn->close();
       if (data.success) {
         document.getElementById('overlay-editar-noticia').classList.remove('open');
 
-        _notData[id] = { titulo, resumen, contenido, categoria, imagen_url: imagen, estado, fecha_pub: fechaPub };
+        _notData[id] = { titulo, resumen, contenido, categoria, estado, fecha_pub: fechaPub };
 
         const row = document.getElementById(`not-row-${id}`);
         if (row) {
