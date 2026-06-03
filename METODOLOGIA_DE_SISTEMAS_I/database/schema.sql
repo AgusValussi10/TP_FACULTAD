@@ -66,3 +66,16 @@ CREATE TABLE IF NOT EXISTS consultas (
     estado     ENUM('pendiente','leida','respondida','archivada') NOT NULL DEFAULT 'pendiente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS noticias (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    titulo      VARCHAR(200)  NOT NULL,
+    resumen     VARCHAR(400)  NOT NULL DEFAULT '',
+    contenido   TEXT          NOT NULL,
+    categoria   ENUM('institucional','academica','deportiva','cultural','general') NOT NULL DEFAULT 'general',
+    imagen_url  VARCHAR(300)  NOT NULL DEFAULT '',
+    estado      ENUM('borrador','publicada','archivada') NOT NULL DEFAULT 'borrador',
+    fecha_pub   DATE,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

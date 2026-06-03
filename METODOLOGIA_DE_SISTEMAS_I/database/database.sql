@@ -55,6 +55,19 @@ INSERT IGNORE INTO opiniones (nombre, texto, mes, anio, estado) VALUES
 ('Laura Fernández', 'Me parece muy completa la oferta académica. El hecho de que incluya nivel inicial, primario y secundario en el mismo centro hace todo mucho más cómodo para las familias.', 5, 2026, 'pendiente'),
 ('Roberto Díaz',    'La infraestructura que están planificando es impresionante. Piscina, gimnasio, sala de computación moderna... claramente pensaron en el desarrollo integral de los chicos.', 2, 2026, 'pendiente');
 
+CREATE TABLE IF NOT EXISTS noticias (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    titulo      VARCHAR(200)  NOT NULL,
+    resumen     VARCHAR(400)  NOT NULL DEFAULT '',
+    contenido   TEXT          NOT NULL,
+    categoria   ENUM('institucional','academica','deportiva','cultural','general') NOT NULL DEFAULT 'general',
+    imagen_url  VARCHAR(300)  NOT NULL DEFAULT '',
+    estado      ENUM('borrador','publicada','archivada') NOT NULL DEFAULT 'borrador',
+    fecha_pub   DATE,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 -- Solicitudes de inscripción enviadas desde el formulario público
 CREATE TABLE IF NOT EXISTS solicitudes_inscripcion (
     id               INT AUTO_INCREMENT PRIMARY KEY,

@@ -69,6 +69,21 @@ if ($res6) while ($r = $res6->fetch_assoc()) $consultas[] = $r;
 $con_stats = ['total'=>0,'pendiente'=>0,'leida'=>0,'respondida'=>0,'archivada'=>0];
 foreach ($consultas as $c) { $con_stats[$c['estado']]++; $con_stats['total']++; }
 
+$noticias = [];
+$res7 = $conn->query(
+    "SELECT id, titulo, resumen, contenido, categoria, imagen_url, estado,
+            DATE_FORMAT(fecha_pub,'%d/%m/%Y') AS fecha_pub_fmt,
+            fecha_pub AS fecha_pub_raw,
+            DATE_FORMAT(created_at,'%d/%m/%Y %H:%i') AS fecha,
+            UNIX_TIMESTAMP(created_at) AS ts
+     FROM noticias
+     ORDER BY FIELD(estado,'publicada','borrador','archivada'), created_at DESC"
+);
+if ($res7) while ($r = $res7->fetch_assoc()) $noticias[] = $r;
+
+$not_stats = ['total'=>0,'borrador'=>0,'publicada'=>0,'archivada'=>0];
+foreach ($noticias as $n) { $not_stats[$n['estado']]++; $not_stats['total']++; }
+
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -239,6 +254,7 @@ $conn->close();
       background: var(--blanco); border-bottom: 2px solid var(--borde);
       padding: 0 1.5rem; position: sticky; top: 65px; z-index: 90;
       box-shadow: 0 2px 8px rgba(0,0,0,.05);
+      overflow-x: auto;
     }
     .tab-btn {
       background: none; border: none; cursor: pointer; font-family: inherit;
@@ -251,6 +267,48 @@ $conn->close();
     .tab-btn.active { color: var(--verde); border-bottom-color: var(--verde); }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
+
+    /* ── Noticias ── */
+    .estado-borrador  { background:#FEF3C7; color:#92400E; }
+    .estado-publicada { background:#D1FAE5; color:#065F46; }
+    .estado-archivada { background:#F3F4F6; color:#6B7280; }
+    .cat-tag { display:inline-block; border-radius:20px; padding:.15rem .6rem; font-size:.73rem; font-weight:800; }
+    .cat-institucional { background:#DBEAFE; color:#1E40AF; }
+    .cat-academica     { background:#EDE9FE; color:#5B21B6; }
+    .cat-deportiva     { background:#D1FAE5; color:#065F46; }
+    .cat-cultural      { background:#FEF3C7; color:#92400E; }
+    .cat-general       { background:#F3F4F6; color:#374151; }
+    .add-noticia-form { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:1.2rem; padding-top:1.2rem; border-top:2px solid var(--borde); }
+    .add-noticia-form input,
+    .add-noticia-form select,
+    .add-noticia-form textarea { width:100%; padding:.6rem .8rem; border:2px solid #E5E7EB; border-radius:10px; font-size:.88rem; font-family:inherit; }
+    .add-noticia-form input:focus,
+    .add-noticia-form select:focus,
+    .add-noticia-form textarea:focus { outline:none; border-color:var(--verde); }
+    .add-noticia-form .span2 { grid-column:1/-1; }
+    .noticia-titulo { font-weight:800; font-size:.88rem; max-width:240px; line-height:1.4; }
+    .noticia-resumen { font-size:.82rem; color:#4B5563; max-width:300px; line-height:1.4; }
+
+    /* Modal editar noticia */
+    .modal-not-box { background:#fff; border-radius:20px; padding:2rem; width:100%; max-width:620px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:popIn .2s ease; }
+    .modal-not-box h3 { font-size:1.1rem; font-weight:900; color:var(--azul); margin-bottom:1rem; }
+    .modal-not-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+    .modal-not-grid .span2 { grid-column:1/-1; }
+    .modal-not-grid input,
+    .modal-not-grid select,
+    .modal-not-grid textarea { width:100%; padding:.6rem .8rem; border:2px solid #E5E7EB; border-radius:10px; font-size:.88rem; font-family:inherit; }
+    .modal-not-grid input:focus,
+    .modal-not-grid select:focus,
+    .modal-not-grid textarea:focus { outline:none; border-color:var(--verde); }
+    .modal-not-grid label { display:block; font-size:.82rem; font-weight:700; margin-bottom:.25rem; color:#374151; }
+
+    /* Modal confirmar eliminar */
+    .modal-del-box { background:#fff; border-radius:20px; padding:2rem; width:100%; max-width:380px; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:popIn .2s ease; text-align:center; }
+    .modal-del-box h3 { font-size:1.05rem; font-weight:900; color:#DC2626; margin-bottom:.5rem; }
+    .modal-del-box p { font-size:.88rem; color:#4B5563; margin-bottom:1.4rem; }
+    .stat-card.borrador   .stat-num { color:#D97706; }
+    .stat-card.publicada  .stat-num { color:#059669; }
+    .stat-card.archivada  .stat-num { color:#9CA3AF; }
   </style>
 </head>
 <body>
@@ -281,6 +339,7 @@ $conn->close();
   <button class="tab-btn" data-tab="opiniones">💬 Opiniones</button>
   <button class="tab-btn" data-tab="propuestas">💼 Propuestas de Trabajo</button>
   <button class="tab-btn" data-tab="consultas">📩 Consultas</button>
+  <button class="tab-btn" data-tab="noticias">📰 Noticias</button>
 </nav>
 
 <div class="container">
@@ -693,6 +752,151 @@ $conn->close();
 
   </div><!-- /panel-consultas -->
 
+  <!-- ══ TAB: NOTICIAS ══ -->
+  <div class="tab-panel" id="panel-noticias">
+
+    <div class="stats-grid" style="margin-top:2rem;">
+      <div class="stat-card total">
+        <div class="stat-num" id="not-stat-total"><?= $not_stats['total'] ?></div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card publicada">
+        <div class="stat-num" id="not-stat-publicada"><?= $not_stats['publicada'] ?></div>
+        <div class="stat-label">Publicadas</div>
+      </div>
+      <div class="stat-card borrador">
+        <div class="stat-num" id="not-stat-borrador"><?= $not_stats['borrador'] ?></div>
+        <div class="stat-label">Borradores</div>
+      </div>
+      <div class="stat-card archivada">
+        <div class="stat-num" id="not-stat-archivada"><?= $not_stats['archivada'] ?></div>
+        <div class="stat-label">Archivadas</div>
+      </div>
+    </div>
+
+    <!-- Formulario nueva noticia -->
+    <div class="card" style="margin-top:1.5rem;">
+      <div class="card-header">
+        <span class="icon">✏️</span>
+        <h2>Nueva Noticia / Novedad</h2>
+      </div>
+      <div class="card-body">
+        <div class="add-noticia-form">
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Título *</label>
+            <input type="text" id="not-titulo" placeholder="ej: Inicio de inscripciones 2027" maxlength="200">
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Categoría *</label>
+            <select id="not-categoria">
+              <option value="institucional">Institucional</option>
+              <option value="academica">Académica</option>
+              <option value="deportiva">Deportiva</option>
+              <option value="cultural">Cultural</option>
+              <option value="general" selected>General</option>
+            </select>
+          </div>
+          <div class="span2">
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Resumen (opcional)</label>
+            <input type="text" id="not-resumen" placeholder="Breve descripción que aparecerá en listados" maxlength="400">
+          </div>
+          <div class="span2">
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Contenido *</label>
+            <textarea id="not-contenido" rows="4" placeholder="Escribí el cuerpo completo de la noticia..." maxlength="5000"></textarea>
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">URL de imagen (opcional)</label>
+            <input type="url" id="not-imagen" placeholder="https://...">
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Fecha de publicación (opcional)</label>
+            <input type="date" id="not-fecha-pub">
+          </div>
+          <div style="display:flex;align-items:center;gap:.6rem;">
+            <select id="not-estado" style="width:auto;padding:.6rem .8rem;border:2px solid #E5E7EB;border-radius:10px;font-size:.88rem;font-family:inherit;">
+              <option value="borrador">Guardar como borrador</option>
+              <option value="publicada">Publicar ahora</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn-agregar" onclick="guardarNoticia()">+ Guardar noticia</button>
+          </div>
+          <p id="not-msg" class="span2" style="font-size:.84rem;font-weight:700;min-height:1.1rem;"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de noticias -->
+    <div class="card" style="margin-top:1.5rem;" id="not-tabla-card">
+      <div class="card-header">
+        <span class="icon">📰</span>
+        <h2>Noticias y Novedades</h2>
+      </div>
+      <div class="card-body" id="not-card-body">
+        <?php if (empty($noticias)): ?>
+          <p class="empty-msg" id="not-empty">No hay noticias registradas aún.</p>
+        <?php else: ?>
+        <table id="tabla-noticias">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Título</th>
+              <th>Categoría</th>
+              <th>Estado</th>
+              <th>Fecha pub.</th>
+              <th>Creada</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($noticias as $n):
+              $rowCls = match($n['estado']) {
+                'publicada' => 'row-admitido',
+                'archivada' => 'row-rechazado',
+                default     => ''
+              };
+              $catCls = 'cat-' . $n['categoria'];
+              $catLabel = ['institucional'=>'Institucional','academica'=>'Académica','deportiva'=>'Deportiva','cultural'=>'Cultural','general'=>'General'][$n['categoria']] ?? ucfirst($n['categoria']);
+            ?>
+            <tr id="not-row-<?= $n['id'] ?>" class="<?= $rowCls ?>">
+              <td><?= $n['id'] ?></td>
+              <td>
+                <span class="noticia-titulo"><?= htmlspecialchars($n['titulo']) ?></span>
+                <?php if ($n['resumen']): ?>
+                  <br><span class="noticia-resumen"><?= htmlspecialchars(mb_strimwidth($n['resumen'], 0, 80, '…')) ?></span>
+                <?php endif; ?>
+              </td>
+              <td><span class="cat-tag <?= $catCls ?>"><?= $catLabel ?></span></td>
+              <td id="not-estado-<?= $n['id'] ?>">
+                <span class="estado-badge estado-<?= $n['estado'] ?>"><?= ucfirst($n['estado']) ?></span>
+              </td>
+              <td style="white-space:nowrap"><?= $n['fecha_pub_fmt'] ?: '—' ?></td>
+              <td style="white-space:nowrap"><?= $n['fecha'] ?></td>
+              <td>
+                <div class="acciones" id="not-acc-<?= $n['id'] ?>">
+                  <button class="btn-accion btn-contactado" onclick="abrirEditarNoticia(<?= $n['id'] ?>)">✏️ Editar</button>
+                  <?php if ($n['estado'] !== 'publicada'): ?>
+                    <button class="btn-accion btn-admitido" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'publicada')">Publicar</button>
+                  <?php endif; ?>
+                  <?php if ($n['estado'] === 'publicada'): ?>
+                    <button class="btn-accion btn-pendiente" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'borrador')">Despublicar</button>
+                  <?php endif; ?>
+                  <?php if ($n['estado'] !== 'archivada'): ?>
+                    <button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'archivada')">Archivar</button>
+                  <?php endif; ?>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(<?= $n['id'] ?>, <?= json_encode($n['titulo']) ?>)">🗑️ Eliminar</button>
+                </div>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+        <?php endif; ?>
+      </div>
+    </div>
+
+  </div><!-- /panel-noticias -->
+
 </div>
 
 <!-- Modal admisión -->
@@ -717,6 +921,72 @@ $conn->close();
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="document.getElementById('overlay-admitir').classList.remove('open')">Cancelar</button>
       <button class="btn-confirmar" id="btn-confirmar" onclick="confirmarAdmision()">Crear usuario y admitir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar noticia -->
+<div class="overlay" id="overlay-editar-noticia" onclick="cerrarModalNot(event)">
+  <div class="modal-not-box">
+    <h3>✏️ Editar Noticia</h3>
+    <input type="hidden" id="edit-not-id">
+    <div class="modal-not-grid">
+      <div class="span2">
+        <label>Título *</label>
+        <input type="text" id="edit-not-titulo" maxlength="200">
+      </div>
+      <div>
+        <label>Categoría *</label>
+        <select id="edit-not-categoria">
+          <option value="institucional">Institucional</option>
+          <option value="academica">Académica</option>
+          <option value="deportiva">Deportiva</option>
+          <option value="cultural">Cultural</option>
+          <option value="general">General</option>
+        </select>
+      </div>
+      <div>
+        <label>Estado *</label>
+        <select id="edit-not-estado">
+          <option value="borrador">Borrador</option>
+          <option value="publicada">Publicada</option>
+          <option value="archivada">Archivada</option>
+        </select>
+      </div>
+      <div class="span2">
+        <label>Resumen (opcional)</label>
+        <input type="text" id="edit-not-resumen" maxlength="400">
+      </div>
+      <div class="span2">
+        <label>Contenido *</label>
+        <textarea id="edit-not-contenido" rows="5" maxlength="5000"></textarea>
+      </div>
+      <div>
+        <label>URL de imagen (opcional)</label>
+        <input type="url" id="edit-not-imagen">
+      </div>
+      <div>
+        <label>Fecha de publicación (opcional)</label>
+        <input type="date" id="edit-not-fecha-pub">
+      </div>
+    </div>
+    <p class="modal-error" id="edit-not-error" style="margin-top:.8rem;"></p>
+    <div class="modal-btns" style="margin-top:1.2rem;">
+      <button class="btn-cancelar" onclick="document.getElementById('overlay-editar-noticia').classList.remove('open')">Cancelar</button>
+      <button class="btn-confirmar" id="btn-guardar-edicion" onclick="guardarEdicionNoticia()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmar eliminación noticia -->
+<div class="overlay" id="overlay-eliminar-noticia" onclick="cerrarModalDelNot(event)">
+  <div class="modal-del-box">
+    <h3>🗑️ Eliminar noticia</h3>
+    <p id="del-not-texto">¿Estás seguro que querés eliminar esta noticia? Esta acción no se puede deshacer.</p>
+    <input type="hidden" id="del-not-id">
+    <div class="modal-btns" style="justify-content:center;">
+      <button class="btn-cancelar" onclick="document.getElementById('overlay-eliminar-noticia').classList.remove('open')">Cancelar</button>
+      <button class="btn-confirmar" id="btn-confirmar-eliminar" style="background:#DC2626;" onclick="ejecutarEliminarNoticia()">Sí, eliminar</button>
     </div>
   </div>
 </div>
@@ -1346,6 +1616,309 @@ $conn->close();
       });
       if (nuevas > 0) mostrarToast(nuevas === 1 ? 'Nueva consulta de contacto recibida' : `${nuevas} nuevas consultas de contacto`);
     } catch { /* reintentar */ }
+  }
+
+  // ── Noticias ──────────────────────────────────────────────────────────
+
+  const NOT_CAT_LABEL = {
+    institucional: 'Institucional', academica: 'Académica',
+    deportiva: 'Deportiva', cultural: 'Cultural', general: 'General'
+  };
+
+  function notBuildRow(n) {
+    const rowCls  = n.estado === 'publicada' ? 'row-admitido' : (n.estado === 'archivada' ? 'row-rechazado' : '');
+    const catLabel = NOT_CAT_LABEL[n.categoria] || n.categoria;
+    const resumenHtml = n.resumen
+      ? `<br><span class="noticia-resumen">${esc(n.resumen.length > 80 ? n.resumen.substring(0,80)+'…' : n.resumen)}</span>`
+      : '';
+    return `<tr id="not-row-${n.id}" class="${rowCls}">
+      <td>${n.id}</td>
+      <td><span class="noticia-titulo">${esc(n.titulo)}</span>${resumenHtml}</td>
+      <td><span class="cat-tag cat-${n.categoria}">${catLabel}</span></td>
+      <td id="not-estado-${n.id}"><span class="estado-badge estado-${n.estado}">${n.estado.charAt(0).toUpperCase()+n.estado.slice(1)}</span></td>
+      <td style="white-space:nowrap">${n.fecha_pub_fmt || '—'}</td>
+      <td style="white-space:nowrap">${n.fecha}</td>
+      <td><div class="acciones" id="not-acc-${n.id}">${notBuildBotones(n.id, n.estado)}</div></td>
+    </tr>`;
+  }
+
+  function notBuildBotones(id, estado) {
+    let btns = `<button class="btn-accion btn-contactado" onclick="abrirEditarNoticia(${id})">✏️ Editar</button>`;
+    if (estado !== 'publicada') btns += `<button class="btn-accion btn-admitido" onclick="cambiarEstadoNoticia(${id},'publicada')">Publicar</button>`;
+    if (estado === 'publicada') btns += `<button class="btn-accion btn-pendiente" onclick="cambiarEstadoNoticia(${id},'borrador')">Despublicar</button>`;
+    if (estado !== 'archivada') btns += `<button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(${id},'archivada')">Archivar</button>`;
+    btns += `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(${id}, ${JSON.stringify(_notData[id]?.titulo || '')})">🗑️ Eliminar</button>`;
+    return btns;
+  }
+
+  // Cache local de datos de noticias para el modal de edición
+  const _notData = {};
+  <?php foreach ($noticias as $n): ?>
+  _notData[<?= $n['id'] ?>] = {
+    titulo:     <?= json_encode($n['titulo']) ?>,
+    resumen:    <?= json_encode($n['resumen']) ?>,
+    contenido:  <?= json_encode($n['contenido']) ?>,
+    categoria:  <?= json_encode($n['categoria']) ?>,
+    imagen_url: <?= json_encode($n['imagen_url']) ?>,
+    estado:     <?= json_encode($n['estado']) ?>,
+    fecha_pub:  <?= json_encode($n['fecha_pub_raw'] ?? '') ?>
+  };
+  <?php endforeach; ?>
+
+  async function guardarNoticia() {
+    const titulo    = document.getElementById('not-titulo').value.trim();
+    const resumen   = document.getElementById('not-resumen').value.trim();
+    const contenido = document.getElementById('not-contenido').value.trim();
+    const categoria = document.getElementById('not-categoria').value;
+    const imagen    = document.getElementById('not-imagen').value.trim();
+    const estado    = document.getElementById('not-estado').value;
+    const fechaPub  = document.getElementById('not-fecha-pub').value;
+    const msg       = document.getElementById('not-msg');
+
+    msg.style.color = '#DC2626'; msg.textContent = '';
+
+    if (titulo.length < 3)   { msg.textContent = 'El título debe tener al menos 3 caracteres.'; return; }
+    if (contenido.length < 10) { msg.textContent = 'El contenido debe tener al menos 10 caracteres.'; return; }
+
+    const body = new FormData();
+    body.append('titulo', titulo);
+    body.append('resumen', resumen);
+    body.append('contenido', contenido);
+    body.append('categoria', categoria);
+    body.append('imagen_url', imagen);
+    body.append('estado', estado);
+    body.append('fecha_pub', fechaPub);
+
+    try {
+      const res  = await fetch('../noticias/guardar.php', { method: 'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        msg.style.color = '#059669';
+        msg.textContent = `✅ Noticia "${titulo}" guardada correctamente.`;
+        document.getElementById('not-titulo').value    = '';
+        document.getElementById('not-resumen').value   = '';
+        document.getElementById('not-contenido').value = '';
+        document.getElementById('not-imagen').value    = '';
+        document.getElementById('not-fecha-pub').value = '';
+        document.getElementById('not-estado').value    = 'borrador';
+
+        const n = data.noticia;
+        _notData[n.id] = {
+          titulo: n.titulo, resumen: n.resumen, contenido: n.contenido,
+          categoria: n.categoria, imagen_url: n.imagen_url,
+          estado: n.estado, fecha_pub: n.fecha_pub || ''
+        };
+
+        asegurarTablaNoticia();
+        const tbody = document.querySelector('#tabla-noticias tbody');
+        const tpl = document.createElement('template');
+        tpl.innerHTML = notBuildRow(n);
+        tbody.insertBefore(tpl.content.firstChild, tbody.firstChild);
+        document.querySelector('#tabla-noticias tbody tr').classList.add('fila-nueva');
+        actualizarStatsNoticias();
+      } else {
+        msg.textContent = data.message || 'Error al guardar.';
+      }
+    } catch { msg.textContent = 'Error de conexión.'; }
+  }
+
+  function asegurarTablaNoticia() {
+    if (!document.getElementById('tabla-noticias')) {
+      const emptyEl = document.getElementById('not-empty');
+      if (emptyEl) emptyEl.remove();
+      document.getElementById('not-card-body').insertAdjacentHTML('beforeend', `
+        <table id="tabla-noticias">
+          <thead><tr>
+            <th>#</th><th>Título</th><th>Categoría</th><th>Estado</th>
+            <th>Fecha pub.</th><th>Creada</th><th>Acciones</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>`);
+    }
+  }
+
+  function abrirEditarNoticia(id) {
+    const d = _notData[id];
+    if (!d) return;
+    document.getElementById('edit-not-id').value       = id;
+    document.getElementById('edit-not-titulo').value   = d.titulo;
+    document.getElementById('edit-not-resumen').value  = d.resumen;
+    document.getElementById('edit-not-contenido').value = d.contenido;
+    document.getElementById('edit-not-categoria').value = d.categoria;
+    document.getElementById('edit-not-estado').value   = d.estado;
+    document.getElementById('edit-not-imagen').value   = d.imagen_url;
+    document.getElementById('edit-not-fecha-pub').value = d.fecha_pub || '';
+    document.getElementById('edit-not-error').textContent = '';
+    document.getElementById('btn-guardar-edicion').disabled = false;
+    document.getElementById('btn-guardar-edicion').textContent = 'Guardar cambios';
+    document.getElementById('overlay-editar-noticia').classList.add('open');
+  }
+
+  function cerrarModalNot(e) {
+    if (e.target === document.getElementById('overlay-editar-noticia'))
+      document.getElementById('overlay-editar-noticia').classList.remove('open');
+  }
+
+  async function guardarEdicionNoticia() {
+    const id        = document.getElementById('edit-not-id').value;
+    const titulo    = document.getElementById('edit-not-titulo').value.trim();
+    const resumen   = document.getElementById('edit-not-resumen').value.trim();
+    const contenido = document.getElementById('edit-not-contenido').value.trim();
+    const categoria = document.getElementById('edit-not-categoria').value;
+    const estado    = document.getElementById('edit-not-estado').value;
+    const imagen    = document.getElementById('edit-not-imagen').value.trim();
+    const fechaPub  = document.getElementById('edit-not-fecha-pub').value;
+    const errorEl   = document.getElementById('edit-not-error');
+    const btn       = document.getElementById('btn-guardar-edicion');
+
+    errorEl.textContent = '';
+    if (titulo.length < 3)    { errorEl.textContent = 'El título debe tener al menos 3 caracteres.'; return; }
+    if (contenido.length < 10) { errorEl.textContent = 'El contenido debe tener al menos 10 caracteres.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const body = new FormData();
+    body.append('id', id); body.append('titulo', titulo);
+    body.append('resumen', resumen); body.append('contenido', contenido);
+    body.append('categoria', categoria); body.append('imagen_url', imagen);
+    body.append('estado', estado); body.append('fecha_pub', fechaPub);
+
+    try {
+      const res  = await fetch('../noticias/actualizar.php', { method: 'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('overlay-editar-noticia').classList.remove('open');
+
+        _notData[id] = { titulo, resumen, contenido, categoria, imagen_url: imagen, estado, fecha_pub: fechaPub };
+
+        const row = document.getElementById(`not-row-${id}`);
+        if (row) {
+          row.className = estado === 'publicada' ? 'row-admitido' : (estado === 'archivada' ? 'row-rechazado' : '');
+          const catLabel = NOT_CAT_LABEL[categoria] || categoria;
+          const resumenHtml = resumen
+            ? `<br><span class="noticia-resumen">${esc(resumen.length > 80 ? resumen.substring(0,80)+'…' : resumen)}</span>`
+            : '';
+          row.cells[1].innerHTML = `<span class="noticia-titulo">${esc(titulo)}</span>${resumenHtml}`;
+          row.cells[2].innerHTML = `<span class="cat-tag cat-${categoria}">${catLabel}</span>`;
+          document.getElementById(`not-estado-${id}`).innerHTML =
+            `<span class="estado-badge estado-${estado}">${estado.charAt(0).toUpperCase()+estado.slice(1)}</span>`;
+          document.getElementById(`not-acc-${id}`).innerHTML = notBuildBotones(id, estado);
+        }
+        actualizarStatsNoticias();
+      } else {
+        errorEl.textContent = data.message || 'Error al actualizar.';
+        btn.disabled = false;
+        btn.textContent = 'Guardar cambios';
+      }
+    } catch {
+      errorEl.textContent = 'Error de conexión.';
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    }
+  }
+
+  async function cambiarEstadoNoticia(id, estado) {
+    const btns = document.querySelectorAll(`#not-acc-${id} button`);
+    btns.forEach(b => b.disabled = true);
+
+    const body = new FormData();
+    body.append('id', id);
+    body.append('titulo',    _notData[id]?.titulo    || '');
+    body.append('resumen',   _notData[id]?.resumen   || '');
+    body.append('contenido', _notData[id]?.contenido || '');
+    body.append('categoria', _notData[id]?.categoria || 'general');
+    body.append('imagen_url',_notData[id]?.imagen_url|| '');
+    body.append('estado', estado);
+    body.append('fecha_pub', _notData[id]?.fecha_pub || '');
+
+    try {
+      const res  = await fetch('../noticias/actualizar.php', { method: 'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        if (_notData[id]) _notData[id].estado = estado;
+        const row = document.getElementById(`not-row-${id}`);
+        if (row) {
+          row.className = estado === 'publicada' ? 'row-admitido' : (estado === 'archivada' ? 'row-rechazado' : '');
+          document.getElementById(`not-estado-${id}`).innerHTML =
+            `<span class="estado-badge estado-${estado}">${estado.charAt(0).toUpperCase()+estado.slice(1)}</span>`;
+          document.getElementById(`not-acc-${id}`).innerHTML = notBuildBotones(id, estado);
+        }
+        actualizarStatsNoticias();
+      } else {
+        alert(data.message || 'Error al cambiar el estado.');
+        btns.forEach(b => b.disabled = false);
+      }
+    } catch {
+      alert('Error de conexión.');
+      btns.forEach(b => b.disabled = false);
+    }
+  }
+
+  function confirmarEliminarNoticia(id, titulo) {
+    document.getElementById('del-not-id').value = id;
+    document.getElementById('del-not-texto').textContent =
+      `¿Estás seguro que querés eliminar "${titulo}"? Esta acción no se puede deshacer.`;
+    document.getElementById('btn-confirmar-eliminar').disabled = false;
+    document.getElementById('btn-confirmar-eliminar').textContent = 'Sí, eliminar';
+    document.getElementById('overlay-eliminar-noticia').classList.add('open');
+  }
+
+  function cerrarModalDelNot(e) {
+    if (e.target === document.getElementById('overlay-eliminar-noticia'))
+      document.getElementById('overlay-eliminar-noticia').classList.remove('open');
+  }
+
+  async function ejecutarEliminarNoticia() {
+    const id  = document.getElementById('del-not-id').value;
+    const btn = document.getElementById('btn-confirmar-eliminar');
+    btn.disabled = true;
+    btn.textContent = 'Eliminando...';
+
+    const body = new FormData();
+    body.append('id', id);
+
+    try {
+      const res  = await fetch('../noticias/eliminar.php', { method: 'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('overlay-eliminar-noticia').classList.remove('open');
+        const row = document.getElementById(`not-row-${id}`);
+        if (row) row.remove();
+        delete _notData[id];
+        actualizarStatsNoticias();
+
+        const tbody = document.querySelector('#tabla-noticias tbody');
+        if (tbody && tbody.rows.length === 0) {
+          document.getElementById('tabla-noticias')?.remove();
+          document.getElementById('not-card-body').insertAdjacentHTML('beforeend',
+            '<p class="empty-msg" id="not-empty">No hay noticias registradas aún.</p>');
+        }
+      } else {
+        alert(data.message || 'Error al eliminar.');
+        btn.disabled = false;
+        btn.textContent = 'Sí, eliminar';
+      }
+    } catch {
+      alert('Error de conexión.');
+      btn.disabled = false;
+      btn.textContent = 'Sí, eliminar';
+    }
+  }
+
+  function actualizarStatsNoticias() {
+    const c = { total: 0, publicada: 0, borrador: 0, archivada: 0 };
+    document.querySelectorAll('#tabla-noticias tbody tr').forEach(row => {
+      const cls = [...row.classList].find(k => k.startsWith('row-'))?.replace('row-', '');
+      if (cls === 'admitido')       { c.publicada++;  c.total++; }
+      else if (cls === 'rechazado') { c.archivada++;  c.total++; }
+      else                          { c.borrador++;   c.total++; }
+    });
+    const upd = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    upd('not-stat-total', c.total);
+    upd('not-stat-publicada', c.publicada);
+    upd('not-stat-borrador', c.borrador);
+    upd('not-stat-archivada', c.archivada);
   }
 </script>
 
