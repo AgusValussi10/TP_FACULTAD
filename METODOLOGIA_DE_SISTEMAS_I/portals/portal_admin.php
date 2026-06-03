@@ -805,8 +805,19 @@ $conn->close();
             <textarea id="not-contenido" rows="4" placeholder="Escribí el cuerpo completo de la noticia..." maxlength="5000"></textarea>
           </div>
           <div>
-            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">URL de imagen (opcional)</label>
-            <input type="url" id="not-imagen" placeholder="https://...">
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Imagen (opcional)</label>
+            <select id="not-imagen">
+              <option value="">— Sin imagen —</option>
+              <option value="assets/edificio.avif">🏫 Edificio</option>
+              <option value="assets/laboratorio.avif">🔬 Laboratorio</option>
+              <option value="assets/campofutbol.avif">⚽ Campo de fútbol</option>
+              <option value="assets/piscina.avif">🏊 Piscina / Natatorio</option>
+              <option value="assets/gimnasio.avif">🏋️ Gimnasio</option>
+              <option value="assets/inscripciones2027.avif">📋 Inscripciones</option>
+              <option value="assets/salacomputacion.avif">💻 Sala de computación</option>
+              <option value="assets/nuevosprofesores.avif">👩‍🏫 Docentes</option>
+              <option value="assets/nuevosprofesores2.jpg">👨‍🏫 Docentes 2</option>
+            </select>
           </div>
           <div>
             <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:.3rem;">Fecha de publicación (opcional)</label>
@@ -884,7 +895,7 @@ $conn->close();
                   <?php if ($n['estado'] !== 'archivada'): ?>
                     <button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'archivada')">Archivar</button>
                   <?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(<?= $n['id'] ?>, <?= json_encode($n['titulo']) ?>)">🗑️ Eliminar</button>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(<?= $n['id'] ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -962,8 +973,19 @@ $conn->close();
         <textarea id="edit-not-contenido" rows="5" maxlength="5000"></textarea>
       </div>
       <div>
-        <label>URL de imagen (opcional)</label>
-        <input type="url" id="edit-not-imagen">
+        <label>Imagen (opcional)</label>
+        <select id="edit-not-imagen">
+          <option value="">— Sin imagen —</option>
+          <option value="assets/edificio.avif">🏫 Edificio</option>
+          <option value="assets/laboratorio.avif">🔬 Laboratorio</option>
+          <option value="assets/campofutbol.avif">⚽ Campo de fútbol</option>
+          <option value="assets/piscina.avif">🏊 Piscina / Natatorio</option>
+          <option value="assets/gimnasio.avif">🏋️ Gimnasio</option>
+          <option value="assets/inscripciones2027.avif">📋 Inscripciones</option>
+          <option value="assets/salacomputacion.avif">💻 Sala de computación</option>
+          <option value="assets/nuevosprofesores.avif">👩‍🏫 Docentes</option>
+          <option value="assets/nuevosprofesores2.jpg">👨‍🏫 Docentes 2</option>
+        </select>
       </div>
       <div>
         <label>Fecha de publicación (opcional)</label>
@@ -1647,7 +1669,7 @@ $conn->close();
     if (estado !== 'publicada') btns += `<button class="btn-accion btn-admitido" onclick="cambiarEstadoNoticia(${id},'publicada')">Publicar</button>`;
     if (estado === 'publicada') btns += `<button class="btn-accion btn-pendiente" onclick="cambiarEstadoNoticia(${id},'borrador')">Despublicar</button>`;
     if (estado !== 'archivada') btns += `<button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(${id},'archivada')">Archivar</button>`;
-    btns += `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(${id}, ${JSON.stringify(_notData[id]?.titulo || '')})">🗑️ Eliminar</button>`;
+    btns += `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(${id})">🗑️ Eliminar</button>`;
     return btns;
   }
 
@@ -1849,8 +1871,9 @@ $conn->close();
     }
   }
 
-  function confirmarEliminarNoticia(id, titulo) {
+  function confirmarEliminarNoticia(id) {
     document.getElementById('del-not-id').value = id;
+    const titulo = _notData[id]?.titulo || 'esta noticia';
     document.getElementById('del-not-texto').textContent =
       `¿Estás seguro que querés eliminar "${titulo}"? Esta acción no se puede deshacer.`;
     document.getElementById('btn-confirmar-eliminar').disabled = false;
