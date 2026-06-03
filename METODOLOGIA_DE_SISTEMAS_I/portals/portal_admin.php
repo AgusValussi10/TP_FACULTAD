@@ -519,7 +519,7 @@ $conn->close();
                   <?php if ($o['estado'] !== 'aprobado'):  ?><button class="btn-accion btn-admitido"  onclick="opinionAccion(<?= $o['id'] ?>,'aprobado')">Aprobar</button><?php endif; ?>
                   <?php if ($o['estado'] !== 'rechazado'): ?><button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $o['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
                   <?php if ($o['estado'] !== 'pendiente'): ?><button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $o['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('opinion',<?= $o['id'] ?>,<?= json_encode($o['nombre']) ?>)">🗑️ Eliminar</button>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('opinion',<?= $o['id'] ?>,<?= htmlspecialchars(json_encode($o['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -655,7 +655,7 @@ $conn->close();
                   <?php if ($p['estado'] !== 'seleccionado'):?><button class="btn-accion btn-admitido"   onclick="postAccion(<?= $p['id'] ?>,'seleccionado')">Seleccionar</button><?php endif; ?>
                   <?php if ($p['estado'] !== 'rechazado'):   ?><button class="btn-accion btn-rechazado"  onclick="postAccion(<?= $p['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
                   <?php if ($p['estado'] !== 'pendiente'):   ?><button class="btn-accion btn-pendiente"  onclick="postAccion(<?= $p['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('postulacion',<?= $p['id'] ?>,<?= json_encode($p['apellido'].', '.$p['nombre']) ?>)">🗑️ Eliminar</button>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('postulacion',<?= $p['id'] ?>,<?= htmlspecialchars(json_encode($p['apellido'].', '.$p['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -741,7 +741,7 @@ $conn->close();
                   <?php if ($c['estado'] !== 'respondida'): ?><button class="btn-accion btn-admitido"   onclick="conAccion(<?= $c['id'] ?>,'respondida')">Respondida</button><?php endif; ?>
                   <?php if ($c['estado'] !== 'archivada'):  ?><button class="btn-accion btn-rechazado"  onclick="conAccion(<?= $c['id'] ?>,'archivada')">Archivar</button><?php endif; ?>
                   <?php if ($c['estado'] !== 'pendiente'):  ?><button class="btn-accion btn-pendiente"  onclick="conAccion(<?= $c['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('consulta',<?= $c['id'] ?>,<?= json_encode($c['nombre']) ?>)">🗑️ Eliminar</button>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('consulta',<?= $c['id'] ?>,<?= htmlspecialchars(json_encode($c['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -897,7 +897,7 @@ $conn->close();
                   <?php if ($n['estado'] !== 'archivada'): ?>
                     <button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'archivada')">Archivar</button>
                   <?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('noticia',<?= $n['id'] ?>,<?= json_encode($n['titulo']) ?>)">🗑️ Eliminar</button>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('noticia',<?= $n['id'] ?>,<?= htmlspecialchars(json_encode($n['titulo'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>

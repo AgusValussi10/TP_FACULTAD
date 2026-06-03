@@ -68,6 +68,37 @@ CREATE TABLE IF NOT EXISTS noticias (
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Postulaciones de ejemplo (visibles en el panel admin > Propuestas de trabajo)
+INSERT INTO postulaciones (puesto_id, nombre, apellido, dni, email, telefono, experiencia_anios, experiencia_descripcion, estado)
+SELECT 1,'Ana','Ruiz','32415678','ana.ruiz@gmail.com','3624-555001',3,
+  'Trabajé 3 años en jardín maternal privado. Manejo de grupos de 3 a 5 años, planificación de actividades lúdico-educativas y atención temprana.',
+  'pendiente'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM postulaciones WHERE dni='32415678');
+
+INSERT INTO postulaciones (puesto_id, nombre, apellido, dni, email, telefono, experiencia_anios, experiencia_descripcion, estado)
+SELECT 2,'Martín','López','28963412','martin.lopez@outlook.com','3624-555002',5,
+  'Certificación Cambridge CAE. Cinco años dictando inglés en instituciones privadas niveles primario y secundario. Metodología comunicativa.',
+  'revisado'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM postulaciones WHERE dni='28963412');
+
+INSERT INTO postulaciones (puesto_id, nombre, apellido, dni, email, telefono, experiencia_anios, experiencia_descripcion, estado)
+SELECT 3,'Sofía','García','35102847','sofia.garcia@yahoo.com','3624-555003',8,
+  'Lic. en Educación Física. 8 años como coordinadora de actividades deportivas extracurriculares. Gestión de torneos intercolegiales y planificación anual.',
+  'seleccionado'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM postulaciones WHERE dni='35102847');
+
+INSERT INTO postulaciones (puesto_id, nombre, apellido, dni, email, telefono, experiencia_anios, experiencia_descripcion, estado)
+SELECT 4,'Diego','Torres','37841205','diego.torres@gmail.com','3624-555004',2,
+  'Recién graduado en Psicopedagogía. Pasantía de 1 año en escuela primaria, apoyo a alumnos con dificultades de aprendizaje y evaluaciones diagnósticas.',
+  'pendiente'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM postulaciones WHERE dni='37841205');
+
+INSERT INTO postulaciones (puesto_id, nombre, apellido, dni, email, telefono, experiencia_anios, experiencia_descripcion, estado)
+SELECT 5,'Camila','Romero','30578964','camila.romero@hotmail.com','3624-555005',4,
+  'Lic. en Enfermería con habilitación provincial vigente. Experiencia en enfermería escolar, primeros auxilios, control de vacunación y atención pediátrica básica.',
+  'pendiente'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM postulaciones WHERE dni='30578964');
+
 -- Solicitudes de inscripción enviadas desde el formulario público
 CREATE TABLE IF NOT EXISTS solicitudes_inscripcion (
     id               INT AUTO_INCREMENT PRIMARY KEY,
