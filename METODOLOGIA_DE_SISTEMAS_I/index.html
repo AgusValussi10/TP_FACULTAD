@@ -768,6 +768,82 @@
   </div>
 </section>
 
+<!-- ======= INSCRIPCIÓN ======= -->
+<section id="inscripcion" class="bg-verde section-anchor">
+  <div class="section-inner">
+    <span class="section-label">Inscripción</span>
+    <h2 class="section-title">Solicitud de Inscripción</h2>
+    <p class="section-sub">Completá el formulario y nos comunicaremos con vos para informarte sobre el proceso de admisión para el ciclo lectivo 2027.</p>
+    <div class="inscripcion-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre del alumno *</label>
+          <input id="insc-nombre" type="text" placeholder="Nombre" maxlength="50">
+          <span class="campo-error-msg" id="err-nombre"></span>
+        </div>
+        <div class="form-group">
+          <label>Apellido del alumno *</label>
+          <input id="insc-apellido" type="text" placeholder="Apellido" maxlength="50">
+          <span class="campo-error-msg" id="err-apellido"></span>
+        </div>
+        <div class="form-group">
+          <label>Fecha de nacimiento *</label>
+          <input id="insc-fecha" type="date" min="1920-01-01" max="2025-12-31">
+          <span class="campo-error-msg" id="err-fecha"></span>
+        </div>
+        <div class="form-group">
+          <label>Nivel educativo solicitado *</label>
+          <select id="insc-nivel"><option value="">— Seleccioná —</option><option>Inicial</option><option>Primario</option><option>Secundario</option></select>
+          <span class="campo-error-msg" id="err-nivel"></span>
+        </div>
+        <div class="form-group">
+          <label>Nombre del padre/tutor *</label>
+          <input id="insc-tutor" type="text" placeholder="Nombre completo" maxlength="100">
+          <span class="campo-error-msg" id="err-tutor"></span>
+        </div>
+        <div class="form-group">
+          <label>Teléfono de contacto *</label>
+          <input id="insc-telefono" type="tel" placeholder="+54 362 ..." maxlength="20">
+          <span class="campo-error-msg" id="err-telefono"></span>
+        </div>
+        <div class="form-group form-full">
+          <label>Correo electrónico *</label>
+          <input id="insc-email" type="email" placeholder="ejemplo@mail.com" maxlength="100">
+          <span class="campo-error-msg" id="err-email"></span>
+        </div>
+        <div class="form-group form-full"><label>Consultas o comentarios</label><textarea id="insc-comentarios" placeholder="¿Tenés alguna pregunta o comentario adicional?"></textarea></div>
+      </div>
+      <button id="btn-insc-submit" class="btn-submit" onclick="enviarInscripcion()">Enviar solicitud 📋</button>
+      <p id="insc-mensaje" style="margin-top:.8rem;font-weight:700;font-size:.95rem;"></p>
+      <p class="form-note">* Campos obligatorios. Tu información es tratada con total confidencialidad según la Ley 25.326 de Protección de Datos Personales.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======= BIENESTAR ======= -->
+<section id="bienestar" class="bg-verde section-anchor">
+  <div class="section-inner">
+    <span class="section-label">Bienestar Estudiantil</span>
+    <h2 class="section-title">Más que educación, una experiencia integral</h2>
+    <p class="section-sub">Contamos con instalaciones de primer nivel y una oferta deportiva y de servicios pensada para el desarrollo completo de cada alumno.</p>
+
+    <div class="bienestar-tabs">
+      <button class="bienestar-tab active">🏅 Deportes</button>
+      <button class="bienestar-tab">🏛️ Instalaciones</button>
+      <button class="bienestar-tab">🚌 Servicios</button>
+    </div>
+
+    <div class="bienestar-grid" id="bienestar-contenido">
+      <div class="bienestar-item"><div class="bi-icon">🏃</div><span>Atletismo</span></div>
+      <div class="bienestar-item"><div class="bi-icon">🏊</div><span>Natación</span></div>
+      <div class="bienestar-item"><div class="bi-icon">⚽</div><span>Fútbol</span></div>
+      <div class="bienestar-item"><div class="bi-icon">🥋</div><span>Artes Marciales</span></div>
+      <div class="bienestar-item"><div class="bi-icon">🏐</div><span>Vóleibol</span></div>
+      <div class="bienestar-item"><div class="bi-icon">💃</div><span>Danza</span></div>
+    </div>
+  </div>
+</section>
+
 <!-- ======= NOTICIAS ======= -->
 <section id="noticias" class="section-anchor">
   <div class="section-inner">
@@ -837,29 +913,6 @@
   </div>
 </section>
 
-<!-- ======= BIENESTAR ======= -->
-<section id="bienestar" class="bg-verde section-anchor">
-  <div class="section-inner">
-    <span class="section-label">Bienestar Estudiantil</span>
-    <h2 class="section-title">Más que educación, una experiencia integral</h2>
-    <p class="section-sub">Contamos con instalaciones de primer nivel y una oferta deportiva y de servicios pensada para el desarrollo completo de cada alumno.</p>
-
-    <div class="bienestar-tabs">
-      <button class="bienestar-tab active">🏅 Deportes</button>
-      <button class="bienestar-tab">🏛️ Instalaciones</button>
-      <button class="bienestar-tab">🚌 Servicios</button>
-    </div>
-
-    <div class="bienestar-grid" id="bienestar-contenido">
-      <div class="bienestar-item"><div class="bi-icon">🏃</div><span>Atletismo</span></div>
-      <div class="bienestar-item"><div class="bi-icon">🏊</div><span>Natación</span></div>
-      <div class="bienestar-item"><div class="bi-icon">⚽</div><span>Fútbol</span></div>
-      <div class="bienestar-item"><div class="bi-icon">🥋</div><span>Artes Marciales</span></div>
-      <div class="bienestar-item"><div class="bi-icon">🏐</div><span>Vóleibol</span></div>
-      <div class="bienestar-item"><div class="bi-icon">💃</div><span>Danza</span></div>
-    </div>
-  </div>
-</section>
 
 <!-- ======= OPINIONES ======= -->
 <section id="opiniones" style="padding: 3.5rem 1.5rem; background: #F9FAFB;">
@@ -895,57 +948,6 @@
   </div>
 </section>
 
-<!-- ======= INSCRIPCIÓN ======= -->
-<section id="inscripcion" class="bg-verde section-anchor">
-  <div class="section-inner">
-    <span class="section-label">Inscripción</span>
-    <h2 class="section-title">Solicitud de Inscripción</h2>
-    <p class="section-sub">Completá el formulario y nos comunicaremos con vos para informarte sobre el proceso de admisión para el ciclo lectivo 2027.</p>
-    <div class="inscripcion-form">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Nombre del alumno *</label>
-          <input id="insc-nombre" type="text" placeholder="Nombre" maxlength="50">
-          <span class="campo-error-msg" id="err-nombre"></span>
-        </div>
-        <div class="form-group">
-          <label>Apellido del alumno *</label>
-          <input id="insc-apellido" type="text" placeholder="Apellido" maxlength="50">
-          <span class="campo-error-msg" id="err-apellido"></span>
-        </div>
-        <div class="form-group">
-          <label>Fecha de nacimiento *</label>
-          <input id="insc-fecha" type="date" min="1920-01-01" max="2025-12-31">
-          <span class="campo-error-msg" id="err-fecha"></span>
-        </div>
-        <div class="form-group">
-          <label>Nivel educativo solicitado *</label>
-          <select id="insc-nivel"><option value="">— Seleccioná —</option><option>Inicial</option><option>Primario</option><option>Secundario</option></select>
-          <span class="campo-error-msg" id="err-nivel"></span>
-        </div>
-        <div class="form-group">
-          <label>Nombre del padre/tutor *</label>
-          <input id="insc-tutor" type="text" placeholder="Nombre completo" maxlength="100">
-          <span class="campo-error-msg" id="err-tutor"></span>
-        </div>
-        <div class="form-group">
-          <label>Teléfono de contacto *</label>
-          <input id="insc-telefono" type="tel" placeholder="+54 362 ..." maxlength="20">
-          <span class="campo-error-msg" id="err-telefono"></span>
-        </div>
-        <div class="form-group form-full">
-          <label>Correo electrónico *</label>
-          <input id="insc-email" type="email" placeholder="ejemplo@mail.com" maxlength="100">
-          <span class="campo-error-msg" id="err-email"></span>
-        </div>
-        <div class="form-group form-full"><label>Consultas o comentarios</label><textarea id="insc-comentarios" placeholder="¿Tenés alguna pregunta o comentario adicional?"></textarea></div>
-      </div>
-      <button id="btn-insc-submit" class="btn-submit" onclick="enviarInscripcion()">Enviar solicitud 📋</button>
-      <p id="insc-mensaje" style="margin-top:.8rem;font-weight:700;font-size:.95rem;"></p>
-      <p class="form-note">* Campos obligatorios. Tu información es tratada con total confidencialidad según la Ley 25.326 de Protección de Datos Personales.</p>
-    </div>
-  </div>
-</section>
 
 <!-- ======= EMPLEO ======= -->
 <section id="empleo" class="section-anchor">
