@@ -791,7 +791,59 @@
     <h2 class="section-title">Novedades del Centro Educativo</h2>
     <p class="section-sub">Mantente informado sobre las últimas novedades, eventos y actividades de nuestra institución.</p>
     <div id="noticias-grid" class="noticias-grid">
-      <p class="not-empty">Cargando noticias...</p>
+      <div class="noticia-card"
+           onclick="abrirNoticia(this)"
+           data-emoji="🎉"
+           data-color="#D5F5E3"
+           data-img="assets/inscripciones2027.avif"
+           data-tag="Institución"
+           data-date="📅 Septiembre 2026"
+           data-title="Apertura de inscripciones para el ciclo 2027"
+           data-resumen="Ya están abiertas las inscripciones para todos los niveles del próximo ciclo lectivo. ¡No pierdas tu lugar!"
+           data-detalle="&lt;p&gt;Nos complace anunciar que a partir del &lt;strong&gt;1° de junio de 2026&lt;/strong&gt; se encuentran abiertas las inscripciones para el ciclo lectivo &lt;strong&gt;2027&lt;/strong&gt; en todos los niveles: Inicial, Primario y Secundario.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Período de inscripción:&lt;/strong&gt; del 1° de junio al 31 de julio de 2026. Los cupos son limitados, por lo que se recomienda inscribirse con anticipación.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Documentación requerida:&lt;/strong&gt;&lt;/p&gt;&lt;ul style=&quot;margin:.4rem 0 .8rem 1.2rem;line-height:2&quot;&gt;&lt;li&gt;DNI original y fotocopia del alumno&lt;/li&gt;&lt;li&gt;Partida de nacimiento&lt;/li&gt;&lt;li&gt;Libreta o boletín del año anterior&lt;/li&gt;&lt;li&gt;2 fotos carnet&lt;/li&gt;&lt;li&gt;Certificado de vacunación actualizado&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;strong&gt;Cómo inscribirse:&lt;/strong&gt; Las inscripciones se realizan de forma &lt;strong&gt;presencial&lt;/strong&gt; en secretaría, de lunes a viernes de 8:00 a 12:00 hs y de 16:00 a 19:00 hs. &lt;/p&gt;&lt;p&gt;Para más información escribinos a &lt;strong&gt;inscripciones@educar.edu.ar&lt;/strong&gt; o comunicate al &lt;strong&gt;+54 362 XXX-XXXX&lt;/strong&gt;.&lt;/p&gt;">
+        <div class="noticia-img" style="padding:0;overflow:hidden;"><img src="assets/inscripciones2027.avif" alt="Inscripciones 2027" style="width:100%;height:100%;object-fit:cover;"></div>
+        <div class="noticia-body">
+          <span class="noticia-tag">Institución</span>
+          <h3>Apertura de inscripciones para el ciclo 2027</h3>
+          <p>Ya están abiertas las inscripciones para todos los niveles del próximo ciclo lectivo. ¡No pierdas tu lugar!</p>
+          <div class="noticia-date">📅 Septiembre 2026</div>
+          <span class="noticia-leer-mas">Leer más</span>
+        </div>
+      </div>
+      <div class="noticia-card"
+           onclick="abrirNoticia(this)"
+           data-img="assets/salacomputacion.avif"
+           data-tag="Infraestructura"
+           data-date="📅 Mayo 2026"
+           data-title="Inauguración de la nueva Sala de Computación"
+           data-resumen="Nuestra nueva sala de computación con 30 equipos modernos ya está disponible para toda la comunidad educativa."
+           data-detalle="&lt;p&gt;Inauguramos nuestra nueva Sala de Computación con 30 equipos modernos, proyector interactivo y fibra óptica, disponible para toda la comunidad educativa.&lt;/p&gt;&lt;p&gt;A partir del ciclo 2027 se incorporan talleres de programación y robótica para todos los niveles.&lt;/p&gt;">
+        <div class="noticia-img" style="padding:0;overflow:hidden;"><img src="assets/salacomputacion.avif" alt="Sala de Computación" style="width:100%;height:100%;object-fit:cover;"></div>
+        <div class="noticia-body">
+          <span class="noticia-tag">Infraestructura</span>
+          <h3>Inauguración de la nueva Sala de Computación</h3>
+          <p>Nuestra nueva sala de computación con 30 equipos modernos ya está disponible para toda la comunidad educativa.</p>
+          <div class="noticia-date">📅 Mayo 2026</div>
+          <span class="noticia-leer-mas">Leer más</span>
+        </div>
+      </div>
+      <div class="noticia-card"
+           onclick="abrirNoticia(this)"
+           data-img="assets/nuevosprofesores.avif"
+           data-tag="Educación"
+           data-date="📅 Marzo 2026"
+           data-title="Incorporación de nuevos docentes para el ciclo 2027"
+           data-resumen="Sumamos profesionales altamente capacitados en distintas áreas para fortalecer nuestra propuesta educativa."
+           data-detalle="&lt;p&gt;Nos complace anunciar la incorporación de nuevos docentes especializados en matemáticas, ciencias, idiomas y tecnología para el ciclo lectivo 2027.&lt;/p&gt;&lt;p&gt;Cada nuevo integrante fue seleccionado por su trayectoria, vocación y compromiso con una educación de calidad.&lt;/p&gt;">
+        <div class="noticia-img" style="padding:0;overflow:hidden;"><img src="assets/nuevosprofesores.avif" alt="Nuevos docentes" style="width:100%;height:100%;object-fit:cover;"></div>
+        <div class="noticia-body">
+          <span class="noticia-tag">Educación</span>
+          <h3>Incorporación de nuevos docentes para el ciclo 2027</h3>
+          <p>Sumamos profesionales altamente capacitados en distintas áreas para fortalecer nuestra propuesta educativa.</p>
+          <div class="noticia-date">📅 Marzo 2026</div>
+          <span class="noticia-leer-mas">Leer más</span>
+        </div>
+      </div>
     </div>
     <div class="not-paginador" id="not-paginador">
       <button class="not-pag-btn" id="not-prev" onclick="notCambiarPagina(-1)">← Anterior</button>
@@ -1616,14 +1668,11 @@
     try {
       const res = await fetch('noticias/listar.php');
       notData   = await res.json();
-      if (!notData.length) {
-        grid.innerHTML = '<p class="not-empty">No hay noticias publicadas aún.</p>';
-        return;
-      }
+      if (!notData.length) return; // sin noticias en BD: quedan las hardcodeadas
       notPagina = 0;
       notRenderizar();
     } catch {
-      grid.innerHTML = '<p class="not-empty">No se pudieron cargar las noticias.</p>';
+      // si falla la conexión quedan las hardcodeadas
     }
   }
   cargarNoticias();
