@@ -491,7 +491,8 @@ $conn->close();
               <th>Opinión</th>
               <th>Período</th>
               <th>Fecha envío</th>
-              <th>Visible en web</th>
+              <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -499,27 +500,26 @@ $conn->close();
             $meses_es = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
             foreach ($opiniones as $o):
-              $isOn    = $o['estado'] === 'aprobado';
               $periodo = $meses_es[(int)$o['mes']] . ' ' . $o['anio'];
-              $rowCls  = $isOn ? 'row-admitido' : ($o['estado'] === 'rechazado' ? 'row-rechazado' : '');
+              $rowCls  = $o['estado'] === 'aprobado' ? 'row-admitido' : ($o['estado'] === 'rechazado' ? 'row-rechazado' : '');
+              $badgeCls = $o['estado'] === 'aprobado' ? 'admitido' : $o['estado'];
+              $badgeLbl = $o['estado'] === 'aprobado' ? 'Aprobada' : ucfirst($o['estado']);
             ?>
-            <tr id="op-row-<?= $o['id'] ?>" class="<?= $rowCls ?>" data-ts="<?= $o['ts'] ?>">
+            <tr id="op-row-<?= $o['id'] ?>" class="<?= $rowCls ?>" data-ts="<?= $o['ts'] ?>" data-desc="<?= htmlspecialchars($o['nombre']) ?>">
               <td><?= $o['id'] ?></td>
               <td><span class="nombre-opinion"><?= htmlspecialchars($o['nombre']) ?></span></td>
               <td><span class="texto-opinion"><?= htmlspecialchars(mb_strimwidth($o['texto'], 0, 120, '…')) ?></span></td>
               <td><span class="mes-anio"><?= $periodo ?></span></td>
               <td style="white-space:nowrap"><?= $o['fecha'] ?></td>
+              <td id="op-estado-<?= $o['id'] ?>">
+                <span class="estado-badge estado-<?= $badgeCls ?>"><?= $badgeLbl ?></span>
+              </td>
               <td>
-                <div class="toggle-wrap">
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="op-chk-<?= $o['id'] ?>"
-                           <?= $isOn ? 'checked' : '' ?>
-                           onchange="toggleOpinion(<?= $o['id'] ?>, this.checked)">
-                    <span class="toggle-track"></span>
-                  </label>
-                  <span class="toggle-lbl <?= $isOn ? 'on' : 'off' ?>" id="op-lbl-<?= $o['id'] ?>">
-                    <?= $isOn ? 'ON' : 'OFF' ?>
-                  </span>
+                <div class="acciones" id="op-acc-<?= $o['id'] ?>">
+                  <?php if ($o['estado'] !== 'aprobado'):  ?><button class="btn-accion btn-admitido"  onclick="opinionAccion(<?= $o['id'] ?>,'aprobado')">Aprobar</button><?php endif; ?>
+                  <?php if ($o['estado'] !== 'rechazado'): ?><button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $o['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
+                  <?php if ($o['estado'] !== 'pendiente'): ?><button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $o['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('opinion',<?= $o['id'] ?>,<?= json_encode($o['nombre']) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -634,7 +634,7 @@ $conn->close();
                 default        => ''
             };
           ?>
-            <tr id="post-row-<?= $p['id'] ?>" class="<?= $rowCls ?>">
+            <tr id="post-row-<?= $p['id'] ?>" class="<?= $rowCls ?>" data-desc="<?= htmlspecialchars($p['apellido'].', '.$p['nombre']) ?>">
               <td><?= $p['id'] ?></td>
               <td style="white-space:nowrap"><strong><?= htmlspecialchars($p['puesto_titulo']) ?></strong></td>
               <td><?= htmlspecialchars($p['apellido'].', '.$p['nombre']) ?></td>
@@ -655,6 +655,7 @@ $conn->close();
                   <?php if ($p['estado'] !== 'seleccionado'):?><button class="btn-accion btn-admitido"   onclick="postAccion(<?= $p['id'] ?>,'seleccionado')">Seleccionar</button><?php endif; ?>
                   <?php if ($p['estado'] !== 'rechazado'):   ?><button class="btn-accion btn-rechazado"  onclick="postAccion(<?= $p['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
                   <?php if ($p['estado'] !== 'pendiente'):   ?><button class="btn-accion btn-pendiente"  onclick="postAccion(<?= $p['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('postulacion',<?= $p['id'] ?>,<?= json_encode($p['apellido'].', '.$p['nombre']) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -724,7 +725,7 @@ $conn->close();
                 default      => ''
               };
             ?>
-            <tr id="con-row-<?= $c['id'] ?>" class="<?= $rowCls ?>">
+            <tr id="con-row-<?= $c['id'] ?>" class="<?= $rowCls ?>" data-desc="<?= htmlspecialchars($c['nombre']) ?>">
               <td><?= $c['id'] ?></td>
               <td><strong><?= htmlspecialchars($c['nombre']) ?></strong></td>
               <td><?= htmlspecialchars($c['email']) ?></td>
@@ -740,6 +741,7 @@ $conn->close();
                   <?php if ($c['estado'] !== 'respondida'): ?><button class="btn-accion btn-admitido"   onclick="conAccion(<?= $c['id'] ?>,'respondida')">Respondida</button><?php endif; ?>
                   <?php if ($c['estado'] !== 'archivada'):  ?><button class="btn-accion btn-rechazado"  onclick="conAccion(<?= $c['id'] ?>,'archivada')">Archivar</button><?php endif; ?>
                   <?php if ($c['estado'] !== 'pendiente'):  ?><button class="btn-accion btn-pendiente"  onclick="conAccion(<?= $c['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('consulta',<?= $c['id'] ?>,<?= json_encode($c['nombre']) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -895,7 +897,7 @@ $conn->close();
                   <?php if ($n['estado'] !== 'archivada'): ?>
                     <button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'archivada')">Archivar</button>
                   <?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(<?= $n['id'] ?>)">🗑️ Eliminar</button>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('noticia',<?= $n['id'] ?>,<?= json_encode($n['titulo']) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -1000,15 +1002,16 @@ $conn->close();
   </div>
 </div>
 
-<!-- Modal confirmar eliminación noticia -->
-<div class="overlay" id="overlay-eliminar-noticia" onclick="cerrarModalDelNot(event)">
+<!-- Modal confirmar eliminación (genérico) -->
+<div class="overlay" id="overlay-eliminar" onclick="cerrarModalEliminar(event)">
   <div class="modal-del-box">
-    <h3>🗑️ Eliminar noticia</h3>
-    <p id="del-not-texto">¿Estás seguro que querés eliminar esta noticia? Esta acción no se puede deshacer.</p>
-    <input type="hidden" id="del-not-id">
+    <h3>🗑️ Eliminar registro</h3>
+    <p id="del-texto">¿Estás seguro que querés eliminarlo? Esta acción no se puede deshacer.</p>
+    <input type="hidden" id="del-id">
+    <input type="hidden" id="del-seccion">
     <div class="modal-btns" style="justify-content:center;">
-      <button class="btn-cancelar" onclick="document.getElementById('overlay-eliminar-noticia').classList.remove('open')">Cancelar</button>
-      <button class="btn-confirmar" id="btn-confirmar-eliminar" style="background:#DC2626;" onclick="ejecutarEliminarNoticia()">Sí, eliminar</button>
+      <button class="btn-cancelar" onclick="document.getElementById('overlay-eliminar').classList.remove('open')">Cancelar</button>
+      <button class="btn-confirmar" id="btn-confirmar-eliminar" style="background:#DC2626;" onclick="ejecutarEliminar()">Sí, eliminar</button>
     </div>
   </div>
 </div>
@@ -1307,24 +1310,20 @@ $conn->close();
       let nuevas = 0;
       opiniones.forEach(o => {
         if (document.getElementById(`op-row-${o.id}`)) return;
-        const isOn    = o.estado === 'aprobado';
-        const rowCls  = isOn ? 'row-admitido' : (o.estado === 'rechazado' ? 'row-rechazado' : '');
+        const rowCls  = OP_ROW[o.estado] || '';
         const periodo = mesesEs[parseInt(o.mes)] + ' ' + o.anio;
         const txt     = o.texto.length > 120 ? esc(o.texto.substring(0,120)) + '…' : esc(o.texto);
+        const nombre  = esc(o.nombre);
+        const opBtns  = buildBotonesOpinion(o.id, o.estado, o.nombre);
         tbody.insertAdjacentHTML('afterbegin', `
-          <tr id="op-row-${o.id}" class="${rowCls} fila-nueva" data-ts="${o.ts}">
+          <tr id="op-row-${o.id}" class="${rowCls} fila-nueva" data-ts="${o.ts}" data-desc="${nombre}">
             <td>${o.id}</td>
-            <td><span class="nombre-opinion">${esc(o.nombre)}</span></td>
+            <td><span class="nombre-opinion">${nombre}</span></td>
             <td><span class="texto-opinion">${txt}</span></td>
             <td><span class="mes-anio">${periodo}</span></td>
             <td style="white-space:nowrap">${o.fecha}</td>
-            <td><div class="toggle-wrap">
-              <label class="toggle-switch">
-                <input type="checkbox" id="op-chk-${o.id}" ${isOn?'checked':''} onchange="toggleOpinion(${o.id}, this.checked)">
-                <span class="toggle-track"></span>
-              </label>
-              <span class="toggle-lbl ${isOn?'on':'off'}" id="op-lbl-${o.id}">${isOn?'ON':'OFF'}</span>
-            </div></td>
+            <td id="op-estado-${o.id}"><span class="estado-badge estado-${OP_BADGE[o.estado]||o.estado}">${OP_LABELS[o.estado]||o.estado}</span></td>
+            <td><div class="acciones" id="op-acc-${o.id}">${opBtns}</div></td>
           </tr>`);
         nuevas++;
       });
@@ -1352,12 +1351,13 @@ $conn->close();
         const badgeCls= POST_BADGE[p.estado]|| p.estado;
         const expTxt  = p.experiencia_descripcion.length > 100 ? esc(p.experiencia_descripcion.substring(0,100)) + '…' : esc(p.experiencia_descripcion);
         const todos   = ['revisado','seleccionado','rechazado','pendiente'];
+        const descP   = esc(p.apellido) + ', ' + esc(p.nombre);
         const btns    = todos.filter(e => e !== p.estado).map(e => {
           const cls = {revisado:'btn-contactado',seleccionado:'btn-admitido',rechazado:'btn-rechazado',pendiente:'btn-pendiente'}[e];
           return `<button class="btn-accion ${cls}" onclick="postAccion(${p.id},'${e}')">${POST_LABELS[e]}</button>`;
-        }).join('');
+        }).join('') + `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('postulacion',${p.id},${JSON.stringify(descP)})">🗑️ Eliminar</button>`;
         tbody.insertAdjacentHTML('afterbegin', `
-          <tr id="post-row-${p.id}" class="${rowCls} fila-nueva">
+          <tr id="post-row-${p.id}" class="${rowCls} fila-nueva" data-desc="${descP}">
             <td>${p.id}</td>
             <td style="white-space:nowrap"><strong>${esc(p.puesto_titulo)}</strong></td>
             <td>${esc(p.apellido)}, ${esc(p.nombre)}</td>
@@ -1461,49 +1461,49 @@ $conn->close();
         document.getElementById(`post-estado-${id}`).innerHTML =
           `<span class="estado-badge estado-${POST_BADGE[estado]}">${POST_LABELS[estado]}</span>`;
         const todos = ['revisado','seleccionado','rechazado','pendiente'];
+        const descPost = document.getElementById(`post-row-${id}`)?.dataset.desc || 'esta postulación';
         document.getElementById(`post-acc-${id}`).innerHTML = todos
           .filter(e => e !== estado)
           .map(e => {
             const cls = { revisado:'btn-contactado', seleccionado:'btn-admitido', rechazado:'btn-rechazado', pendiente:'btn-pendiente' }[e];
             return `<button class="btn-accion ${cls}" onclick="postAccion(${id},'${e}')">${POST_LABELS[e]}</button>`;
-          }).join('');
+          }).join('') + `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('postulacion',${id},${JSON.stringify(descPost)})">🗑️ Eliminar</button>`;
       } else { alert(data.message||'Error.'); btns.forEach(b=>b.disabled=false); }
     } catch { alert('Error de conexión.'); btns.forEach(b=>b.disabled=false); }
   }
 
-  // ── Gestión de opiniones (toggle ON/OFF) ──────────────────────────
-  async function toggleOpinion(id, isOn) {
-    const estado = isOn ? 'aprobado' : 'pendiente';
-    const chk    = document.getElementById(`op-chk-${id}`);
-    chk.disabled = true;
+  // ── Gestión de opiniones ──────────────────────────────────────────
+  const OP_ROW    = { pendiente: '', aprobado: 'row-admitido', rechazado: 'row-rechazado' };
+  const OP_BADGE  = { pendiente: 'pendiente', aprobado: 'admitido', rechazado: 'rechazado' };
+  const OP_LABELS = { pendiente: 'Pendiente', aprobado: 'Aprobada', rechazado: 'Rechazada' };
 
+  function buildBotonesOpinion(id, estadoActual, desc) {
+    const d = desc ?? document.getElementById(`op-row-${id}`)?.dataset.desc ?? 'esta opinión';
+    const map = {
+      aprobado:  `<button class="btn-accion btn-admitido"  onclick="opinionAccion(${id},'aprobado')">Aprobar</button>`,
+      rechazado: `<button class="btn-accion btn-rechazado" onclick="opinionAccion(${id},'rechazado')">Rechazar</button>`,
+      pendiente: `<button class="btn-accion btn-pendiente" onclick="opinionAccion(${id},'pendiente')">↩ Pendiente</button>`,
+    };
+    const delBtn = `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('opinion',${id},${JSON.stringify(d)})">🗑️ Eliminar</button>`;
+    return Object.entries(map).filter(([e]) => e !== estadoActual).map(([, b]) => b).join('') + delBtn;
+  }
+
+  async function opinionAccion(id, estado) {
+    const btns = document.querySelectorAll(`#op-acc-${id} button`);
+    btns.forEach(b => b.disabled = true);
+    const body = new FormData();
+    body.append('id', id); body.append('estado', estado);
     try {
-      const body = new FormData();
-      body.append('id', id);
-      body.append('estado', estado);
       const res  = await fetch('../opiniones/cambiar_estado.php', { method: 'POST', body });
       const data = await res.json();
-
       if (data.success) {
-        const row = document.getElementById(`op-row-${id}`);
-        row.className = isOn ? 'row-admitido' : '';
-        row.dataset.ts = row.dataset.ts; // mantener para sort
-
-        const lbl = document.getElementById(`op-lbl-${id}`);
-        lbl.textContent = isOn ? 'ON' : 'OFF';
-        lbl.className   = `toggle-lbl ${isOn ? 'on' : 'off'}`;
-
+        document.getElementById(`op-row-${id}`).className = OP_ROW[estado];
+        document.getElementById(`op-estado-${id}`).innerHTML =
+          `<span class="estado-badge estado-${OP_BADGE[estado]}">${OP_LABELS[estado]}</span>`;
+        document.getElementById(`op-acc-${id}`).innerHTML = buildBotonesOpinion(id, estado);
         actualizarStatsOpiniones();
-      } else {
-        alert(data.message || 'Error al actualizar.');
-        chk.checked = !isOn; // revertir visualmente
-      }
-    } catch {
-      alert('No se pudo conectar con el servidor.');
-      chk.checked = !isOn;
-    } finally {
-      chk.disabled = false;
-    }
+      } else { alert(data.message || 'Error.'); btns.forEach(b => b.disabled = false); }
+    } catch { alert('Error de conexión.'); btns.forEach(b => b.disabled = false); }
   }
 
   function sortOpiniones(dir) {
@@ -1542,17 +1542,19 @@ $conn->close();
   const CON_BADGE = { pendiente:'pendiente', leida:'contactado', respondida:'admitido', archivada:'rechazado' };
   const CON_LABELS = { pendiente:'Pendiente', leida:'Leída', respondida:'Respondida', archivada:'Archivada' };
 
-  function buildBotonesConsulta(id, estadoActual) {
+  function buildBotonesConsulta(id, estadoActual, desc) {
     const map = {
       leida:      '<button class="btn-accion btn-contactado" onclick="conAccion(ID,\'leida\')">Leída</button>',
       respondida: '<button class="btn-accion btn-admitido"   onclick="conAccion(ID,\'respondida\')">Respondida</button>',
       archivada:  '<button class="btn-accion btn-rechazado"  onclick="conAccion(ID,\'archivada\')">Archivar</button>',
       pendiente:  '<button class="btn-accion btn-pendiente"  onclick="conAccion(ID,\'pendiente\')">↩ Pendiente</button>',
     };
+    const d = desc ?? document.getElementById(`con-row-${id}`)?.dataset.desc ?? 'esta consulta';
+    const delBtn = `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('consulta',${id},${JSON.stringify(d)})">🗑️ Eliminar</button>`;
     return Object.entries(map)
       .filter(([e]) => e !== estadoActual)
       .map(([, btn]) => btn.replaceAll('ID', id))
-      .join('');
+      .join('') + delBtn;
   }
 
   async function conAccion(id, estado) {
@@ -1624,7 +1626,7 @@ $conn->close();
         const asuntoTxt = c.asunto ? (c.asunto.length > 50 ? esc(c.asunto.substring(0,50))+'…' : esc(c.asunto)) : '—';
         const msgTxt    = c.mensaje.length > 80 ? esc(c.mensaje.substring(0,80))+'…' : esc(c.mensaje);
         tbody.insertAdjacentHTML('afterbegin', `
-          <tr id="con-row-${c.id}" class="${CON_ROW[c.estado]} fila-nueva">
+          <tr id="con-row-${c.id}" class="${CON_ROW[c.estado]} fila-nueva" data-desc="${esc(c.nombre)}">
             <td>${c.id}</td>
             <td><strong>${esc(c.nombre)}</strong></td>
             <td>${esc(c.email)}</td>
@@ -1632,7 +1634,7 @@ $conn->close();
             <td><span class="comentario-txt">${msgTxt}</span></td>
             <td style="white-space:nowrap">${c.fecha}</td>
             <td id="con-estado-${c.id}"><span class="estado-badge estado-${CON_BADGE[c.estado]}">${CON_LABELS[c.estado]}</span></td>
-            <td><div class="acciones" id="con-acc-${c.id}">${buildBotonesConsulta(c.id, c.estado)}</div></td>
+            <td><div class="acciones" id="con-acc-${c.id}">${buildBotonesConsulta(c.id, c.estado, c.nombre)}</div></td>
           </tr>`);
         nuevas++;
       });
@@ -1669,7 +1671,7 @@ $conn->close();
     if (estado !== 'publicada') btns += `<button class="btn-accion btn-admitido" onclick="cambiarEstadoNoticia(${id},'publicada')">Publicar</button>`;
     if (estado === 'publicada') btns += `<button class="btn-accion btn-pendiente" onclick="cambiarEstadoNoticia(${id},'borrador')">Despublicar</button>`;
     if (estado !== 'archivada') btns += `<button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(${id},'archivada')">Archivar</button>`;
-    btns += `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminarNoticia(${id})">🗑️ Eliminar</button>`;
+    btns += `<button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('noticia',${id},(_notData[${id}]?.titulo||'esta noticia'))">🗑️ Eliminar</button>`;
     return btns;
   }
 
@@ -1871,24 +1873,33 @@ $conn->close();
     }
   }
 
-  function confirmarEliminarNoticia(id) {
-    document.getElementById('del-not-id').value = id;
-    const titulo = _notData[id]?.titulo || 'esta noticia';
-    document.getElementById('del-not-texto').textContent =
-      `¿Estás seguro que querés eliminar "${titulo}"? Esta acción no se puede deshacer.`;
-    document.getElementById('btn-confirmar-eliminar').disabled = false;
+  // ── Eliminación genérica ──────────────────────────────────────────
+  const ELIMINAR_ENDPOINTS = {
+    noticia:     '../noticias/eliminar.php',
+    opinion:     '../opiniones/eliminar.php',
+    postulacion: '../propuestas/eliminar_postulacion.php',
+    consulta:    '../consultas/eliminar.php',
+  };
+
+  function confirmarEliminar(seccion, id, descripcion) {
+    document.getElementById('del-id').value      = id;
+    document.getElementById('del-seccion').value = seccion;
+    document.getElementById('del-texto').textContent =
+      `¿Estás seguro que querés eliminar "${descripcion}"? Esta acción no se puede deshacer.`;
+    document.getElementById('btn-confirmar-eliminar').disabled    = false;
     document.getElementById('btn-confirmar-eliminar').textContent = 'Sí, eliminar';
-    document.getElementById('overlay-eliminar-noticia').classList.add('open');
+    document.getElementById('overlay-eliminar').classList.add('open');
   }
 
-  function cerrarModalDelNot(e) {
-    if (e.target === document.getElementById('overlay-eliminar-noticia'))
-      document.getElementById('overlay-eliminar-noticia').classList.remove('open');
+  function cerrarModalEliminar(e) {
+    if (e.target === document.getElementById('overlay-eliminar'))
+      document.getElementById('overlay-eliminar').classList.remove('open');
   }
 
-  async function ejecutarEliminarNoticia() {
-    const id  = document.getElementById('del-not-id').value;
-    const btn = document.getElementById('btn-confirmar-eliminar');
+  async function ejecutarEliminar() {
+    const id      = document.getElementById('del-id').value;
+    const seccion = document.getElementById('del-seccion').value;
+    const btn     = document.getElementById('btn-confirmar-eliminar');
     btn.disabled = true;
     btn.textContent = 'Eliminando...';
 
@@ -1896,20 +1907,28 @@ $conn->close();
     body.append('id', id);
 
     try {
-      const res  = await fetch('../noticias/eliminar.php', { method: 'POST', body });
+      const res  = await fetch(ELIMINAR_ENDPOINTS[seccion], { method: 'POST', body });
       const data = await res.json();
       if (data.success) {
-        document.getElementById('overlay-eliminar-noticia').classList.remove('open');
-        const row = document.getElementById(`not-row-${id}`);
-        if (row) row.remove();
-        delete _notData[id];
-        actualizarStatsNoticias();
+        document.getElementById('overlay-eliminar').classList.remove('open');
 
-        const tbody = document.querySelector('#tabla-noticias tbody');
-        if (tbody && tbody.rows.length === 0) {
-          document.getElementById('tabla-noticias')?.remove();
-          document.getElementById('not-card-body').insertAdjacentHTML('beforeend',
-            '<p class="empty-msg" id="not-empty">No hay noticias registradas aún.</p>');
+        const prefijos = { noticia:'not-row-', opinion:'op-row-', postulacion:'post-row-', consulta:'con-row-' };
+        const row = document.getElementById(prefijos[seccion] + id);
+        if (row) row.remove();
+
+        if (seccion === 'noticia') {
+          delete _notData[id];
+          actualizarStatsNoticias();
+          const tbody = document.querySelector('#tabla-noticias tbody');
+          if (tbody && tbody.rows.length === 0) {
+            document.getElementById('tabla-noticias')?.remove();
+            document.getElementById('not-card-body').insertAdjacentHTML('beforeend',
+              '<p class="empty-msg" id="not-empty">No hay noticias registradas aún.</p>');
+          }
+        } else if (seccion === 'opinion') {
+          actualizarStatsOpiniones();
+        } else if (seccion === 'consulta') {
+          actualizarStatsConsultas();
         }
       } else {
         alert(data.message || 'Error al eliminar.');

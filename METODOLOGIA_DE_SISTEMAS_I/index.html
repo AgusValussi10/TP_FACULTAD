@@ -1078,7 +1078,7 @@
       <div>
         <div style="background:var(--blanco); border-radius:16px; padding:2rem; box-shadow:var(--sombra);">
           <h3 style="font-size:1rem; font-weight:800; margin-bottom:1.2rem; color:var(--verde);">📩 Envianos un mensaje</h3>
-          <div class="form-group"><label>Nombre *</label><input type="text" id="con-nombre" placeholder="Tu nombre completo" maxlength="100"><span class="campo-error-msg" id="err-con-nombre"></span></div>
+          <div class="form-group"><label>Nombre *</label><input type="text" id="con-nombre" placeholder="Tu nombre completo" maxlength="100" oninput="this.value=this.value.replace(/[0-9]/g,'')"><span class="campo-error-msg" id="err-con-nombre"></span></div>
           <div class="form-group"><label>Email *</label><input type="email" id="con-email" placeholder="tu@email.com" maxlength="150"><span class="campo-error-msg" id="err-con-email"></span></div>
           <div class="form-group"><label>Asunto</label><input type="text" id="con-asunto" placeholder="¿En qué podemos ayudarte?" maxlength="200"></div>
           <div class="form-group"><label>Mensaje *</label><textarea id="con-mensaje" style="width:100%;padding:.7rem .9rem;border:2px solid var(--borde);border-radius:10px;font-family:inherit;font-size:.9rem;resize:vertical;min-height:100px;" placeholder="Escribí tu consulta..." maxlength="3000"></textarea><span class="campo-error-msg" id="err-con-mensaje"></span></div>
@@ -1881,7 +1881,7 @@
   function _conValidarNombre() {
     const v = document.getElementById('con-nombre').value.trim();
     if (!v) return _conCampoErr('con-nombre', 'err-con-nombre', 'Este campo es obligatorio.');
-    if (v.length < 2) return _conCampoErr('con-nombre', 'err-con-nombre', 'Ingresá al menos 2 caracteres.');
+    if (!_RE_LETRAS_TUTOR.test(v)) return _conCampoErr('con-nombre', 'err-con-nombre', 'Solo letras, entre 2 y 100 caracteres.');
     return _conCampoOk('con-nombre', 'err-con-nombre');
   }
   function _conValidarEmail() {
