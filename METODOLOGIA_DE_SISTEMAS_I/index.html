@@ -597,14 +597,83 @@
     }
     .footer-bottom p { font-size: .78rem; opacity: .6; }
 
+    /* ======= HAMBURGER MENU ======= */
+    .hamburger {
+      display: none; flex-direction: column; justify-content: center; gap: 5px;
+      width: 40px; height: 40px; padding: 6px; cursor: pointer;
+      background: none; border: none; border-radius: 8px;
+      transition: background .2s;
+    }
+    .hamburger:hover { background: rgba(249,115,22,.08); }
+    .hamburger span {
+      display: block; width: 24px; height: 2.5px;
+      background: var(--gris-texto); border-radius: 2px;
+      transition: transform .3s, opacity .3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+    /* Overlay background for mobile menu */
+    .nav-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 98; opacity: 0; transition: opacity .3s;
+    }
+    .nav-overlay.open { display: block; opacity: 1; }
+
+    /* Mobile nav drawer */
+    .nav-drawer {
+      display: none; position: fixed; top: 0; right: 0;
+      width: min(280px, 85vw); height: 100vh;
+      background: var(--blanco); z-index: 99;
+      flex-direction: column; padding: 1.25rem 1rem;
+      box-shadow: -4px 0 24px rgba(0,0,0,.15);
+      transform: translateX(100%); transition: transform .3s ease;
+      overflow-y: auto;
+    }
+    .nav-drawer.open { transform: translateX(0); }
+    .nav-drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem; padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(249,115,22,.15);
+    }
+    .nav-drawer-header strong { font-size: .95rem; font-weight: 900; color: var(--gris-texto); }
+    .nav-drawer-close {
+      background: none; border: none; font-size: 1.4rem; cursor: pointer;
+      color: #6B7280; line-height: 1; padding: .2rem .4rem; border-radius: 6px;
+    }
+    .nav-drawer-close:hover { background: #F3F4F6; }
+    .nav-drawer a {
+      display: block; color: var(--gris-oscuro); text-decoration: none;
+      padding: .75rem 1rem; border-radius: 10px;
+      font-size: .95rem; font-weight: 700;
+      transition: background .2s, color .2s;
+      margin-bottom: .2rem;
+    }
+    .nav-drawer a:hover { background: rgba(249,115,22,.08); color: var(--naranja); }
+    .nav-drawer .btn-acceso {
+      display: block; margin-top: 1rem; text-align: center;
+      padding: .75rem 1rem !important; border-radius: 12px !important;
+    }
+
     /* ======= RESPONSIVE ======= */
     @media (max-width: 768px) {
       .quienes-grid, .contacto-grid, .footer-grid { grid-template-columns: 1fr; }
       nav { display: none; }
+      .hamburger { display: flex; }
+      .nav-drawer { display: flex; }
       .form-row { grid-template-columns: 1fr; }
       .galeria-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
       .galeria-item:nth-child(1) { grid-column: span 2; grid-row: span 1; }
       .values-grid { grid-template-columns: 1fr; }
+      .niveles-grid { grid-template-columns: 1fr 1fr; }
+      .noticias-grid { grid-template-columns: 1fr; }
+      .hero-stats { display: none; }
+    }
+    @media (max-width: 480px) {
+      .niveles-grid { grid-template-columns: 1fr; }
+      .header-inner { padding: .6rem 1rem; }
+      .logo-text span { display: none; }
     }
 
     /* ======= ACTIVE NAV ======= */
@@ -633,8 +702,28 @@
       <a href="#contacto">Contacto</a>
       <a href="#" class="btn-acceso" onclick="abrirLogin(event)">🔑 Ingresar</a>
     </nav>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleMenu()" aria-label="Abrir menú">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
+
+<!-- ======= MOBILE DRAWER ======= -->
+<div class="nav-overlay" id="nav-overlay" onclick="cerrarMenu()"></div>
+<div class="nav-drawer" id="nav-drawer">
+  <div class="nav-drawer-header">
+    <strong>Menú</strong>
+    <button class="nav-drawer-close" onclick="cerrarMenu()">✕</button>
+  </div>
+  <a href="#quienes"    onclick="cerrarMenu()">Quiénes somos</a>
+  <a href="#niveles"    onclick="cerrarMenu()">Niveles</a>
+  <a href="#inscripcion" onclick="cerrarMenu()">Inscripción</a>
+  <a href="#bienestar"  onclick="cerrarMenu()">Bienestar</a>
+  <a href="#noticias"   onclick="cerrarMenu()">Noticias</a>
+  <a href="#empleo"     onclick="cerrarMenu()">Empleo</a>
+  <a href="#contacto"   onclick="cerrarMenu()">Contacto</a>
+  <a href="#" class="btn-acceso" onclick="cerrarMenu(); abrirLogin(event)">🔑 Ingresar</a>
+</div>
 
 <!-- ======= HERO ======= -->
 <section id="inicio" class="hero section-anchor">
@@ -1168,6 +1257,30 @@
 
 <!-- ======= SCRIPTS ======= -->
 <script>
+  // ── Menú hamburguesa ─────────────────────────────────────────────
+  function toggleMenu() {
+    const btn     = document.getElementById('hamburger-btn');
+    const drawer  = document.getElementById('nav-drawer');
+    const overlay = document.getElementById('nav-overlay');
+    const open    = drawer.classList.contains('open');
+    if (open) {
+      cerrarMenu();
+    } else {
+      btn.classList.add('open');
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  function cerrarMenu() {
+    document.getElementById('hamburger-btn').classList.remove('open');
+    document.getElementById('nav-drawer').classList.remove('open');
+    document.getElementById('nav-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  // Cerrar con Escape
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarMenu(); });
+
   // Modal noticias
   function abrirNoticia(card) {
     const header = document.getElementById('nm-header');
