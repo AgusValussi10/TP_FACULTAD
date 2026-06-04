@@ -169,7 +169,7 @@ $conn->close();
     .btn-rechazado  { background: #FEE2E2; color: #991B1B; }
     .btn-pendiente  { background: #F3F4F6; color: #374151; }
 
-    .comentario-txt { font-size: .82rem; color: #6B7280; font-style: italic; max-width: 200px; }
+    .comentario-txt { font-size: .82rem; color: #6B7280; font-style: italic; word-break: break-word; min-width: 180px; }
     .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 2rem 0; }
 
     /* Modal admisión */
@@ -210,7 +210,7 @@ $conn->close();
     .toast-notif.visible { opacity: 1; transform: translateY(0); }
 
     /* ── Texto largo truncado ── */
-    .texto-opinion { font-size:.84rem; color:#4B5563; max-width:320px; line-height:1.5; }
+    .texto-opinion { font-size:.84rem; color:#4B5563; line-height:1.5; word-break: break-word; min-width: 220px; }
     .nombre-opinion { font-weight:800; font-size:.88rem; }
     .mes-anio { font-size:.78rem; color:#9CA3AF; }
 
@@ -434,7 +434,7 @@ $conn->close();
             <td><?= htmlspecialchars($s['nombre_tutor']) ?></td>
             <td><?= htmlspecialchars($s['telefono']) ?></td>
             <td><?= htmlspecialchars($s['email']) ?></td>
-            <td><span class="comentario-txt"><?= $s['comentarios'] ? htmlspecialchars(mb_strimwidth($s['comentarios'], 0, 60, '…')) : '—' ?></span></td>
+            <td><span class="comentario-txt"><?= $s['comentarios'] ? htmlspecialchars($s['comentarios']) : '—' ?></span></td>
             <td style="white-space:nowrap"><?= $s['fecha'] ?></td>
             <td id="estado-<?= $s['id'] ?>">
               <span class="estado-badge estado-<?= $s['estado'] ?>"><?= ucfirst($s['estado']) ?></span>
@@ -537,7 +537,7 @@ $conn->close();
             <tr id="op-row-<?= $o['id'] ?>" class="<?= $rowCls ?>" data-ts="<?= $o['ts'] ?>" data-desc="<?= htmlspecialchars($o['nombre']) ?>">
               <td><?= $o['id'] ?></td>
               <td><span class="nombre-opinion"><?= htmlspecialchars($o['nombre']) ?></span></td>
-              <td><span class="texto-opinion"><?= htmlspecialchars(mb_strimwidth($o['texto'], 0, 120, '…')) ?></span></td>
+              <td><span class="texto-opinion"><?= htmlspecialchars($o['texto']) ?></span></td>
               <td><span class="mes-anio"><?= $periodo ?></span></td>
               <td style="white-space:nowrap"><?= $o['fecha'] ?></td>
               <td id="op-estado-<?= $o['id'] ?>">
@@ -758,8 +758,8 @@ $conn->close();
               <td><?= $c['id'] ?></td>
               <td><strong><?= htmlspecialchars($c['nombre']) ?></strong></td>
               <td><?= htmlspecialchars($c['email']) ?></td>
-              <td><?= $c['asunto'] ? htmlspecialchars(mb_strimwidth($c['asunto'], 0, 50, '…')) : '—' ?></td>
-              <td><span class="comentario-txt"><?= htmlspecialchars(mb_strimwidth($c['mensaje'], 0, 80, '…')) ?></span></td>
+              <td><?= $c['asunto'] ? htmlspecialchars($c['asunto']) : '—' ?></td>
+              <td><span class="comentario-txt"><?= htmlspecialchars($c['mensaje']) ?></span></td>
               <td style="white-space:nowrap"><?= $c['fecha'] ?></td>
               <td id="con-estado-<?= $c['id'] ?>">
                 <span class="estado-badge estado-<?= $c['estado'] === 'leida' ? 'contactado' : ($c['estado'] === 'respondida' ? 'admitido' : ($c['estado'] === 'archivada' ? 'rechazado' : 'pendiente')) ?>"><?= ucfirst($c['estado']) ?></span>
@@ -1198,9 +1198,7 @@ $conn->close();
       .filter(e => e !== s.estado)
       .map(e => BOTONES[e].replaceAll('ID', id))
       .join('');
-    const comentario = s.comentarios
-      ? esc(s.comentarios.length > 60 ? s.comentarios.substring(0, 60) + '…' : s.comentarios)
-      : '—';
+    const comentario = s.comentarios ? esc(s.comentarios) : '—';
     return `<tr id="row-${id}" class="row-${s.estado} fila-nueva"
                 data-nombre="${esc(s.nombre_alumno)}" data-apellido="${esc(s.apellido_alumno)}">
       <td>${id}</td>
