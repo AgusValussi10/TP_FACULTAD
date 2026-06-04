@@ -246,7 +246,7 @@ $conn->close();
     .btn-agregar:hover { opacity:.85; }
     .estado-revisado    { background:#EDE9FE; color:#5B21B6; }
     .estado-seleccionado{ background:#D1FAE5; color:#065F46; }
-    .exp-txt { font-size:.82rem; color:#4B5563; max-width:280px; line-height:1.4; }
+    .exp-txt { font-size:.82rem; color:#4B5563; line-height:1.4; word-break:break-word; min-width:180px; }
 
     /* ── Tabs ── */
     .tabs-nav {
@@ -286,8 +286,8 @@ $conn->close();
     .add-noticia-form select:focus,
     .add-noticia-form textarea:focus { outline:none; border-color:var(--verde); }
     .add-noticia-form .span2 { grid-column:1/-1; }
-    .noticia-titulo { font-weight:800; font-size:.88rem; max-width:240px; line-height:1.4; }
-    .noticia-resumen { font-size:.82rem; color:#4B5563; max-width:300px; line-height:1.4; }
+    .noticia-titulo { font-weight:800; font-size:.88rem; line-height:1.4; word-break:break-word; min-width:180px; }
+    .noticia-resumen { font-size:.82rem; color:#4B5563; line-height:1.4; word-break:break-word; }
 
     /* Modal editar noticia */
     .modal-not-box { background:#fff; border-radius:20px; padding:2rem; width:100%; max-width:620px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:popIn .2s ease; }
@@ -671,7 +671,7 @@ $conn->close();
               <td><?= htmlspecialchars($p['email']) ?></td>
               <td><?= htmlspecialchars($p['telefono']) ?></td>
               <td style="text-align:center"><?= $p['experiencia_anios'] ?> año<?= $p['experiencia_anios'] !== '1' ? 's' : '' ?></td>
-              <td><span class="exp-txt"><?= htmlspecialchars(mb_strimwidth($p['experiencia_descripcion'], 0, 100, '…')) ?></span></td>
+              <td><span class="exp-txt"><?= htmlspecialchars($p['experiencia_descripcion']) ?></span></td>
               <td style="white-space:nowrap"><?= $p['fecha'] ?></td>
               <td id="post-estado-<?= $p['id'] ?>">
                 <span class="estado-badge estado-<?= $p['estado'] === 'seleccionado' ? 'admitido' : ($p['estado'] === 'revisado' ? 'contactado' : $p['estado']) ?>">
@@ -909,7 +909,7 @@ $conn->close();
               <td>
                 <span class="noticia-titulo"><?= htmlspecialchars($n['titulo']) ?></span>
                 <?php if ($n['resumen']): ?>
-                  <br><span class="noticia-resumen"><?= htmlspecialchars(mb_strimwidth($n['resumen'], 0, 80, '…')) ?></span>
+                  <br><span class="noticia-resumen"><?= htmlspecialchars($n['resumen']) ?></span>
                 <?php endif; ?>
               </td>
               <td><span class="cat-tag <?= $catCls ?>"><?= $catLabel ?></span></td>
@@ -1669,7 +1669,7 @@ $conn->close();
     const rowCls  = n.estado === 'publicada' ? 'row-admitido' : (n.estado === 'archivada' ? 'row-rechazado' : '');
     const catLabel = NOT_CAT_LABEL[n.categoria] || n.categoria;
     const resumenHtml = n.resumen
-      ? `<br><span class="noticia-resumen">${esc(n.resumen.length > 80 ? n.resumen.substring(0,80)+'…' : n.resumen)}</span>`
+      ? `<br><span class="noticia-resumen">${esc(n.resumen)}</span>`
       : '';
     return `<tr id="not-row-${n.id}" class="${rowCls}">
       <td>${n.id}</td>
@@ -1832,7 +1832,7 @@ $conn->close();
           row.className = estado === 'publicada' ? 'row-admitido' : (estado === 'archivada' ? 'row-rechazado' : '');
           const catLabel = NOT_CAT_LABEL[categoria] || categoria;
           const resumenHtml = resumen
-            ? `<br><span class="noticia-resumen">${esc(resumen.length > 80 ? resumen.substring(0,80)+'…' : resumen)}</span>`
+            ? `<br><span class="noticia-resumen">${esc(resumen)}</span>`
             : '';
           row.cells[1].innerHTML = `<span class="noticia-titulo">${esc(titulo)}</span>${resumenHtml}`;
           row.cells[2].innerHTML = `<span class="cat-tag cat-${categoria}">${catLabel}</span>`;
