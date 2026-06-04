@@ -1,0 +1,38 @@
+﻿@model IEnumerable<TUP.Mundial.Entidades.Partido>
+@{
+    ViewData["Title"] = "Partidos...";
+}
+
+Partidos...@Model.Count();
+
+@{
+    var suma = 1 + 2;
+}
+
+Resultado de la suma: @suma
+
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Partido</th>
+            <th>Goles Local</th>
+            <th>Goles Visitante</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var partido in Model)
+        {
+            <tr>
+                <td>
+                    @partido.Local.Nombre vs @partido.Visitante.Nombre
+                    <br />
+                    <a href="/ticket/grupo/@(partido.Local.Nombre)-vs-@(partido.Visitante.Nombre)" class="btn btn-primary">Comprar tickets</a>
+
+                </td>
+                <td>0</td>
+                <td>0</td>
+            </tr>
+        }
+    </tbody>
+</table>
