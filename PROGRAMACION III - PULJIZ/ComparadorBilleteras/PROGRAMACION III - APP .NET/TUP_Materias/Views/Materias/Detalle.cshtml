@@ -1,0 +1,44 @@
+@*
+    Acá el modelo es un solo objeto Materia (no una lista),
+    porque mostramos el detalle de UNA materia específica.
+*@
+@model TUP_Materias.Models.Materia
+
+@{
+    ViewData["Title"] = $"Detalle - {Model.Nombre}";
+}
+
+<h1 class="mb-1">@Model.Nombre</h1>
+<p class="text-muted mb-4">Profesor a cargo: <strong>@Model.Profesor.NombreCompleto</strong></p>
+
+<h4>Alumnos inscriptos (@Model.Alumnos.Count)</h4>
+
+@if (Model.Alumnos.Count == 0)
+{
+    <p class="text-warning">Esta materia no tiene alumnos inscriptos.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead class="table-secondary">
+            <tr>
+                <th>#</th>
+                <th>Nombre completo</th>
+            </tr>
+        </thead>
+        <tbody>
+            @* @for con índice para mostrar el número de orden de cada alumno *@
+            @for (int i = 0; i < Model.Alumnos.Count; i++)
+            {
+                <tr>
+                    <td>@(i + 1)</td>
+                    <td>@Model.Alumnos[i].NombreCompleto</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<a asp-controller="Materias" asp-action="Index" class="btn btn-secondary mt-2">
+    &larr; Volver al listado
+</a>

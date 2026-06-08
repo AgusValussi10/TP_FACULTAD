@@ -1,0 +1,50 @@
+El siguiente trabajo es personal en un repositorio git proporcionado por la materia
+
+Ejercicio: Página web ASP.NET MVC para visualizar Materias de TUP
+
+El objetivo del ejercicio es desarrollar una aplicación web sencilla utilizando ASP.NET MVC que permita visualizar el listado de materias de la Tecnicatura Universitaria en Programación (TUP). Para cada materia se deberá mostrar el nombre de la materia, el profesor a cargo y el listado de alumnos inscriptos. La aplicación debe permitir acceder al detalle de cada materia para consultar la información completa, incluyendo los alumnos asociados
+
+El ejercicio se desarrollará en etapas, avanzando desde una versión simple con datos simulados hasta una versión con acceso a base de datos y autenticación
+
+Etapas del ejercicio
+
+TP-02: Versión con objetos mockeados
+
+En esta primera etapa se deberá crear la aplicación utilizando objetos cargados en memoria, sin conexión a base de datos
+
+Se deberán definir clases como:
+
+Materia
+Profesor
+Alumno
+La aplicación deberá permitir:
+
+Visualizar el listado de materias
+Ver el profesor asignado a cada materia
+Acceder al detalle de una materia
+Visualizar el listado de alumnos de cada materia
+Los datos pueden estar cargados manualmente en el código, por ejemplo en una lista de objetos
+
+TP-04: Versión con acceso a datos
+
+En esta segunda etapa se deberá reemplazar la información mockeada por datos obtenidos desde una base de datos.
+
+La aplicación deberá permitir:
+
+Obtener las materias desde la base de datos.
+Obtener el profesor asociado a cada materia.
+Obtener los alumnos inscriptos en cada materia.
+Mantener la misma funcionalidad visual desarrollada en la primera etapa.
+Se podrá utilizar acceso a datos con ADO.NET, Entity Framework u otra estrategia definida por la cátedra.
+
+TP-06 Incorporación de login
+
+En esta tercera etapa se deberá agregar un mecanismo de autenticación para acceder a la aplicación.
+
+La aplicación deberá contemplar:
+
+Pantalla de login.
+Validación de usuario y contraseña.
+Restricción de acceso al listado de materias solo para usuarios autenticados.
+Opción para cerrar sesión.
+El objetivo de esta etapa es introducir el concepto de autenticación en aplicaciones web y proteger el acceso a determinadas funcionalidades

@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["php82", "php82Extensions.mysqli", "php82Extensions.mbstring", "php82Extensions.session"]
+
+[phases.build]
+cmds = ["php -r \"echo extension_loaded('mysqli') ? 'mysqli OK' : 'mysqli MISSING'; echo PHP_EOL;\""]
+
+[start]
+cmd = "php -d extension=mysqli -S 0.0.0.0:$PORT"

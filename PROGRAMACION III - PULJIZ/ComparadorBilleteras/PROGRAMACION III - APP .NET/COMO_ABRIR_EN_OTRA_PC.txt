@@ -1,0 +1,121 @@
+====================================================
+  GUIA PARA ABRIR EL PROYECTO EN OTRA PC
+  App ASP.NET MVC - Materias TUP
+====================================================
+
+REQUISITOS PREVIOS
+------------------
+Antes de empezar, la PC tiene que tener instalado:
+
+  1. .NET SDK 10  -->  https://dotnet.microsoft.com/download
+  2. XAMPP        -->  https://www.apachefriends.org  (para MySQL y phpMyAdmin)
+  3. Git          -->  https://git-scm.com  (o bajar el ZIP del repo directamente)
+
+Si alguno no esta instalado, instalarlo antes de seguir.
+
+
+PASO 1 - OBTENER EL PROYECTO
+-----------------------------
+Abrir una terminal (CMD o PowerShell) y ejecutar:
+
+  git clone https://github.com/AgusValussi10/TP_FACULTAD.git
+
+Esto descarga todo el repositorio en una carpeta llamada TP_FACULTAD.
+
+  (Si no tenes Git, en GitHub hacer clic en Code > Download ZIP y descomprimir)
+
+
+PASO 2 - INICIAR XAMPP Y CREAR LA BASE DE DATOS
+-------------------------------------------------
+  1. Abrir el panel de XAMPP
+  2. Iniciar el servicio "MySQL" (boton Start)
+  3. Abrir phpMyAdmin en el navegador: http://localhost/phpmyadmin
+  4. Ir a la pestaña "SQL" y ejecutar el siguiente script:
+
+-------- COPIAR DESDE ACA --------
+
+CREATE DATABASE tup_materias;
+
+USE tup_materias;
+
+CREATE TABLE profesores (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL,
+    apellido VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE materias (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    profesor_id INT NOT NULL,
+    FOREIGN KEY (profesor_id) REFERENCES profesores(id)
+);
+
+CREATE TABLE alumnos (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL,
+    apellido VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE materia_alumno (
+    materia_id INT NOT NULL,
+    alumno_id INT NOT NULL,
+    PRIMARY KEY (materia_id, alumno_id),
+    FOREIGN KEY (materia_id) REFERENCES materias(id),
+    FOREIGN KEY (alumno_id) REFERENCES alumnos(id)
+);
+
+INSERT INTO profesores VALUES (1, 'Juan', 'Puljiz'), (2, 'Ana', 'Martinez'), (3, 'Roberto', 'Sanchez');
+INSERT INTO materias VALUES (1, 'Programacion III', 1), (2, 'Base de Datos II', 2), (3, 'Laboratorio III', 3);
+INSERT INTO alumnos VALUES
+(1, 'Agustin', 'Valussi'), (2, 'Maria', 'Gomez'), (3, 'Carlos', 'Lopez'),
+(4, 'Lucas', 'Fernandez'), (5, 'Sofia', 'Perez'),
+(6, 'Diego', 'Ruiz'), (7, 'Camila', 'Torres'), (8, 'Nicolas', 'Herrera'), (9, 'Lucia', 'Vargas');
+INSERT INTO materia_alumno VALUES
+(1,1),(1,2),(1,3),(2,4),(2,5),(3,6),(3,7),(3,8),(3,9);
+
+-------- HASTA ACA --------
+
+  5. Verificar que se crearon las 4 tablas: profesores, materias, alumnos, materia_alumno
+
+
+PASO 3 - VERIFICAR STRING DE CONEXION
+--------------------------------------
+Abrir el archivo:
+  TP_FACULTAD\PROGRAMACION III - APP .NET\TUP_Materias\appsettings.json
+
+Verificar que la linea de conexion sea correcta:
+  "DefaultConnection": "server=localhost;database=tup_materias;user=root;password=;"
+
+  IMPORTANTE: si el MySQL de la PC tiene contraseña, cambiar password=; por password=TU_CONTRASEÑA;
+  Si el usuario no es root, cambiarlo tambien.
+
+
+PASO 4 - CORRER EL PROYECTO
+-----------------------------
+Abrir una terminal, navegar hasta la carpeta del proyecto y ejecutar:
+
+  cd "TP_FACULTAD\PROGRAMACION III - APP .NET\TUP_Materias"
+  dotnet run
+
+Esperar hasta ver un mensaje como:
+  Now listening on: http://localhost:5186
+
+
+PASO 5 - ABRIR EN EL NAVEGADOR
+--------------------------------
+Abrir el navegador e ir a:
+
+  http://localhost:5186/Materias
+
+Ahi se ve el listado de materias con sus profesores.
+Haciendo clic en "Ver detalle" se ven los alumnos de cada materia.
+
+
+POSIBLES PROBLEMAS
+-------------------
+- "dotnet no se reconoce": el SDK de .NET no esta instalado o hay que reiniciar la terminal
+- Pagina en blanco o error al abrir: verificar que MySQL este iniciado en XAMPP
+- "Access denied for user root": el MySQL tiene contraseña, actualizar el appsettings.json
+
+====================================================
