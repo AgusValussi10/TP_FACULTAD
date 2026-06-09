@@ -940,6 +940,18 @@ keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias and
 
 > 💡 Los cambios solo en JS (pantallas, lógica) se aplican con `r` en Metro sin recompilar. Solo recompilá cuando cambiés archivos nativos (AndroidManifest.xml, package.json con nuevos módulos nativos, etc.).
 
+# Ver en celular físico
+
+```powershell
+# Opción 1 — mismo WiFi que la PC (más rápido)
+npx expo start --clear
+
+# Opción 2 — tunnel (funciona con datos móviles o redes distintas)
+npx expo start --tunnel --clear
+```
+
+Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa excepto el login con Google (el intent filter solo existe en el APK custom). Para Google Sign-In en celular físico hay que compilar con `arm64-v8a` en `gradle.properties` e instalar por USB.
+
 ---
 
 ## 📋 Estado actual del proyecto
