@@ -4,35 +4,38 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
-  Modal,
   SafeAreaView,
   Animated,
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
+import NumericKeyboardScreen from './NumericKeyboardScreen';
 
 const colors = {
   primary: '#3b82f6',
   primaryDark: '#2563eb',
   success: '#10b981',
+  brasil: '#009c3b',
+  brasilSoft: '#f0fdf4',
   background: '#ffffff',
   surface: '#f8f9fa',
   border: '#dee2e6',
-  borderFocus: '#3b82f6',
   textPrimary: '#1a1a1a',
   textSecondary: '#6c757d',
   textMuted: '#adb5bd',
   divider: '#e0e0e0',
 };
 
-const COUNTRIES = [
-  { id: 'br', flag: '🇧🇷', name: 'Brasil', method: 'PIX', currency: 'BRL', prefix: 'R$', popular: true, subtitle: 'Transferencia instantánea' },
-  { id: 'us', flag: '🇺🇸', name: 'USA', method: 'USD', currency: 'USD', prefix: 'USD', popular: false, subtitle: 'Dólar estadounidense' },
-  { id: 'eu', flag: '🇪🇺', name: 'Europa', method: 'EUR', currency: 'EUR', prefix: '€', popular: false, subtitle: 'Euro zona' },
-];
+const DESTINATION = {
+  flag: '🇧🇷',
+  name: 'Brasil',
+  method: 'PIX',
+  currency: 'BRL',
+  prefix: 'R$',
+  subtitle: 'Transferencia instantánea',
+};
 
 const RECENT_QUERIES = [
   { id: '1', text: '500 BRL - Hace 2hs' },
@@ -40,25 +43,16 @@ const RECENT_QUERIES = [
   { id: '3', text: '250 BRL - Hace 3 días' },
 ];
 
-const BOTTOM_TABS = [
-  { icon: 'stats-chart', label: 'Comparar', active: true },
-  { icon: 'card-outline', label: 'Billeteras', active: false },
-  { icon: 'trending-up-outline', label: 'Historial', active: false },
-  { icon: 'notifications-outline', label: 'Alertas', active: false },
-  { icon: 'information-circle-outline', label: 'Info', active: false },
-];
-
-function formatAmount(val, prefix) {
-  const num = parseFloat(val);
-  if (isNaN(num)) return '';
-  return `${prefix} ${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function formatAmount(val) {
+  if (!val) return '';
+  const [int, dec] = val.split('.');
+  const intFormatted = parseInt(int || '0', 10).toLocaleString('es-AR');
+  return dec !== undefined ? `${intFormatted},${dec}` : intFormatted;
 }
 
 export default function HomeScreen({ navigation }) {
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [amount, setAmount] = useState('');
-  const [countryModalVisible, setCountryModalVisible] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const buttonScale = useRef(new Animated.Value(1)).current;
 
   const animateButton = (callback) => {
@@ -73,16 +67,10 @@ export default function HomeScreen({ navigation }) {
     animateButton(() => {
       navigation.navigate('Results', {
         amount: parseFloat(amount),
-        currency: selectedCountry.currency,
-        country: selectedCountry.name,
+        currency: DESTINATION.currency,
+        country: DESTINATION.name,
       });
     });
-  };
-
-  const handleCountrySelect = (country) => {
-    setSelectedCountry(country);
-    setAmount('');
-    setCountryModalVisible(false);
   };
 
   return (
@@ -108,47 +96,38 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Comparador de{'\n'}Cotizaciones</Text>
+        <Text style={styles.title}>Pagá en Brasil{'\n'}al mejor cambio</Text>
 
-        {/* Selector de país */}
+        {/* Card de destino (fijo Brasil PIX) */}
+        <View style={styles.destinationCard}>
+          <Text style={styles.flag}>{DESTINATION.flag}</Text>
+          <View style={styles.destinationInfo}>
+            <View style={styles.destinationRow}>
+              <Text style={styles.destinationName}>
+                {DESTINATION.name} — {DESTINATION.method}
+              </Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>Activo</Text>
+              </View>
+            </View>
+            <Text style={styles.destinationSubtitle}>{DESTINATION.subtitle}</Text>
+          </View>
+        </View>
+
+        {/* Input de monto — abre teclado custom */}
+        <Text style={styles.label}>¿Cuánto vas a pagar?</Text>
         <TouchableOpacity
-          style={[styles.countrySelector, selectedCountry.popular && styles.countrySelectorPopular]}
-          onPress={() => setCountryModalVisible(true)}
+          style={styles.amountContainer}
+          onPress={() => setKeyboardVisible(true)}
           activeOpacity={0.7}
         >
-          <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
-          <View style={styles.countrySelectorInfo}>
-            <View style={styles.countrySelectorRow}>
-              <Text style={styles.countryName}>
-                {selectedCountry.name} — {selectedCountry.method}
-              </Text>
-              {selectedCountry.popular && (
-                <View style={styles.popularBadge}>
-                  <Text style={styles.popularBadgeText}>Popular</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.countrySubtitle}>{selectedCountry.subtitle}</Text>
-          </View>
-          <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+          <Text style={styles.currencyPrefix}>{DESTINATION.prefix}</Text>
+          {amount ? (
+            <Text style={styles.amountText}>{formatAmount(amount)}</Text>
+          ) : (
+            <Text style={styles.amountPlaceholder}>500,00</Text>
+          )}
         </TouchableOpacity>
-
-        {/* Input de monto */}
-        <Text style={styles.label}>¿Cuánto vas a pagar?</Text>
-        <View style={[styles.amountContainer, inputFocused && styles.amountContainerFocused]}>
-          <Text style={styles.currencyPrefix}>{selectedCountry.prefix}</Text>
-          <TextInput
-            style={styles.amountInput}
-            value={amount}
-            onChangeText={(t) => setAmount(t.replace(/[^0-9.]/g, ''))}
-            keyboardType="numeric"
-            placeholder="500,00"
-            placeholderTextColor={colors.textMuted}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            underlineColorAndroid="transparent"
-          />
-        </View>
 
         {/* Botón comparar */}
         <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
@@ -176,52 +155,13 @@ export default function HomeScreen({ navigation }) {
 
       <BottomNav active="Home" navigation={navigation} />
 
-      {/* Modal selector de país */}
-      <Modal
-        visible={countryModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setCountryModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setCountryModalVisible(false)}
-        >
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Seleccioná el destino</Text>
-            {COUNTRIES.map((country) => (
-              <TouchableOpacity
-                key={country.id}
-                style={[
-                  styles.modalOption,
-                  selectedCountry.id === country.id && styles.modalOptionSelected,
-                  country.popular && styles.modalOptionPopular,
-                ]}
-                onPress={() => handleCountrySelect(country)}
-              >
-                <Text style={styles.modalFlag}>{country.flag}</Text>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.modalOptionRow}>
-                    <Text style={styles.modalOptionText}>
-                      {country.name} — {country.method}
-                    </Text>
-                    {country.popular && (
-                      <View style={styles.popularBadge}>
-                        <Text style={styles.popularBadgeText}>Popular</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.modalOptionSubtitle}>{country.subtitle}</Text>
-                </View>
-                {selectedCountry.id === country.id && (
-                  <Ionicons name="checkmark" size={20} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <NumericKeyboardScreen
+        visible={keyboardVisible}
+        onClose={() => setKeyboardVisible(false)}
+        onConfirm={(val) => setAmount(val)}
+        initialValue={amount}
+        prefix={DESTINATION.prefix}
+      />
     </SafeAreaView>
   );
 }
@@ -258,49 +198,45 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     lineHeight: 40,
   },
-  countrySelector: {
+  destinationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.brasilSoft,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: colors.brasil,
     padding: 16,
     marginBottom: 24,
-    gap: 10,
+    gap: 12,
   },
-  countrySelectorPopular: {
-    borderColor: '#009c3b',
-    backgroundColor: '#f0fdf4',
-  },
-  countrySelectorInfo: {
+  destinationInfo: {
     flex: 1,
   },
-  countrySelectorRow: {
+  destinationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  countryFlag: {
-    fontSize: 22,
+  flag: {
+    fontSize: 26,
   },
-  countryName: {
+  destinationName: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  countrySubtitle: {
+  destinationSubtitle: {
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
   },
-  popularBadge: {
-    backgroundColor: '#009c3b',
+  badge: {
+    backgroundColor: colors.brasil,
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
-  popularBadgeText: {
+  badgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#ffffff',
@@ -317,27 +253,30 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     marginBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  amountContainerFocused: {
-    borderColor: colors.borderFocus,
   },
   currencyPrefix: {
     fontSize: 28,
     fontWeight: '700',
     color: colors.textSecondary,
   },
-  amountInput: {
+  amountText: {
     flex: 1,
     fontSize: 32,
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -1,
-    padding: 0,
+  },
+  amountPlaceholder: {
+    flex: 1,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: -1,
   },
   button: {
     backgroundColor: colors.primary,
@@ -381,71 +320,5 @@ const styles = StyleSheet.create({
   recentText: {
     fontSize: 14,
     color: colors.textSecondary,
-  },
-  bottomNav: {
-    height: 70,
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    backgroundColor: colors.background,
-  },
-  bottomTab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 36,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 20,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    marginBottom: 8,
-  },
-  modalOptionSelected: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  modalFlag: {
-    fontSize: 24,
-  },
-  modalOptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.textPrimary,
-  },
-  modalOptionSubtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  modalOptionPopular: {
-    borderWidth: 1,
-    borderColor: '#009c3b',
-    backgroundColor: '#f0fdf4',
   },
 });

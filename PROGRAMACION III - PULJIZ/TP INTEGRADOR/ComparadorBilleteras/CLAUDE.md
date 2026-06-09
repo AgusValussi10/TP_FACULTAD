@@ -5,9 +5,18 @@
 
 ## 🧠 ¿Qué es esta app?
 
-Una app mobile (React Native + Expo SDK 51) que permite a usuarios argentinos **comparar cotizaciones de billeteras digitales** (Mercado Pago, Ualá, Brubank, etc.) para pagos al exterior, principalmente PIX (Brasil).
+Una app mobile (React Native + Expo SDK 51) **dedicada exclusivamente a usuarios argentinos que viajan a Brasil** y necesitan saber, en el momento exacto del pago, **qué billetera virtual argentina les conviene más para pagar vía PIX**.
 
-El usuario ingresa un monto en moneda extranjera, selecciona el país/método de pago, y la app muestra un ranking de proveedores ordenado por mejor cotización, indicando cuánto ahorra con cada opción.
+**Caso de uso único (MVP):**
+- Usuario: argentino en Brasil
+- Origen: ARS (Argentina)
+- Destino: BRL (Brasil) vía PIX
+- Billeteras: argentinas (Mercado Pago, Ualá, Brubank, Bimo, etc.)
+- Acción: ingresa monto en R$, ve ranking ordenado por mejor cotización ARS → BRL
+
+**Filosofía:** evitar que el usuario tenga que abrir 10 apps distintas para comparar cotizaciones. La app lo hace por él en segundos.
+
+**Roadmap futuro (no MVP):** evaluar si vale la pena estandarizar para más países destino (USA, Europa) u otros pares de monedas. Por ahora todo el código y UI debe estar optimizado para el caso AR → BR.
 
 ---
 
@@ -17,10 +26,15 @@ El usuario ingresa un monto en moneda extranjera, selecciona el país/método de
 |---|---|---|
 | React Native | 0.74.5 | |
 | Expo SDK | 51 | NO actualizar a 52+ sin revisar compatibilidad |
-| React Navigation | 6.x | Stack + Bottom Tabs |
+| React Navigation | 6.x | Stack |
 | react-native-screens | 3.31.1 | Compatible con Nav v6 |
 | react-native-gesture-handler | 2.16.1 | |
 | react-native-safe-area-context | 4.10.5 | |
+| Gradle | 8.8 | Definido en `gradle-wrapper.properties` |
+| Firebase (Web SDK) | 10.x | Auth: email/contraseña + Google Sign-In |
+| expo-auth-session | — | OAuth con Google via Chrome Custom Tab |
+| expo-web-browser | — | Requerido por expo-auth-session |
+| @react-native-async-storage/async-storage | — | Persistencia de sesión Firebase |
 
 ---
 
@@ -34,14 +48,18 @@ ComparadorBilleteras/
 │   │   ├── ResultsScreen.js
 │   │   └── ...
 │   ├── components/       ← Componentes reutilizables
-│   │   ├── ProviderCard.js
-│   │   ├── CountrySelector.js
-│   │   └── ...
-│   └── navigation/       ← Configuración de navegación
-│       └── AppNavigator.js
-├── App.js                ← Entry point, solo monta el Navigator
+│   ├── navigation/       ← Configuración de navegación
+│   │   └── AppNavigator.js
+│   ├── config/
+│   │   └── firebase.js   ← Config Firebase + GOOGLE_WEB_CLIENT_ID
+│   ├── context/
+│   │   └── AuthContext.js ← AuthProvider, useAuth, getAuthErrorMessage
+│   └── data/             ← Datos compartidos (billeteras, helpers)
+│       └── wallets.js
+├── App.js                ← Entry point, monta AuthProvider + Navigator
 ├── android/
-│   ├── gradle/wrapper/gradle-wrapper.properties  ← Gradle 8.3
+│   ├── app/src/main/AndroidManifest.xml  ← Intent filter Google OAuth
+│   ├── gradle/wrapper/gradle-wrapper.properties  ← Gradle 8.8
 │   └── local.properties  ← sdk.dir configurado
 └── package.json
 ```
@@ -91,61 +109,44 @@ const colors = {
 
 ## 📱 Pantallas
 
-> **25 pantallas planificadas.** Las marcadas con ✅ ya tienen archivo `.js`. Las demás están estructuradas para implementar.
+> **23 pantallas en alcance** (25 originales menos 2 removidas por foco MVP en AR→BR PIX). Las marcadas con ✅ están implementadas. Las demás están especificadas y pendientes.
 
 ---
 
 ### 🗂️ BLOQUE 1 — Onboarding
 
-### Pantalla 1 — Splash / Bienvenida (`SplashScreen.js`)
+### Pantalla 1 — Splash / Bienvenida (`SplashScreen.js`) ✅
 
-**Descripción:** Primer impacto visual. Se muestra 2-3 segundos y luego navega automáticamente.
+**Descripción:** Primer impacto visual. Se muestra 2.5 segundos y navega automáticamente a Onboarding.
 
 **Estructura:**
 ```
 Fondo (azul primario #3b82f6, centrado)
-  ├── Logo (ícono 💳 grande, 80px, color blanco)
+  ├── Logo (ícono 💳 grande, 80px, color blanco) — fade-in + scale spring
   ├── Nombre: "ComparaBilleteras" (28px bold, blanco)
-  ├── Tagline: "Siempre el mejor cambio" (14px, blanco 80%)
-  └── Loading indicator (puntos animados, abajo centrado)
+  ├── Tagline: "El mejor cambio para Brasil 🇧🇷" (14px, blanco 80%)
+  └── Loading indicator (3 puntos animados con loop opacity, abajo centrado)
 ```
 
 ---
 
-### Pantalla 2 — Selección de país de residencia (`CountryResidenceScreen.js`)
+### Pantalla 2 — ~~Selección de país de residencia~~ (REMOVIDA)
 
-**Descripción:** El usuario elige su país base. Define la moneda local para mostrar cotizaciones.
-
-**Estructura:**
-```
-Header (sin back)
-  └── Título: "¿Dónde vivís?" (32px bold)
-
-Subtítulo: "Elegí tu país para ver cotizaciones en tu moneda" (gris)
-
-Lista de países (scrollable)
-  ├── Card Argentina 🇦🇷 — ARS (borde azul, selected por defecto)
-  ├── Card Uruguay 🇺🇾 — UYU
-  ├── Card Chile 🇨🇱 — CLP
-  ├── Card Paraguay 🇵🇾 — PYG
-  └── Card Bolivia 🇧🇴 — BOB
-
-Botón "CONTINUAR →" (azul, full width, fijo abajo)
-```
+**Estado:** Fuera de alcance del MVP. El usuario es siempre argentino → no se pide país de residencia. El flujo de onboarding va directo Splash → Onboarding → Home.
 
 ---
 
-### Pantalla 3 — Tutorial / Carrusel de funciones (`OnboardingScreen.js`)
+### Pantalla 3 — Tutorial / Carrusel de funciones (`OnboardingScreen.js`) ✅
 
-**Descripción:** 3 slides que explican qué hace la app. Dots de paginación. Puede contarse como 1 pantalla con 3 estados.
+**Descripción:** 3 slides que explican qué hace la app. FlatList horizontal pageable con dots de paginación animados (el activo se estira a 24px).
 
 **Estructura:**
 ```
-Slides (FlatList horizontal, paginado)
+Slides (FlatList horizontal, paginado, ancho completo)
   ├── Slide 1
-  │     ├── Ilustración: 💱 (ícono grande, 120px, fondo azul claro)
-  │     ├── Título: "Compará cotizaciones"
-  │     └── Subtítulo: "Encontrá la billetera que te da más pesos por tu divisa"
+  │     ├── Ilustración: 🇧🇷 (ícono grande, 80px, fondo azul claro circular 160px)
+  │     ├── Título: "Pagá en Brasil con la mejor cotización"
+  │     └── Subtítulo: "Compará billeteras argentinas y elegí la que más rinde para tu PIX"
   ├── Slide 2
   │     ├── Ilustración: 🔔
   │     ├── Título: "Alertas de precio"
@@ -155,11 +156,11 @@ Slides (FlatList horizontal, paginado)
         ├── Título: "Siempre actualizado"
         └── Subtítulo: "Cotizaciones en tiempo real de las billeteras más usadas de Argentina"
 
-Dots de paginación (3 puntos, el activo azul)
+Dots de paginación (3 puntos, el activo azul y más ancho)
 
 Botones
   ├── "Omitir" (texto gris, izquierda) — solo en slides 1-2
-  └── "Siguiente →" / "COMENZAR" (azul, derecha)
+  └── "Siguiente →" / "COMENZAR" (azul, derecha — flex full en último slide)
 ```
 
 ---
@@ -168,42 +169,44 @@ Botones
 
 ### Pantalla 4 — Home / Comparador (`HomeScreen.js`) ✅
 
+**Descripción:** Brasil PIX es el destino fijo (sin selector). El monto se ingresa abriendo el `NumericKeyboardScreen` (no usa teclado del sistema).
+
 **Estructura:**
 ```
 Header (64px)
   ├── Ícono menú (izquierda)
-  ├── Ícono home (centro)
+  ├── Ícono home (centro, activo)
   └── Ícono perfil (derecha)
 
 Contenido (scrollable)
-  ├── Título: "Comparador de\nCotizaciones" (32px bold)
-  ├── Country Selector
-  │     ├── Flag + nombre del país/método (ej: 🇧🇷 Brasil - PIX)
-  │     └── Flecha dropdown ▼
+  ├── Título: "Pagá en Brasil\nal mejor cambio" (32px bold)
+  ├── Card destino (borde verde Brasil, fondo verde claro, NO clickeable)
+  │     ├── 🇧🇷 Brasil — PIX + Badge verde "Activo"
+  │     └── Subtítulo: "Transferencia instantánea"
   ├── Label: "¿Cuánto vas a pagar?"
-  ├── Amount Input Container (fondo gris, centrado)
-  │     ├── Monto grande (48px bold, ej: R$ 500,00)
-  │     └── Placeholder: "Ejemplo: R$ 500,00"
-  ├── Botón primario: "COMPARAR AHORA" (azul, full width)
+  ├── Amount Container (clickeable → abre NumericKeyboardScreen)
+  │     ├── Prefijo: R$
+  │     └── Monto formateado (32px bold) o placeholder "500,00"
+  ├── Botón primario: "COMPARAR AHORA" (azul, full width, animación de scale)
   ├── Divider
   └── Últimas consultas
         ├── Bullet azul + "500 BRL - Hace 2hs"
         ├── Bullet azul + "1000 BRL - Ayer"
         └── Bullet azul + "250 BRL - Hace 3 días"
 
-Bottom Navigation (70px)
-  ├── 📊 (activo)
-  ├── 💳
-  ├── 📈
-  ├── 🔔
-  └── ℹ️
+Bottom Navigation (70px, vía BottomNav.js)
+  ├── 📊 Comparar (activo)
+  ├── 💳 Billeteras
+  ├── 📈 Historial
+  ├── 🔔 Alertas
+  └── ℹ️ Info
 ```
 
 ---
 
-### Pantalla 5 — Teclado numérico emergente (`NumericKeyboardScreen.js`)
+### Pantalla 5 — Teclado numérico emergente (`NumericKeyboardScreen.js`) ✅
 
-**Descripción:** Modal que aparece al tocar el campo de monto. Teclado custom sin usar el teclado del sistema.
+**Descripción:** Modal bottom sheet que aparece al tocar el campo de monto. Teclado custom sin usar el teclado del sistema. Reusable: recibe `visible`, `onClose`, `onConfirm`, `initialValue`, `prefix`.
 
 **Estructura:**
 ```
@@ -225,25 +228,9 @@ Bottom Sheet
 
 ---
 
-### Pantalla 6 — Selector de país destino (`CountrySelectorScreen.js`)
+### Pantalla 6 — ~~Selector de país destino~~ (REMOVIDA)
 
-**Descripción:** Modal/bottom sheet con la lista expandida de países y un buscador. Estado diferente del selector compacto del Home.
-
-**Estructura:**
-```
-Bottom Sheet (altura 70% de pantalla)
-  ├── Título: "Seleccioná el destino"
-  ├── Buscador (input con ícono lupa)
-  │
-  ├── Sección "Popular"
-  │     └── Card Brasil 🇧🇷 — PIX (borde verde, badge "Popular")
-  │
-  └── Sección "Otros destinos"
-        ├── Card USA 🇺🇸 — USD
-        ├── Card Europa 🇪🇺 — EUR
-        ├── Card México 🇲🇽 — MXN
-        └── Card Colombia 🇨🇴 — COP
-```
+**Estado:** Fuera de alcance del MVP. Brasil PIX es el único destino soportado, queda fijo en HomeScreen sin selector. Si se expande el alcance a otros destinos en el futuro, reintroducir esta pantalla.
 
 ---
 
@@ -256,32 +243,29 @@ Bottom Sheet (altura 70% de pantalla)
 Header (64px)
   ├── Botón atrás ← (izquierda)
   ├── Título: "Resultados" (centro)
-  └── Ícono ⋮ más opciones (derecha)
+  └── Ícono compare (derecha) → abre CompareScreen con top 2
 
 Contenido (scrollable)
-  ├── Contexto: "Pagando 500 BRL" (gris, 14px)
+  ├── Contexto: "Pagando 500 BRL" + Chip "⚖ Comparar 2"
   │
-  ├── Card MEJOR OPCIÓN (borde verde, fondo gradiente verde claro)
+  ├── Card MEJOR OPCIÓN (borde verde, fondo verde claro)
   │     ├── Badge verde: "💚 Mejor opción"
-  │     ├── Nombre: "Mercado Pago" (20px bold)
-  │     ├── Precio: "$ 485.230 ARS" (32px bold)
-  │     ├── Ahorro: "✓ Ahorrás $15.000 (3.1%)" (verde)
-  │     └── Link: "Ver más →" (azul)
+  │     ├── Logo (color marca, iniciales)
+  │     ├── Nombre (20px bold)
+  │     ├── Precio (32px bold)
+  │     ├── Ahorro vs peor opción (verde)
+  │     └── Link "Ver más →" → WalletDetailScreen
   │
-  ├── Card opción 2 (borde gris estándar)
-  │     ├── Nombre: "Ualá"
-  │     ├── Precio: "$ 492.180 ARS"
-  │     ├── Ahorro: "Ahorrás $8.050 (1.6%)"
-  │     └── Link: "Ver más →"
-  │
-  ├── Card opción 3 (borde gris estándar)
-  │     ├── Nombre: "Brubank"
-  │     ├── Precio: "$ 500.230 ARS"
-  │     └── Link: "Ver más →"
+  ├── Cards 2-10 (borde gris estándar)
+  │     ├── Logo + nombre + precio (24px)
+  │     ├── Ahorro vs peor opción
+  │     └── Link "Ver más →"
   │
   └── Botones de acción
-        ├── "COMPARTIR" (secundario, gris)
-        └── "NUEVA" (primario, azul)
+        ├── "COMPARTIR" (secundario, gris) — usa Share API
+        └── "NUEVA" (primario, azul) — vuelve al Home
+
+Animaciones: cards con stagger 80ms (fade-in + translateY 24→0)
 ```
 
 ---
@@ -337,11 +321,11 @@ Nota visual: todas las barras skeleton son gris #e0e0e0, con shimmer animado (lo
 
 ### 🔍 BLOQUE 3 — Detalle y comparación profunda
 
-### Pantalla 10 — Detalle de billetera (`WalletDetailScreen.js`)
+### Pantalla 10 — Detalle de billetera (`WalletDetailScreen.js`) ✅
 
-**Descripción:** Aparece al tocar "Ver más →" en una card de resultados. Muestra tipo de cambio exacto, comisiones, límites y tiempo estimado.
+**Descripción:** Aparece al tocar "Ver más →" en una card de resultados. Muestra tipo de cambio exacto, comisiones, límites y tiempo estimado. Botón "IR A LA APP" usa `Linking.openURL` con la URL oficial de la billetera. Botón compartir usa la `Share` API.
 
-**Recibe como parámetro:** `walletName` (string), `currency` (string), `amount` (number)
+**Recibe como parámetro:** `wallet` (objeto completo con price, rate, savings, etc.), `amount` (number), `currency` (string)
 
 **Estructura:**
 ```
@@ -374,11 +358,11 @@ Contenido (scrollable)
 
 ---
 
-### Pantalla 11 — Comparación lado a lado (`CompareScreen.js`)
+### Pantalla 11 — Comparación lado a lado (`CompareScreen.js`) ✅
 
-**Descripción:** El usuario selecciona 2 billeteras para verlas en tabla comparativa. Feature diferenciador del MVP.
+**Descripción:** El usuario selecciona 2 billeteras para verlas en tabla comparativa. Feature diferenciador del MVP. Tocando cada columna se abre un modal con el listado de las 10 billeteras para hacer swap (la billetera ya usada en la otra columna queda deshabilitada).
 
-**Recibe como parámetros:** `wallet1`, `wallet2` (objetos con name, rate, etc.)
+**Recibe como parámetros:** `amount` (number), `currency` (string), `initialWallet1`, `initialWallet2` (objetos del array de resultados — pueden omitirse, defaultea a top 1 y 2)
 
 **Estructura:**
 ```
@@ -779,12 +763,10 @@ Footer
 
 ```
 SplashScreen (1)
-  └─► CountryResidenceScreen (2)
-        └─► OnboardingScreen (3)
-              └─► HomeScreen (4) ←── Pantalla principal
-                    ├── [tocar monto] → NumericKeyboardScreen (5) [modal]
-                    ├── [tocar país]  → CountrySelectorScreen (6) [modal]
-                    └── [COMPARAR]    → ResultsScreen (7)
+  └─► OnboardingScreen (3)
+        └─► HomeScreen (4) ←── Pantalla principal (Brasil PIX fijo)
+              ├── [tocar monto] → NumericKeyboardScreen (5) [modal]
+              └── [COMPARAR]    → ResultsScreen (7)
                                            ├── [empty]    → EmptyResultsScreen (8)
                                            ├── [loading]  → LoadingResultsScreen (9)
                                            ├── [Ver más]  → WalletDetailScreen (10)
@@ -815,46 +797,33 @@ Estados globales
 
 ---
 
-## 🧩 Componentes reutilizables
+## 🧩 Componentes y módulos compartidos
 
-### `ProviderCard`
-Props:
-- `provider` (string) — nombre del proveedor
-- `price` (string) — monto formateado
-- `savings` (string | null) — texto de ahorro
-- `savingsPercent` (string | null) — porcentaje
-- `isBest` (boolean) — si es la mejor opción
-- `onPress` () — callback al presionar "Ver más"
+### `src/components/BottomNav.js`
+Barra de navegación inferior usada por las pantallas con tabs (Home, History, etc.). Props:
+- `active` (string) — nombre de la pantalla activa
+- `navigation` — objeto de React Navigation
 
-### `CountrySelector`
-Props:
-- `selectedCountry` (object) — `{ flag, name, currency }`
-- `onPress` () — abre el selector
+### `src/data/wallets.js`
+Datos y helpers centralizados. Exporta:
+- `WALLET_META` — meta de cada billetera: `color`, `initials`, `description`, `commission`, `dailyLimit`, `estimatedTime`, `appUrl`
+- `PROVIDERS` — tarifas por moneda (clave `BRL` por ahora)
+- `formatARS(amount)` — formatea a `$ 12.345 ARS`
+- `buildResults(amount, currency = 'BRL')` — devuelve array ordenado con `price`, `savings`, `savingsPct`, `isBest`
+- `getWalletMeta(name)` — meta con fallback si el nombre no está
 
-### `AmountInput`
-Props:
-- `value` (string)
-- `currency` (string) — prefijo (R$, USD, etc.)
-- `onChange` (function)
+### `src/config/firebase.js`
+Inicializa Firebase y exporta:
+- `auth` — instancia de Firebase Auth con persistencia AsyncStorage
+- `GOOGLE_WEB_CLIENT_ID` — Web Client ID de Firebase para Google Sign-In
 
----
+### `src/context/AuthContext.js`
+Context de autenticación. Exporta:
+- `AuthProvider` — wrappea la app en `App.js`
+- `useAuth()` — hook que devuelve `{ user, signInWithEmail, signInWithGoogleCredential, signOut, loading }`
+- `getAuthErrorMessage(err)` — traduce errores de Firebase a mensajes en español
 
-## 🗺️ Navegación
-
-```javascript
-// Stack principal
-AppNavigator
-├── HomeScreen      (pantalla inicial)
-└── ResultsScreen   (recibe params: amount, currency, country)
-
-// Bottom tabs (dentro de HomeScreen o como wrapper)
-TabNavigator
-├── Tab Comparar    → HomeScreen
-├── Tab Billeteras  → WalletsScreen (futuro)
-├── Tab Historial   → HistoryScreen (futuro)
-├── Tab Alertas     → AlertsScreen (futuro)
-└── Tab Info        → InfoScreen (futuro)
-```
+> Las cards de proveedor (`ProviderCard`) y los modales (`NumericKeyboardScreen`) viven inline dentro de su pantalla por simplicidad. Si una necesidad real obliga a reutilizarlas en otra pantalla, recién ahí extraerlas a `src/components/`.
 
 ---
 
@@ -877,24 +846,99 @@ reactNativeArchitectures=x86_64
 sdk.dir=C\:\\Users\\Agustin\\AppData\\Local\\Android\\Sdk
 ```
 
+### app.json — scheme
+```json
+"scheme": "comparadorbilleteras"
+```
+Requerido por `expo-auth-session` para manejar deep links OAuth.
+
+### Firebase (src/config/firebase.js)
+- Proyecto: `comparabilleteras-1e6b7`
+- Auth habilitado: Email/Contraseña + Google
+- Web Client ID exportado como `GOOGLE_WEB_CLIENT_ID`
+
+### Google OAuth — configuración en Google Cloud Console
+Proyecto: `ComparaBilleteras` (ID: `276300901779`)
+
+Clientes OAuth configurados:
+| Tipo | Client ID | Uso |
+|---|---|---|
+| Web (Firebase auto) | `276300901779-k09s2dj857ds18efarm268bdj7rmau1g` | Firebase Auth handler |
+| **Desktop app** | `276300901779-kdko463f6u3hq58fv0r0duattluo7l1m` | Google Sign-In desde APK de desarrollo |
+
+> ⚠️ **IMPORTANTE:** El cliente tipo **Desktop app** es el que funciona con `expo-auth-session` en un APK de desarrollo. Los tipos Android y Web fallan en este contexto. NO usar `useProxy: true` — en APK conectado a Metro local, `makeRedirectUri` devuelve `exp://127.0.0.1:8081` (ignorando el parámetro `native`), así que el redirect URI se hardcodea directamente.
+
+**Redirect URI del Desktop client:**
+```
+com.googleusercontent.apps.276300901779-kdko463f6u3hq58fv0r0duattluo7l1m:/
+```
+
+**Intent filter en AndroidManifest.xml** (registra el scheme para que Android intercepte el redirect):
+```xml
+<intent-filter>
+  <action android:name="android.intent.action.VIEW"/>
+  <category android:name="android.intent.category.DEFAULT"/>
+  <category android:name="android.intent.category.BROWSABLE"/>
+  <data android:scheme="com.googleusercontent.apps.276300901779-kdko463f6u3hq58fv0r0duattluo7l1m"/>
+</intent-filter>
+```
+
+**Authorized redirect URIs en el Web client (Firebase):**
+```
+https://comparabilleteras-1e6b7.firebaseapp.com/__/auth/handler
+https://auth.expo.io/@agusvalussi10/ComparadorBilleteras
+```
+
+**Usuarios de prueba OAuth:** `agusvalussi10@gmail.com`
+
+**Debug keystore SHA-1** (para referencia futura):
+```
+97:C8:EF:3B:1B:EF:1A:6B:B3:46:DD:12:E8:0E:4F:F2:E3:4D:47:98
+```
+
+### Problema de paths largos en Windows (BUILD)
+El path largo del proyecto hace que `react-native-screens` falle al compilar C++ con CMake ("ninja: error: manifest 'build.ninja' still dirty"). La solución es usar un junction point con path corto:
+
+```powershell
+# Crear junction (solo la primera vez)
+New-Item -ItemType Directory -Path "C:\dev" -Force
+cmd /c mklink /J "C:\dev\CB" "c:\Users\Agustin\Escritorio\TP_FACULTAD-1\PROGRAMACION III - PULJIZ\TP INTEGRADOR\ComparadorBilleteras"
+
+# Compilar SIEMPRE desde C:\dev\CB\android
+cd C:\dev\CB\android
+.\gradlew.bat app:assembleDebug
+```
+
 ---
 
 ## 🚀 Comandos útiles
 
-```bash
+```powershell
 # Levantar Metro (dejar corriendo siempre)
-npx expo start --dev-client
+npx expo start --clear
 
-# Compilar e instalar APK (si Metro ya corre)
-cd android && .\gradlew.bat app:assembleDebug
-adb install app\build\outputs\apk\debug\app-debug.apk
+# Compilar APK — SIEMPRE desde C:\dev\CB para evitar error de path largo
+cd C:\dev\CB\android
+.\gradlew.bat app:assembleDebug
+
+# Instalar APK en emulador
+adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 
 # Ver dispositivos conectados
 adb devices
 
-# Limpiar build
-cd android && .\gradlew.bat clean
+# Limpiar build (si hay errores raros)
+cd C:\dev\CB\android
+.\gradlew.bat clean
+
+# Recrear el junction si se perdió (PowerShell)
+cmd /c mklink /J "C:\dev\CB" "c:\Users\Agustin\Escritorio\TP_FACULTAD-1\PROGRAMACION III - PULJIZ\TP INTEGRADOR\ComparadorBilleteras"
+
+# SHA-1 del debug keystore (para Google Cloud Console)
+keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
 ```
+
+> 💡 Los cambios solo en JS (pantallas, lógica) se aplican con `r` en Metro sin recompilar. Solo recompilá cuando cambiés archivos nativos (AndroidManifest.xml, package.json con nuevos módulos nativos, etc.).
 
 ---
 
@@ -905,28 +949,38 @@ cd android && .\gradlew.bat clean
 - [x] Dependencias instaladas (React Navigation v6, gesture handler, screens, safe area)
 - [x] Emulador Pixel 8 API 36 funcionando
 - [x] Hot reload funcionando (Metro + APK debug)
-- [x] Estructura de carpetas creada (`src/screens`, `src/components`, `src/navigation`)
-- [x] `AppNavigator.js` — Stack con Home, Results, History
+- [x] Estructura de carpetas creada (`src/screens`, `src/components`, `src/navigation`, `src/config`, `src/context`)
+- [x] `AppNavigator.js` — Stack con Splash, Onboarding, Login, Home, Results, WalletDetail, Compare, History, ForgotPassword
 - [x] `BottomNav.js` — componente compartido de navegación inferior
 - [x] Brasil PIX destacado con badge "Popular" y borde verde
 - [x] Animaciones: cards con entrada escalonada, botón con efecto de escala
 - [x] 10 billeteras argentinas: Mercado Pago, Ualá, Bimo, Naranja X, Prex, Brubank, Personal Pay, Lemon Cash, Modo, Cuenta DNI
+- [x] Firebase Auth configurado (email/contraseña + Google Sign-In funcionando)
+- [x] Junction `C:\dev\CB` creado para resolver el problema de path largo en Windows
+- [x] Intent filter Google OAuth en AndroidManifest.xml
 
-### Pantallas implementadas (3/25)
-- [x] `HomeScreen.js` — Pantalla 4: comparador con selector de país, input de monto, últimas consultas
-- [x] `ResultsScreen.js` — Pantalla 7: ranking de 10 billeteras con logos, ahorro y animaciones
+### Pantallas implementadas (10/23)
+- [x] `SplashScreen.js` — Pantalla 1: logo + tagline "El mejor cambio para Brasil 🇧🇷", auto-navega a Onboarding en 2.5s
+- [x] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides con dots animados, navega a Login al finalizar
+- [x] `HomeScreen.js` — Pantalla 4: comparador con Brasil PIX fijo + input de monto
+- [x] `NumericKeyboardScreen.js` — Pantalla 5: teclado numérico custom 3x4 (modal bottom sheet)
+- [x] `ResultsScreen.js` — Pantalla 7: ranking de 10 billeteras + chip "Comparar 2" + ícono compare en header
+- [x] `WalletDetailScreen.js` — Pantalla 10: detalle con tipo de cambio, comisión, límite, tiempo, total y botón ir a la app
+- [x] `CompareScreen.js` — Pantalla 11: tabla comparativa 5 criterios + selector de billetera por columna + resumen
 - [x] `HistoryScreen.js` — Pantalla 12: historial de consultas con datos mock, tap para repetir búsqueda
+- [x] `LoginScreen.js` — Pantalla 21: login con email/contraseña + Google Sign-In (Desktop OAuth client), validaciones, opción "Continuar sin cuenta"
+- [x] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña con Firebase, estado de éxito/error
 
-### Pantallas pendientes (22/25)
-- [ ] `SplashScreen.js` — Pantalla 1: logo + tagline, auto-navega al onboarding
-- [ ] `CountryResidenceScreen.js` — Pantalla 2: selección de país de residencia
-- [ ] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides con funciones de la app
-- [ ] `NumericKeyboardScreen.js` — Pantalla 5: teclado numérico custom (modal)
-- [ ] `CountrySelectorScreen.js` — Pantalla 6: selector de destino con buscador (modal)
+### Datos compartidos
+- [x] `src/data/wallets.js` — `WALLET_META`, `PROVIDERS`, `formatARS`, `buildResults`, `getWalletMeta`
+
+### Pantallas fuera de alcance (MVP solo AR→BR PIX)
+- ~~Pantalla 2 `CountryResidenceScreen.js`~~ — eliminada (usuario siempre argentino)
+- ~~Pantalla 6 `CountrySelectorScreen.js`~~ — eliminada (Brasil PIX único destino)
+
+### Pantallas pendientes (13/23)
 - [ ] `EmptyResultsScreen.js` — Pantalla 8: estado vacío cuando no hay cotizaciones
 - [ ] `LoadingResultsScreen.js` — Pantalla 9: skeleton loaders de carga
-- [ ] `WalletDetailScreen.js` — Pantalla 10: detalle de billetera (tipo de cambio, límites, comisiones)
-- [ ] `CompareScreen.js` — Pantalla 11: tabla comparativa lado a lado de 2 billeteras
 - [ ] `AlertsScreen.js` — Pantalla 13: lista de alertas configuradas
 - [ ] `CreateAlertScreen.js` — Pantalla 14: formulario para nueva alerta
 - [ ] `PushNotificationScreen.js` — Pantalla 15: mockup de notificación push recibida
@@ -935,8 +989,6 @@ cd android && .\gradlew.bat clean
 - [ ] `ProfileScreen.js` — Pantalla 18: perfil del usuario con historial y configuración rápida
 - [ ] `SettingsScreen.js` — Pantalla 19: ajustes (moneda, notificaciones, tema, idioma)
 - [ ] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos del usuario
-- [ ] `LoginScreen.js` — Pantalla 21: login con email/contraseña y Google
-- [ ] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña (con estado de éxito)
 - [ ] `ErrorScreen.js` — Pantalla 23: sin conexión con botón reintentar
 - [ ] `ExternalRedirectModal.js` — Pantalla 24: confirmación antes de abrir app externa
 - [ ] `LoadingSplashScreen.js` — Pantalla 25: splash de carga con barra de progreso y versión
@@ -944,8 +996,8 @@ cd android && .\gradlew.bat clean
 ### Funcionalidad pendiente
 - [ ] Historial persistente con AsyncStorage
 - [ ] Integración con API real de cotizaciones
-- [ ] Actualizar `AppNavigator.js` para incluir las 22 pantallas nuevas
-- [ ] Actualizar `BottomNav.js` para conectar tabs a las pantallas de sus secciones
+- [ ] Conectar tabs de `BottomNav.js` a las pantallas de cada sección a medida que se implementen
+- [ ] Pantalla de Perfil conectada al usuario autenticado (Firebase `auth.currentUser`)
 
 ---
 
@@ -955,18 +1007,19 @@ cd android && .\gradlew.bat clean
 |---|---|---|
 | `src/navigation/AppNavigator.js` | Navigator principal | ✅ |
 | `src/components/BottomNav.js` | Barra de navegación inferior | ✅ |
-| `src/screens/HomeScreen.js` | 4 — Comparador | ✅ |
+| `src/screens/SplashScreen.js` | 1 — Splash | ✅ |
+| `src/screens/OnboardingScreen.js` | 3 — Tutorial carrusel | ✅ |
+| `src/screens/HomeScreen.js` | 4 — Comparador (Brasil fijo) | ✅ |
+| `src/screens/NumericKeyboardScreen.js` | 5 — Teclado numérico | ✅ |
 | `src/screens/ResultsScreen.js` | 7 — Resultados | ✅ |
+| `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ |
+| `src/screens/CompareScreen.js` | 11 — Comparación 2 billeteras | ✅ |
 | `src/screens/HistoryScreen.js` | 12 — Historial | ✅ |
-| `src/screens/SplashScreen.js` | 1 — Splash | ⏳ |
-| `src/screens/CountryResidenceScreen.js` | 2 — País de residencia | ⏳ |
-| `src/screens/OnboardingScreen.js` | 3 — Tutorial carrusel | ⏳ |
-| `src/screens/NumericKeyboardScreen.js` | 5 — Teclado numérico | ⏳ |
-| `src/screens/CountrySelectorScreen.js` | 6 — Selector destino | ⏳ |
+| `src/data/wallets.js` | Datos compartidos (meta, rates, helpers) | ✅ |
+| ~~`src/screens/CountryResidenceScreen.js`~~ | ~~2 — País de residencia~~ | ❌ Fuera de alcance |
+| ~~`src/screens/CountrySelectorScreen.js`~~ | ~~6 — Selector destino~~ | ❌ Fuera de alcance |
 | `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ⏳ |
 | `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ⏳ |
-| `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ⏳ |
-| `src/screens/CompareScreen.js` | 11 — Comparación 2 billeteras | ⏳ |
 | `src/screens/AlertsScreen.js` | 13 — Lista alertas | ⏳ |
 | `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ⏳ |
 | `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ⏳ |
@@ -975,8 +1028,10 @@ cd android && .\gradlew.bat clean
 | `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ⏳ |
 | `src/screens/SettingsScreen.js` | 19 — Configuración | ⏳ |
 | `src/screens/FavoritesScreen.js` | 20 — Favoritos | ⏳ |
-| `src/screens/LoginScreen.js` | 21 — Login / Registro | ⏳ |
-| `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ⏳ |
+| `src/config/firebase.js` | Config Firebase + Web Client ID | ✅ |
+| `src/context/AuthContext.js` | Auth context (email + Google) | ✅ |
+| `src/screens/LoginScreen.js` | 21 — Login / Registro | ✅ |
+| `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ✅ |
 | `src/screens/ErrorScreen.js` | 23 — Sin conexión | ⏳ |
 | `src/screens/ExternalRedirectModal.js` | 24 — Confirmación redirección | ⏳ |
 | `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ⏳ |
@@ -987,8 +1042,9 @@ cd android && .\gradlew.bat clean
 
 1. Persistir historial con `AsyncStorage` (guardar cada búsqueda al navegar a Results)
 2. Conectar con API real de cotizaciones
-3. Pantalla de Billeteras con info y links de cada proveedor
-4. Pantalla de Alertas para notificar cuando una cotización supera un umbral
+3. `WalletsScreen.js` — directorio de billeteras con info y links de cada proveedor
+4. `AlertsScreen.js` + `CreateAlertScreen.js` — sistema de alertas de precio
+5. `ProfileScreen.js` — mostrar datos del usuario autenticado (`auth.currentUser.email`, foto, etc.)
 
 ---
 
@@ -1000,6 +1056,10 @@ cd android && .\gradlew.bat clean
 - Para navegación usar `useNavigation()` hook dentro de componentes
 - Los parámetros entre pantallas van con `navigation.navigate('ResultsScreen', { amount, currency })`
 - Respetar el design system definido arriba — mismos colores, radios y tipografía
+- Para acceder al usuario autenticado usar `const { user } = useAuth()` — `user` es el objeto Firebase User (puede ser `null` si no hay sesión)
+- **COMPILAR SIEMPRE desde `C:\dev\CB\android`**, nunca desde el path largo original
+- Si hay cambios en `AndroidManifest.xml` o nuevos módulos nativos → recompilar APK. Si es solo JS → `r` en Metro alcanza
+- Google Sign-In usa el cliente **Desktop app** (`276300901779-kdko463f6u3hq58fv0r0duattluo7l1m`) con redirect hardcodeado — NO intentar usar `makeRedirectUri({ useProxy: true })` en este setup, devuelve `exp://127.0.0.1:8081` ignorando el parámetro
 
 ---
 
@@ -1048,5 +1108,11 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 ### Notas importantes
 - El primer build tarda ~5 minutos (descarga Gradle y compila código nativo)
 - Gradle debe ser **8.8** — no cambiar `gradle-wrapper.properties`
+- **Path largo en Windows:** el path del proyecto tiene espacios y es muy largo, lo que hace fallar la compilación de C++ de `react-native-screens` con CMake. Solución: crear un junction point antes de compilar:
+  ```powershell
+  New-Item -ItemType Directory -Path "C:\dev" -Force
+  cmd /c mklink /J "C:\dev\CB" "RUTA_COMPLETA_AL_PROYECTO"
+  # Compilar siempre desde C:\dev\CB\android
+  ```
 - Solo compilar para arquitectura **x86_64** (para emulador) — ya está configurado en `gradle.properties`
 - Para builds futuros (solo cambios JS): solo necesitás Metro corriendo + presionar `r`
