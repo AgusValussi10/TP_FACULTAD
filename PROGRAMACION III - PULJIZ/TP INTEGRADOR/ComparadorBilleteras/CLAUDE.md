@@ -950,7 +950,33 @@ npx expo start --clear
 npx expo start --tunnel --clear
 ```
 
-Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa excepto el login con Google (el intent filter solo existe en el APK custom). Para Google Sign-In en celular físico hay que compilar con `arm64-v8a` en `gradle.properties` e instalar por USB.
+Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa **excepto el login con Google**.
+
+### ⚠️ Por qué Google Sign-In no funciona en Expo Go
+
+El flujo OAuth de Google abre Chrome, el usuario acepta, y Google redirige al scheme `com.googleusercontent.apps.276300901779-kdko463f6u3hq58fv0r0duattluo7l1m:/`. Ese scheme está registrado en el `AndroidManifest.xml` del APK custom, entonces Android sabe que tiene que interceptar esa URL y volver a la app.
+
+Expo Go **no tiene ese intent filter registrado**, por lo que Chrome simplemente navega a esa URL como un link normal y la app nunca se entera del redirect. El login con Google queda colgado en el browser.
+
+**Para el TP:** alcanza con aclarar que Google Sign-In funciona en el APK custom instalado directamente. El login con email/contraseña funciona perfecto en Expo Go.
+
+### Para demostrar Google Sign-In en celular físico
+
+Compilar el APK con soporte ARM64 e instalar por USB:
+
+```powershell
+# 1. Agregar arm64-v8a en android/gradle.properties
+#    reactNativeArchitectures=x86_64,arm64-v8a
+
+# 2. Compilar desde el junction (path corto)
+cd C:\dev\CB\android
+.\gradlew.bat app:assembleDebug
+
+# 3. Instalar en el celular conectado por USB (con depuración USB habilitada)
+adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
+```
+
+> El primer build con arm64 tarda más porque compila código nativo para dos arquitecturas. Una vez instalado el APK, Google Sign-In funciona igual que en el emulador.
 
 ---
 
@@ -962,8 +988,8 @@ Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa
 - [x] Emulador Pixel 8 API 36 funcionando
 - [x] Hot reload funcionando (Metro + APK debug)
 - [x] Estructura de carpetas creada (`src/screens`, `src/components`, `src/navigation`, `src/config`, `src/context`)
-- [x] `AppNavigator.js` — Stack con Splash, Onboarding, Login, Home, Results, WalletDetail, Compare, History, ForgotPassword
-- [x] `BottomNav.js` — componente compartido de navegación inferior
+- [x] `AppNavigator.js` — Stack con todas las pantallas implementadas (17 rutas registradas)
+- [x] `BottomNav.js` — todos los tabs conectados: 📊 Home, 💳 Wallets, 📈 History, 🔔 Alerts, ℹ️ Profile
 - [x] Brasil PIX destacado con badge "Popular" y borde verde
 - [x] Animaciones: cards con entrada escalonada, botón con efecto de escala
 - [x] 10 billeteras argentinas: Mercado Pago, Ualá, Bimo, Naranja X, Prex, Brubank, Personal Pay, Lemon Cash, Modo, Cuenta DNI
@@ -971,17 +997,25 @@ Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa
 - [x] Junction `C:\dev\CB` creado para resolver el problema de path largo en Windows
 - [x] Intent filter Google OAuth en AndroidManifest.xml
 
-### Pantallas implementadas (10/23)
+### Pantallas implementadas (18/23)
 - [x] `SplashScreen.js` — Pantalla 1: logo + tagline "El mejor cambio para Brasil 🇧🇷", auto-navega a Onboarding en 2.5s
 - [x] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides con dots animados, navega a Login al finalizar
 - [x] `HomeScreen.js` — Pantalla 4: comparador con Brasil PIX fijo + input de monto
 - [x] `NumericKeyboardScreen.js` — Pantalla 5: teclado numérico custom 3x4 (modal bottom sheet)
 - [x] `ResultsScreen.js` — Pantalla 7: ranking de 10 billeteras + chip "Comparar 2" + ícono compare en header
+- [x] `EmptyResultsScreen.js` — Pantalla 8: empty state con ícono search, mensaje y botón "Nueva consulta"
+- [x] `LoadingResultsScreen.js` — Pantalla 9: skeleton loaders animados (opacity loop) para best card y 2 cards normales
 - [x] `WalletDetailScreen.js` — Pantalla 10: detalle con tipo de cambio, comisión, límite, tiempo, total y botón ir a la app
 - [x] `CompareScreen.js` — Pantalla 11: tabla comparativa 5 criterios + selector de billetera por columna + resumen
 - [x] `HistoryScreen.js` — Pantalla 12: historial de consultas con datos mock, tap para repetir búsqueda
+- [x] `AlertsScreen.js` — Pantalla 13: lista de 3 alertas mock con Toggle que cambia estado activa/pausada
+- [x] `CreateAlertScreen.js` — Pantalla 14: formulario con selector billetera (Modal), radio condición, input valor, preview dinámico
+- [x] `WalletsScreen.js` — Pantalla 16: directorio con búsqueda, ratings mock, logo circular, botón "Ver perfil"
+- [x] `WalletProfileScreen.js` — Pantalla 17: hero con logo, pros/contras desde WALLET_META, "IR AL SITIO OFICIAL" con Linking
+- [x] `ProfileScreen.js` — Pantalla 18: avatar con inicial del email, datos reales de useAuth(), historial mock, botón cerrar sesión
 - [x] `LoginScreen.js` — Pantalla 21: login con email/contraseña + Google Sign-In (Desktop OAuth client), validaciones, opción "Continuar sin cuenta"
 - [x] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña con Firebase, estado de éxito/error
+- [x] `ErrorScreen.js` — Pantalla 23: sin conexión, ícono wifi, botón "Reintentar" (goBack)
 
 ### Datos compartidos
 - [x] `src/data/wallets.js` — `WALLET_META`, `PROVIDERS`, `formatARS`, `buildResults`, `getWalletMeta`
@@ -990,26 +1024,16 @@ Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa
 - ~~Pantalla 2 `CountryResidenceScreen.js`~~ — eliminada (usuario siempre argentino)
 - ~~Pantalla 6 `CountrySelectorScreen.js`~~ — eliminada (Brasil PIX único destino)
 
-### Pantallas pendientes (13/23)
-- [ ] `EmptyResultsScreen.js` — Pantalla 8: estado vacío cuando no hay cotizaciones
-- [ ] `LoadingResultsScreen.js` — Pantalla 9: skeleton loaders de carga
-- [ ] `AlertsScreen.js` — Pantalla 13: lista de alertas configuradas
-- [ ] `CreateAlertScreen.js` — Pantalla 14: formulario para nueva alerta
-- [ ] `PushNotificationScreen.js` — Pantalla 15: mockup de notificación push recibida
-- [ ] `WalletsScreen.js` — Pantalla 16: directorio de billeteras con rating y países
-- [ ] `WalletProfileScreen.js` — Pantalla 17: perfil estático de billetera (pros/contras, link)
-- [ ] `ProfileScreen.js` — Pantalla 18: perfil del usuario con historial y configuración rápida
+### Pantallas pendientes (5/23)
+- [ ] `PushNotificationScreen.js` — Pantalla 15: mockup estático de notificación push recibida
 - [ ] `SettingsScreen.js` — Pantalla 19: ajustes (moneda, notificaciones, tema, idioma)
 - [ ] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos del usuario
-- [ ] `ErrorScreen.js` — Pantalla 23: sin conexión con botón reintentar
-- [ ] `ExternalRedirectModal.js` — Pantalla 24: confirmación antes de abrir app externa
+- [ ] `ExternalRedirectModal.js` — Pantalla 24: confirmación modal antes de abrir app externa
 - [ ] `LoadingSplashScreen.js` — Pantalla 25: splash de carga con barra de progreso y versión
 
 ### Funcionalidad pendiente
 - [ ] Historial persistente con AsyncStorage
 - [ ] Integración con API real de cotizaciones
-- [ ] Conectar tabs de `BottomNav.js` a las pantallas de cada sección a medida que se implementen
-- [ ] Pantalla de Perfil conectada al usuario autenticado (Firebase `auth.currentUser`)
 
 ---
 
@@ -1030,21 +1054,21 @@ Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa
 | `src/data/wallets.js` | Datos compartidos (meta, rates, helpers) | ✅ |
 | ~~`src/screens/CountryResidenceScreen.js`~~ | ~~2 — País de residencia~~ | ❌ Fuera de alcance |
 | ~~`src/screens/CountrySelectorScreen.js`~~ | ~~6 — Selector destino~~ | ❌ Fuera de alcance |
-| `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ⏳ |
-| `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ⏳ |
-| `src/screens/AlertsScreen.js` | 13 — Lista alertas | ⏳ |
-| `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ⏳ |
+| `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ✅ |
+| `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ✅ |
+| `src/screens/AlertsScreen.js` | 13 — Lista alertas | ✅ |
+| `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ✅ |
 | `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ⏳ |
-| `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ⏳ |
-| `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ⏳ |
-| `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ⏳ |
+| `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ✅ |
+| `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ✅ |
+| `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ✅ |
 | `src/screens/SettingsScreen.js` | 19 — Configuración | ⏳ |
 | `src/screens/FavoritesScreen.js` | 20 — Favoritos | ⏳ |
 | `src/config/firebase.js` | Config Firebase + Web Client ID | ✅ |
 | `src/context/AuthContext.js` | Auth context (email + Google) | ✅ |
 | `src/screens/LoginScreen.js` | 21 — Login / Registro | ✅ |
 | `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ✅ |
-| `src/screens/ErrorScreen.js` | 23 — Sin conexión | ⏳ |
+| `src/screens/ErrorScreen.js` | 23 — Sin conexión | ✅ |
 | `src/screens/ExternalRedirectModal.js` | 24 — Confirmación redirección | ⏳ |
 | `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ⏳ |
 
@@ -1052,11 +1076,9 @@ Instalá **Expo Go** desde Play Store y escaneá el QR. La app funciona completa
 
 ## 🔜 Próximos pasos sugeridos
 
-1. Persistir historial con `AsyncStorage` (guardar cada búsqueda al navegar a Results)
-2. Conectar con API real de cotizaciones
-3. `WalletsScreen.js` — directorio de billeteras con info y links de cada proveedor
-4. `AlertsScreen.js` + `CreateAlertScreen.js` — sistema de alertas de precio
-5. `ProfileScreen.js` — mostrar datos del usuario autenticado (`auth.currentUser.email`, foto, etc.)
+1. Pantallas restantes del Bloque 2: `SettingsScreen`, `FavoritesScreen`, `ExternalRedirectModal`, `PushNotificationScreen`, `LoadingSplashScreen`
+2. Persistir historial con `AsyncStorage` (guardar cada búsqueda al navegar a Results)
+3. Conectar con API real de cotizaciones
 
 ---
 
