@@ -912,12 +912,18 @@ cd android && .\gradlew.bat clean
 - [x] Animaciones: cards con entrada escalonada, botón con efecto de escala
 - [x] 10 billeteras argentinas: Mercado Pago, Ualá, Bimo, Naranja X, Prex, Brubank, Personal Pay, Lemon Cash, Modo, Cuenta DNI
 
-### Pantallas implementadas (3/25)
+### Pantallas implementadas (9/25)
 - [x] `HomeScreen.js` — Pantalla 4: comparador con selector de país, input de monto, últimas consultas
 - [x] `ResultsScreen.js` — Pantalla 7: ranking de 10 billeteras con logos, ahorro y animaciones
 - [x] `HistoryScreen.js` — Pantalla 12: historial de consultas con datos mock, tap para repetir búsqueda
+- [x] `PushNotificationScreen.js` — Pantalla 15: mockup de pantalla bloqueada con banner de notificación
+- [x] `ProfileScreen.js` — Pantalla 18: perfil del usuario con acceso a Settings y Favorites
+- [x] `SettingsScreen.js` — Pantalla 19: ajustes (moneda, notificaciones, tema, idioma) con toggles
+- [x] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos, empty state, chips eliminables
+- [x] `ExternalRedirectModal.js` — Pantalla 24: modal reutilizable en `src/components/` (no una ruta)
+- [x] `LoadingSplashScreen.js` — Pantalla 25: splash azul con animación de logo + barra de progreso
 
-### Pantallas pendientes (22/25)
+### Pantallas pendientes (16/25)
 - [ ] `SplashScreen.js` — Pantalla 1: logo + tagline, auto-navega al onboarding
 - [ ] `CountryResidenceScreen.js` — Pantalla 2: selección de país de residencia
 - [ ] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides con funciones de la app
@@ -929,17 +935,11 @@ cd android && .\gradlew.bat clean
 - [ ] `CompareScreen.js` — Pantalla 11: tabla comparativa lado a lado de 2 billeteras
 - [ ] `AlertsScreen.js` — Pantalla 13: lista de alertas configuradas
 - [ ] `CreateAlertScreen.js` — Pantalla 14: formulario para nueva alerta
-- [ ] `PushNotificationScreen.js` — Pantalla 15: mockup de notificación push recibida
 - [ ] `WalletsScreen.js` — Pantalla 16: directorio de billeteras con rating y países
 - [ ] `WalletProfileScreen.js` — Pantalla 17: perfil estático de billetera (pros/contras, link)
-- [ ] `ProfileScreen.js` — Pantalla 18: perfil del usuario con historial y configuración rápida
-- [ ] `SettingsScreen.js` — Pantalla 19: ajustes (moneda, notificaciones, tema, idioma)
-- [ ] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos del usuario
 - [ ] `LoginScreen.js` — Pantalla 21: login con email/contraseña y Google
 - [ ] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña (con estado de éxito)
 - [ ] `ErrorScreen.js` — Pantalla 23: sin conexión con botón reintentar
-- [ ] `ExternalRedirectModal.js` — Pantalla 24: confirmación antes de abrir app externa
-- [ ] `LoadingSplashScreen.js` — Pantalla 25: splash de carga con barra de progreso y versión
 
 ### Funcionalidad pendiente
 - [ ] Historial persistente con AsyncStorage
@@ -969,17 +969,17 @@ cd android && .\gradlew.bat clean
 | `src/screens/CompareScreen.js` | 11 — Comparación 2 billeteras | ⏳ |
 | `src/screens/AlertsScreen.js` | 13 — Lista alertas | ⏳ |
 | `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ⏳ |
-| `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ⏳ |
+| `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ✅ |
 | `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ⏳ |
 | `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ⏳ |
-| `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ⏳ |
-| `src/screens/SettingsScreen.js` | 19 — Configuración | ⏳ |
-| `src/screens/FavoritesScreen.js` | 20 — Favoritos | ⏳ |
+| `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ✅ |
+| `src/screens/SettingsScreen.js` | 19 — Configuración | ✅ |
+| `src/screens/FavoritesScreen.js` | 20 — Favoritos | ✅ |
 | `src/screens/LoginScreen.js` | 21 — Login / Registro | ⏳ |
 | `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ⏳ |
 | `src/screens/ErrorScreen.js` | 23 — Sin conexión | ⏳ |
-| `src/screens/ExternalRedirectModal.js` | 24 — Confirmación redirección | ⏳ |
-| `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ⏳ |
+| `src/components/ExternalRedirectModal.js` | 24 — Confirmación redirección (componente) | ✅ |
+| `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ✅ |
 
 ---
 
