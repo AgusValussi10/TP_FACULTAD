@@ -14,6 +14,10 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import EmailVerificationScreen from '../screens/EmailVerificationScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import WalletsScreen from '../screens/WalletsScreen';
+import WalletDetailScreen from '../screens/WalletDetailScreen';
+import WalletProfileScreen from '../screens/WalletProfileScreen';
+import WalletCompareScreen from '../screens/WalletCompareScreen';
 
 const Stack = createStackNavigator();
 
@@ -34,6 +38,10 @@ export default function AppNavigator() {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+        <Stack.Screen name="Wallets" component={WalletsScreen} />
+        <Stack.Screen name="WalletDetail" component={WalletDetailScreen} />
+        <Stack.Screen name="WalletProfile" component={WalletProfileScreen} />
+        <Stack.Screen name="WalletCompare" component={WalletCompareScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
