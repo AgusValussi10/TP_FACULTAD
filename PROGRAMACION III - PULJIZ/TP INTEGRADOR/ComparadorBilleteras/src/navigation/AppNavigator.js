@@ -9,6 +9,11 @@ import SettingsScreen from '../screens/SettingsScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import PushNotificationScreen from '../screens/PushNotificationScreen';
 import LoadingSplashScreen from '../screens/LoadingSplashScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import EmailVerificationScreen from '../screens/EmailVerificationScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -24,6 +29,11 @@ export default function AppNavigator() {
         <Stack.Screen name="Favorites" component={FavoritesScreen} />
         <Stack.Screen name="PushNotification" component={PushNotificationScreen} />
         <Stack.Screen name="LoadingSplash" component={LoadingSplashScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

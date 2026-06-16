@@ -94,6 +94,12 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.sectionLabel}>Mi cuenta</Text>
         <View style={styles.card}>
           <MenuRow
+            icon="create-outline"
+            label="Editar perfil"
+            onPress={() => navigation.navigate('EditProfile')}
+          />
+          <View style={styles.cardDivider} />
+          <MenuRow
             icon="settings-outline"
             label="Configuración"
             onPress={() => navigation.navigate('Settings')}
