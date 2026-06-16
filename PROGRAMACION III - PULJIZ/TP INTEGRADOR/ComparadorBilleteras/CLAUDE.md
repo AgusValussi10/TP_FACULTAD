@@ -15,12 +15,34 @@ El usuario ingresa un monto en moneda extranjera, selecciona el país/método de
 
 | Tecnología | Versión | Notas |
 |---|---|---|
-| React Native | 0.74.5 | |
-| Expo SDK | 51 | NO actualizar a 52+ sin revisar compatibilidad |
-| React Navigation | 6.x | Stack + Bottom Tabs |
-| react-native-screens | 3.31.1 | Compatible con Nav v6 |
-| react-native-gesture-handler | 2.16.1 | |
-| react-native-safe-area-context | 4.10.5 | |
+| React Native | 0.81.5 | Actualizado desde 0.74.5 en migración a SDK 54 |
+| Expo SDK | 54 | Objetivo: Expo Go. NO usar `expo prebuild` |
+| React | 19.1.0 | Actualizado desde 18.2.0 |
+| React Navigation | 6.x | Stack + Bottom Tabs — compatible con React 19, no requirió v7 |
+| react-native-screens | ~4.16.0 | Actualizado desde 3.31.1 |
+| react-native-gesture-handler | ~2.28.0 | Actualizado desde 2.16.1 |
+| react-native-safe-area-context | ~5.6.0 | Actualizado desde 4.10.5 |
+| expo-status-bar | ~3.0.9 | Actualizado desde 1.12.1 |
+| babel-preset-expo | ~54.0.10 | Movido a dependencies (antes implícito) |
+
+### Migración SDK 51 → 54 (junio 2026)
+
+**Qué cambió:**
+1. `npm install expo@^54.0.35` → `npx expo install --fix` alineó automáticamente todas las deps nativas.
+2. `babel.config.js` — sin cambios, `babel-preset-expo` sigue siendo el único preset.
+3. React Navigation v6 — **no se subió a v7**: sus `peerDependencies` aceptan `react: "*"`, funciona con React 19.
+4. `expo-status-bar` pasó de `~1.12.1` a `~3.0.9`.
+5. `babel-preset-expo` aparece explícitamente en `dependencies` (antes lo manejaba expo internamente).
+
+**expo-doctor:** 17/18 ✅ — el único aviso es el check de CNG (`android/` presente con config en `app.json`), que es esperado y no afecta Expo Go.
+
+**Bundle verificado:** `npx expo export --platform android` compiló 958 módulos sin errores (exit 0).
+
+**Para correr en Expo Go:**
+```bash
+npx expo start -c
+# Escaneá el QR con Expo Go (SDK 54 compatible)
+```
 
 ---
 
@@ -882,18 +904,19 @@ sdk.dir=C\:\\Users\\Agustin\\AppData\\Local\\Android\\Sdk
 ## 🚀 Comandos útiles
 
 ```bash
-# Levantar Metro (dejar corriendo siempre)
-npx expo start --dev-client
+# Levantar Metro para Expo Go (target actual)
+npx expo start -c
 
-# Compilar e instalar APK (si Metro ya corre)
-cd android && .\gradlew.bat app:assembleDebug
-adb install app\build\outputs\apk\debug\app-debug.apk
+# Verificar bundle sin correr servidor
+npx expo export --platform android
 
-# Ver dispositivos conectados
-adb devices
+# Verificar estado de dependencias
+npx expo-doctor
 
-# Limpiar build
-cd android && .\gradlew.bat clean
+# --- Comandos APK (desactivados — target es Expo Go) ---
+# cd android && .\gradlew.bat app:assembleDebug
+# adb install app\build\outputs\apk\debug\app-debug.apk
+# cd android && .\gradlew.bat clean
 ```
 
 ---
