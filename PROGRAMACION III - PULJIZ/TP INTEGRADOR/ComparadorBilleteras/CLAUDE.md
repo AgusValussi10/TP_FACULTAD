@@ -991,52 +991,58 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 ## 📋 Estado actual del proyecto
 
 ### Infraestructura
-- [x] Setup inicial con Expo SDK 51
+- [x] Setup inicial con Expo SDK 51 → migrado a **SDK 54** (junio 2026)
 - [x] Dependencias instaladas (React Navigation v6, gesture handler, screens, safe area)
 - [x] Emulador Pixel 8 API 36 funcionando
-- [x] Hot reload funcionando (Metro + APK debug)
+- [x] Hot reload funcionando (Metro + Expo Go)
 - [x] Estructura de carpetas creada (`src/screens`, `src/components`, `src/navigation`, `src/config`, `src/context`)
-- [x] `AppNavigator.js` — Stack con todas las pantallas implementadas (17 rutas registradas)
+- [x] `AppNavigator.js` — Stack con 23 rutas registradas
 - [x] `BottomNav.js` — todos los tabs conectados: 📊 Home, 💳 Wallets, 📈 History, 🔔 Alerts, ℹ️ Profile
-- [x] Brasil PIX destacado con badge "Popular" y borde verde
-- [x] Animaciones: cards con entrada escalonada, botón con efecto de escala
-- [x] 10 billeteras argentinas: Mercado Pago, Ualá, Bimo, Naranja X, Prex, Brubank, Personal Pay, Lemon Cash, Modo, Cuenta DNI
-- [x] Firebase Auth configurado (email/contraseña + Google Sign-In funcionando)
+- [x] 10 billeteras argentinas con datos completos en `src/data/wallets.js` (`WALLETS`, `PROVIDERS`, `WALLET_META`)
+- [x] Firebase Auth configurado (email/contraseña + Google Sign-In)
 - [x] Junction `C:\dev\CB` creado para resolver el problema de path largo en Windows
 - [x] Intent filter Google OAuth en AndroidManifest.xml
 
-### Pantallas implementadas (9/25)
-- [x] `HomeScreen.js` — Pantalla 4: comparador con selector de país, input de monto, últimas consultas
+### Pantallas implementadas (23/23 en alcance MVP)
+
+> Pantallas 2 y 6 fueron removidas del scope (ver notas en las secciones correspondientes arriba).
+
+- [x] `SplashScreen.js` — Pantalla 1: logo + tagline, auto-navega al onboarding
+- [x] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides
+- [x] `HomeScreen.js` — Pantalla 4: comparador Brasil PIX fijo, input de monto
+- [x] `NumericKeyboardScreen.js` — Pantalla 5: teclado numérico custom (modal)
 - [x] `ResultsScreen.js` — Pantalla 7: ranking de 10 billeteras con logos, ahorro y animaciones
-- [x] `HistoryScreen.js` — Pantalla 12: historial de consultas con datos mock, tap para repetir búsqueda
-- [x] `PushNotificationScreen.js` — Pantalla 15: mockup de pantalla bloqueada con banner de notificación
-- [x] `ProfileScreen.js` — Pantalla 18: perfil del usuario con acceso a Settings y Favorites
-- [x] `SettingsScreen.js` — Pantalla 19: ajustes (moneda, notificaciones, tema, idioma) con toggles
-- [x] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos, empty state, chips eliminables
-- [x] `ExternalRedirectModal.js` — Pantalla 24: modal reutilizable en `src/components/` (no una ruta)
-- [x] `LoadingSplashScreen.js` — Pantalla 25: splash azul con animación de logo + barra de progreso
+- [x] `EmptyResultsScreen.js` — Pantalla 8: estado vacío sin cotizaciones
+- [x] `LoadingResultsScreen.js` — Pantalla 9: skeleton loaders de carga
+- [x] `WalletDetailScreen.js` — Pantalla 10: detalle de billetera (tipo de cambio, límites, comisiones)
+- [x] `WalletCompareScreen.js` — Pantalla 11: tabla comparativa lado a lado de 2 billeteras (ruta: `WalletCompare`)
+- [x] `HistoryScreen.js` — Pantalla 12: historial de consultas con datos mock
+- [x] `AlertsScreen.js` — Pantalla 13: lista de alertas configuradas
+- [x] `CreateAlertScreen.js` — Pantalla 14: formulario para nueva alerta
+- [x] `PushNotificationScreen.js` — Pantalla 15: mockup de pantalla bloqueada con banner
+- [x] `WalletsScreen.js` — Pantalla 16: directorio de billeteras con rating, países y buscador
+- [x] `WalletProfileScreen.js` — Pantalla 17: perfil estático de billetera
+- [x] `ProfileScreen.js` — Pantalla 18: perfil del usuario
+- [x] `SettingsScreen.js` — Pantalla 19: ajustes con toggles
+- [x] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos
+- [x] `LoginScreen.js` — Pantalla 21: login email/contraseña
+- [x] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña
+- [x] `ErrorScreen.js` — Pantalla 23: sin conexión con botón reintentar
+- [x] `ExternalRedirectModal.js` — Pantalla 24: componente modal en `src/components/`
+- [x] `LoadingSplashScreen.js` — Pantalla 25: splash azul con animación y barra de progreso
 
-### Pantallas pendientes (16/25)
-- [ ] `SplashScreen.js` — Pantalla 1: logo + tagline, auto-navega al onboarding
-- [ ] `CountryResidenceScreen.js` — Pantalla 2: selección de país de residencia
-- [ ] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides con funciones de la app
-- [ ] `NumericKeyboardScreen.js` — Pantalla 5: teclado numérico custom (modal)
-- [ ] `CountrySelectorScreen.js` — Pantalla 6: selector de destino con buscador (modal)
-- [ ] `EmptyResultsScreen.js` — Pantalla 8: estado vacío cuando no hay cotizaciones
-- [ ] `LoadingResultsScreen.js` — Pantalla 9: skeleton loaders de carga
-- [ ] `WalletDetailScreen.js` — Pantalla 10: detalle de billetera (tipo de cambio, límites, comisiones)
-- [ ] `CompareScreen.js` — Pantalla 11: tabla comparativa lado a lado de 2 billeteras
-- [ ] `AlertsScreen.js` — Pantalla 13: lista de alertas configuradas
-- [ ] `CreateAlertScreen.js` — Pantalla 14: formulario para nueva alerta
-- [ ] `WalletsScreen.js` — Pantalla 16: directorio de billeteras con rating y países
-- [ ] `WalletProfileScreen.js` — Pantalla 17: perfil estático de billetera (pros/contras, link)
-- [ ] `LoginScreen.js` — Pantalla 21: login con email/contraseña y Google
-- [ ] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña (con estado de éxito)
-- [ ] `ErrorScreen.js` — Pantalla 23: sin conexión con botón reintentar
+### Pantallas extra (fuera del spec original)
+- [x] `RegisterScreen.js` — Registro de cuenta nueva con email/contraseña
+- [x] `EditProfileScreen.js` — Edición de datos del perfil
+- [x] `EmailVerificationScreen.js` — Verificación de email post-registro
 
-### Funcionalidad pendiente
-- [ ] Historial persistente con AsyncStorage
-- [ ] Integración con API real de cotizaciones
+### Archivo legacy
+- ⚠️ `CompareScreen.js` — versión anterior de la pantalla 11, **no registrada en AppNavigator**. Puede eliminarse; la activa es `WalletCompareScreen.js`.
+
+### Bugs conocidos pendientes de fix
+- [ ] **WalletDetailScreen params**: `ResultsScreen` navega con `{ wallet, amount, currency }` (objeto wallet completo) pero `WalletDetailScreen` espera `{ walletName }` (string). Hay que alinear uno de los dos.
+- [ ] **Historial persistente**: sin AsyncStorage, el historial se pierde al cerrar la app.
+- [ ] **API real de cotizaciones**: actualmente los rates son datos hardcodeados en `PROVIDERS`.
 
 ---
 
@@ -1046,44 +1052,42 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 |---|---|---|
 | `src/navigation/AppNavigator.js` | Navigator principal | ✅ |
 | `src/components/BottomNav.js` | Barra de navegación inferior | ✅ |
+| `src/data/wallets.js` | Datos y helpers centralizados | ✅ |
 | `src/screens/SplashScreen.js` | 1 — Splash | ✅ |
 | `src/screens/OnboardingScreen.js` | 3 — Tutorial carrusel | ✅ |
 | `src/screens/HomeScreen.js` | 4 — Comparador (Brasil fijo) | ✅ |
 | `src/screens/NumericKeyboardScreen.js` | 5 — Teclado numérico | ✅ |
 | `src/screens/ResultsScreen.js` | 7 — Resultados | ✅ |
-| `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ |
-| `src/screens/CompareScreen.js` | 11 — Comparación 2 billeteras | ✅ |
+| `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ✅ |
+| `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ✅ |
+| `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ ⚠️ ver bugs |
+| `src/screens/WalletCompareScreen.js` | 11 — Comparación 2 billeteras | ✅ |
 | `src/screens/HistoryScreen.js` | 12 — Historial | ✅ |
-| `src/screens/SplashScreen.js` | 1 — Splash | ⏳ |
-| `src/screens/CountryResidenceScreen.js` | 2 — País de residencia | ⏳ |
-| `src/screens/OnboardingScreen.js` | 3 — Tutorial carrusel | ⏳ |
-| `src/screens/NumericKeyboardScreen.js` | 5 — Teclado numérico | ⏳ |
-| `src/screens/CountrySelectorScreen.js` | 6 — Selector destino | ⏳ |
-| `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ⏳ |
-| `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ⏳ |
-| `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ⏳ |
-| `src/screens/CompareScreen.js` | 11 — Comparación 2 billeteras | ⏳ |
-| `src/screens/AlertsScreen.js` | 13 — Lista alertas | ⏳ |
-| `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ⏳ |
+| `src/screens/AlertsScreen.js` | 13 — Lista alertas | ✅ |
+| `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ✅ |
 | `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ✅ |
-| `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ⏳ |
-| `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ⏳ |
+| `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ✅ |
+| `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ✅ |
 | `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ✅ |
 | `src/screens/SettingsScreen.js` | 19 — Configuración | ✅ |
 | `src/screens/FavoritesScreen.js` | 20 — Favoritos | ✅ |
-| `src/screens/LoginScreen.js` | 21 — Login / Registro | ⏳ |
-| `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ⏳ |
-| `src/screens/ErrorScreen.js` | 23 — Sin conexión | ⏳ |
-| `src/components/ExternalRedirectModal.js` | 24 — Confirmación redirección (componente) | ✅ |
+| `src/screens/LoginScreen.js` | 21 — Login | ✅ |
+| `src/screens/RegisterScreen.js` | Extra — Registro | ✅ |
+| `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ✅ |
+| `src/screens/EmailVerificationScreen.js` | Extra — Verificación email | ✅ |
+| `src/screens/ErrorScreen.js` | 23 — Sin conexión | ✅ |
+| `src/components/ExternalRedirectModal.js` | 24 — Confirmación redirección | ✅ |
 | `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ✅ |
+| `src/screens/EditProfileScreen.js` | Extra — Editar perfil | ✅ |
 
 ---
 
-## 🔜 Próximos pasos sugeridos
+## 🔜 Próximos pasos
 
-1. Pantallas restantes del Bloque 2: `SettingsScreen`, `FavoritesScreen`, `ExternalRedirectModal`, `PushNotificationScreen`, `LoadingSplashScreen`
-2. Persistir historial con `AsyncStorage` (guardar cada búsqueda al navegar a Results)
-3. Conectar con API real de cotizaciones
+1. **Fix bug params WalletDetail**: alinear `ResultsScreen` (que pasa `{ wallet }`) con `WalletDetailScreen` (que espera `{ walletName }`). Lo más limpio es que ResultsScreen pase `walletName: wallet.name`.
+2. **Eliminar `CompareScreen.js`**: archivo legacy no usado, puede borrarse para evitar confusión.
+3. **Historial persistente**: usar `AsyncStorage` para guardar cada búsqueda al navegar a Results.
+4. **API real de cotizaciones**: reemplazar los rates hardcodeados en `PROVIDERS` por llamadas a una API.
 
 ---
 

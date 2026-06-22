@@ -122,7 +122,7 @@ export default function ResultsScreen({ route, navigation }) {
   };
 
   const handleCompare = () => {
-    navigation.navigate('Compare', {
+    navigation.navigate('WalletCompare', {
       amount,
       currency,
       initialWallet1: results[0],

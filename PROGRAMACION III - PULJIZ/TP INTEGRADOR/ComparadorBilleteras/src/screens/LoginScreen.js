@@ -41,7 +41,7 @@ function getFirebaseError(code) {
 }
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  const { signInWithEmail } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,7 +59,7 @@ export default function LoginScreen({ navigation }) {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await signInWithEmail(email.trim(), password);
       navigation.replace('Home');
     } catch (e) {
       setError(getFirebaseError(e.code));
