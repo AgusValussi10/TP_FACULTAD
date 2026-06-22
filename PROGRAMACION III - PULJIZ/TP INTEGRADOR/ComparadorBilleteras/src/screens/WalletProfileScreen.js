@@ -1,10 +1,21 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Linking, Alert } from 'react-native';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  StatusBar,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getWalletMeta } from '../data/wallets';
+import { getWalletByName } from '../data/wallets';
+import ExternalRedirectModal from '../components/ExternalRedirectModal';
 
 const colors = {
   primary: '#3b82f6',
+  primaryDark: '#2563eb',
   success: '#10b981',
   background: '#ffffff',
   surface: '#f8f9fa',
@@ -15,106 +26,223 @@ const colors = {
   divider: '#e0e0e0',
 };
 
-const HOW_IT_WORKS = {
-  'Mercado Pago': 'Vinculá tu cuenta de Mercado Pago Argentina y pagá en cualquier comercio de Brasil que acepte PIX. El tipo de cambio se aplica al momento de la transacción.',
-  'Ualá': 'Con tu tarjeta Ualá podés hacer pagos via PIX en Brasil directamente desde la app. El débito se hace en ARS al tipo de cambio del día.',
-  'Bimo': 'Bimo permite transferencias internacionales y pagos PIX. Operá desde Argentina y pagá en reales de forma instantánea.',
-  'Prex': 'Con la tarjeta Prex podés pagar en Brasil en comercios habilitados. El saldo se gestiona en ARS y la conversión es automática.',
-  'Naranja X': 'Naranja X permite realizar pagos internacionales via PIX usando el saldo en ARS de tu cuenta. Sin necesidad de cambiar divisas previamente.',
-  'Brubank': 'Brubank ofrece pagos internacionales en Brasil con su tarjeta Visa. La conversión ARS→BRL se hace automáticamente al mejor tipo de cambio disponible.',
-  'Personal Pay': 'Personal Pay funciona como billetera digital para pagos en Brasil. Vinculá tu cuenta y pagá en pesos argentinos con conversión automática.',
-  'Lemon Cash': 'Lemon Cash permite pagos en Brasil usando crypto o ARS. La app convierte automáticamente al tipo de cambio más conveniente.',
-  'Modo': 'Modo es la billetera interoperativa de los bancos argentinos. Permite pagos PIX en Brasil desde tu cuenta bancaria en ARS.',
-  'Cuenta DNI': 'Cuenta DNI del Banco Provincia permite pagos en Brasil via PIX directamente desde tu cuenta. El tipo de cambio lo fija el banco al momento del pago.',
-};
+function SectionTitle({ text }) {
+  return <Text style={styles.sectionTitle}>{text}</Text>;
+}
+
+function Stars({ rating }) {
+  return (
+    <View style={styles.starsRow}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <Ionicons
+          key={i}
+          name={i <= Math.round(rating) ? 'star' : 'star-outline'}
+          size={13}
+          color="#f59e0b"
+        />
+      ))}
+    </View>
+  );
+}
+
+function ReviewCard({ review }) {
+  return (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewHeader}>
+        <View style={styles.reviewAvatar}>
+          <Text style={styles.reviewAvatarText}>{review.user.charAt(0)}</Text>
+        </View>
+        <View style={styles.reviewMeta}>
+          <Text style={styles.reviewUser}>{review.user}</Text>
+          <Stars rating={review.rating} />
+        </View>
+        <Text style={styles.reviewDate}>{review.date}</Text>
+      </View>
+      <Text style={styles.reviewComment}>{review.comment}</Text>
+    </View>
+  );
+}
 
 export default function WalletProfileScreen({ route, navigation }) {
   const { walletName } = route.params;
-  const meta = getWalletMeta(walletName);
+  const wallet = getWalletByName(walletName);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const handleOpenSite = () => {
-    if (!meta.appUrl) {
-      Alert.alert('Sin link', 'No tenemos un sitio configurado para esta billetera.');
-      return;
-    }
-    Linking.openURL(meta.appUrl).catch(() =>
-      Alert.alert('Error', 'No se pudo abrir el link.')
+  if (!wallet) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Perfil</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundText}>Billetera no encontrada</Text>
+        </View>
+      </SafeAreaView>
     );
-  };
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{walletName}</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>{wallet.name}</Text>
+        <View style={styles.headerRight} />
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero */}
         <View style={styles.hero}>
-          <View style={[styles.logo, { backgroundColor: meta.color }]}>
-            <Text style={styles.logoText}>{meta.initials}</Text>
+          <View style={[styles.heroLogo, { backgroundColor: wallet.color }]}>
+            <Text style={styles.heroLogoText}>{wallet.initials}</Text>
           </View>
-          <Text style={styles.heroName}>{walletName}</Text>
-          <Text style={styles.heroDesc}>{meta.description}</Text>
+          <Text style={styles.heroName}>{wallet.name}</Text>
+          <View style={styles.heroRatingRow}>
+            <Stars rating={wallet.rating} />
+            <Text style={styles.heroRatingText}>
+              {wallet.rating.toFixed(1)} · {wallet.ratingCount.toLocaleString('es-AR')} opiniones
+            </Text>
+          </View>
         </View>
 
-        {/* Monedas disponibles */}
+        {/* Acerca de */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Monedas disponibles</Text>
-          <View style={styles.chipRow}>
-            <View style={styles.chip}>
-              <Text style={styles.chipText}>🇧🇷 BRL</Text>
-            </View>
-          </View>
+          <SectionTitle text="Acerca de" />
+          <Text style={styles.bodyText}>{wallet.description}</Text>
         </View>
 
         <View style={styles.divider} />
 
-        {/* Cómo funciona */}
+        {/* Comisiones detalladas */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>¿Cómo funciona el envío?</Text>
-          <Text style={styles.bodyText}>
-            {HOW_IT_WORKS[walletName] ?? 'Realizá pagos PIX en Brasil directamente desde tu billetera argentina. La conversión ARS→BRL se aplica automáticamente al tipo de cambio vigente.'}
-          </Text>
+          <SectionTitle text="Comisiones" />
+          <View style={styles.card}>
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Comisión base</Text>
+              <Text style={[styles.feeValue, { color: colors.success }]}>{wallet.commission}</Text>
+            </View>
+            <View style={styles.rowDivider} />
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Límite diario</Text>
+              <Text style={styles.feeValue}>{wallet.dailyLimit}</Text>
+            </View>
+            <View style={styles.rowDivider} />
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Límite mensual</Text>
+              <Text style={styles.feeValue}>{wallet.monthlyLimit}</Text>
+            </View>
+            <View style={styles.rowDivider} />
+            <View style={styles.feeRow}>
+              <Text style={styles.feeLabel}>Tiempo estimado</Text>
+              <Text style={styles.feeValue}>{wallet.estimatedTime}</Text>
+            </View>
+          </View>
+          <Text style={styles.feeNote}>{wallet.commissionDetail}</Text>
         </View>
 
         <View style={styles.divider} />
 
         {/* Pros y contras */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Pros y contras</Text>
-          <View style={styles.prosConsList}>
-            {meta.commission === '0%' && (
-              <View style={styles.prosConsItem}>
-                <Text style={styles.proIcon}>✅</Text>
-                <Text style={styles.prosConsText}>Sin comisión para PIX</Text>
-              </View>
-            )}
-            <View style={styles.prosConsItem}>
-              <Text style={styles.proIcon}>✅</Text>
-              <Text style={styles.prosConsText}>Instantáneo 24/7</Text>
+          <SectionTitle text="Pros y contras" />
+          <View style={styles.prosConsContainer}>
+            <View style={styles.prosCol}>
+              {wallet.pros.map((p, i) => (
+                <View key={i} style={styles.bulletRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                  <Text style={styles.proText}>{p}</Text>
+                </View>
+              ))}
             </View>
-            <View style={styles.prosConsItem}>
-              <Text style={styles.conIcon}>❌</Text>
-              <Text style={styles.prosConsText}>Límite {meta.dailyLimit}/día</Text>
-            </View>
-            <View style={styles.prosConsItem}>
-              <Text style={styles.conIcon}>❌</Text>
-              <Text style={styles.prosConsText}>Requiere cuenta verificada</Text>
+            <View style={styles.prosConsGap} />
+            <View style={styles.consCol}>
+              {wallet.cons.map((c, i) => (
+                <View key={i} style={styles.bulletRow}>
+                  <Ionicons name="close-circle" size={16} color="#ef4444" />
+                  <Text style={styles.conText}>{c}</Text>
+                </View>
+              ))}
             </View>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.siteButton} onPress={handleOpenSite} activeOpacity={0.7}>
-          <Text style={styles.siteButtonText}>IR AL SITIO OFICIAL</Text>
-          <Ionicons name="open-outline" size={16} color={colors.primary} />
+        <View style={styles.divider} />
+
+        {/* Requisitos */}
+        <View style={styles.section}>
+          <SectionTitle text="Requisitos para abrir cuenta" />
+          <View style={styles.card}>
+            {wallet.requirements.map((req, i) => (
+              <View key={i}>
+                {i > 0 && <View style={styles.rowDivider} />}
+                <View style={styles.requirementRow}>
+                  <Ionicons name="checkmark-outline" size={16} color={colors.primary} />
+                  <Text style={styles.requirementText}>{req}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Países */}
+        <View style={styles.section}>
+          <SectionTitle text="Países disponibles" />
+          <View style={styles.flagsGrid}>
+            {wallet.countryFlags.map((flag, i) => (
+              <View key={i} style={styles.flagItem}>
+                <Text style={styles.flagEmoji}>{flag}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Opiniones */}
+        <View style={styles.section}>
+          <SectionTitle text="Opiniones de usuarios" />
+          {wallet.reviews.map((review, i) => (
+            <ReviewCard key={i} review={review} />
+          ))}
+        </View>
+
+        {/* Botón ir a la app */}
+        <TouchableOpacity
+          style={styles.goToAppBtn}
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.goToAppText}>IR A LA APP DE {wallet.name.toUpperCase()}</Text>
+          <Ionicons name="arrow-forward" size={18} color="#ffffff" />
         </TouchableOpacity>
       </ScrollView>
+
+      <ExternalRedirectModal
+        visible={modalVisible}
+        walletName={wallet.name}
+        onCancel={() => setModalVisible(false)}
+        onConfirm={() => {
+          setModalVisible(false);
+          Alert.alert(
+            'Redirigiendo...',
+            `La app de ${wallet.name} no está disponible en el simulador.`,
+            [{ text: 'OK' }]
+          );
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -122,7 +250,7 @@ export default function WalletProfileScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     height: 64,
@@ -130,13 +258,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.divider,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textPrimary,
+  },
+  headerRight: {
+    width: 36,
   },
   scroll: {
     flex: 1,
@@ -147,104 +285,225 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
     paddingVertical: 28,
-    paddingHorizontal: 20,
+    backgroundColor: colors.background,
+    gap: 8,
   },
-  logo: {
+  heroLogo: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
+    borderRadius: 20,
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'center',
+    marginBottom: 4,
   },
-  logoText: {
+  heroLogoText: {
     color: '#ffffff',
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   heroName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 6,
   },
-  heroDesc: {
-    fontSize: 14,
+  heroRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  heroRatingText: {
+    fontSize: 13,
     color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
+  },
+  divider: {
+    height: 8,
+    backgroundColor: colors.surface,
   },
   section: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
+    backgroundColor: colors.background,
+    gap: 12,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.divider,
-    marginHorizontal: 20,
   },
   bodyText: {
     fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 22,
   },
-  prosConsList: {
-    gap: 10,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
-  prosConsItem: {
+  feeRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
-  proIcon: {
-    fontSize: 16,
-  },
-  conIcon: {
-    fontSize: 16,
-  },
-  prosConsText: {
+  feeLabel: {
     fontSize: 15,
     color: colors.textPrimary,
   },
-  siteButton: {
+  feeValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginHorizontal: 16,
+  },
+  feeNote: {
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 18,
+  },
+  prosConsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  prosCol: {
+    flex: 1,
+    gap: 8,
+  },
+  consCol: {
+    flex: 1,
+    gap: 8,
+  },
+  prosConsGap: {
+    width: 1,
+    backgroundColor: colors.divider,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  proText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textPrimary,
+    lineHeight: 18,
+  },
+  conText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textPrimary,
+    lineHeight: 18,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  requirementText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  flagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  flagItem: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flagEmoji: {
+    fontSize: 22,
+  },
+  reviewCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 8,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  reviewAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewAvatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  reviewMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  reviewUser: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  reviewDate: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  reviewComment: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  goToAppBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
     marginHorizontal: 20,
     marginTop: 24,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
+    paddingVertical: 16,
   },
-  siteButtonText: {
-    fontSize: 15,
+  goToAppText: {
+    fontSize: 14,
     fontWeight: '700',
-    color: colors.primary,
+    color: '#ffffff',
     letterSpacing: 0.5,
+  },
+  notFound: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notFoundText: {
+    fontSize: 16,
+    color: colors.textSecondary,
   },
 });

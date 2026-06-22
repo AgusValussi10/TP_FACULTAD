@@ -24,17 +24,34 @@ Una app mobile (React Native + Expo SDK 51) **dedicada exclusivamente a usuarios
 
 | Tecnología | Versión | Notas |
 |---|---|---|
-| React Native | 0.74.5 | |
-| Expo SDK | 51 | NO actualizar a 52+ sin revisar compatibilidad |
-| React Navigation | 6.x | Stack |
-| react-native-screens | 3.31.1 | Compatible con Nav v6 |
-| react-native-gesture-handler | 2.16.1 | |
-| react-native-safe-area-context | 4.10.5 | |
-| Gradle | 8.8 | Definido en `gradle-wrapper.properties` |
-| Firebase (Web SDK) | 10.x | Auth: email/contraseña + Google Sign-In |
-| expo-auth-session | — | OAuth con Google via Chrome Custom Tab |
-| expo-web-browser | — | Requerido por expo-auth-session |
-| @react-native-async-storage/async-storage | — | Persistencia de sesión Firebase |
+| React Native | 0.81.5 | Actualizado desde 0.74.5 en migración a SDK 54 |
+| Expo SDK | 54 | Objetivo: Expo Go. NO usar `expo prebuild` |
+| React | 19.1.0 | Actualizado desde 18.2.0 |
+| React Navigation | 6.x | Stack + Bottom Tabs — compatible con React 19, no requirió v7 |
+| react-native-screens | ~4.16.0 | Actualizado desde 3.31.1 |
+| react-native-gesture-handler | ~2.28.0 | Actualizado desde 2.16.1 |
+| react-native-safe-area-context | ~5.6.0 | Actualizado desde 4.10.5 |
+| expo-status-bar | ~3.0.9 | Actualizado desde 1.12.1 |
+| babel-preset-expo | ~54.0.10 | Movido a dependencies (antes implícito) |
+
+### Migración SDK 51 → 54 (junio 2026)
+
+**Qué cambió:**
+1. `npm install expo@^54.0.35` → `npx expo install --fix` alineó automáticamente todas las deps nativas.
+2. `babel.config.js` — sin cambios, `babel-preset-expo` sigue siendo el único preset.
+3. React Navigation v6 — **no se subió a v7**: sus `peerDependencies` aceptan `react: "*"`, funciona con React 19.
+4. `expo-status-bar` pasó de `~1.12.1` a `~3.0.9`.
+5. `babel-preset-expo` aparece explícitamente en `dependencies` (antes lo manejaba expo internamente).
+
+**expo-doctor:** 17/18 ✅ — el único aviso es el check de CNG (`android/` presente con config en `app.json`), que es esperado y no afecta Expo Go.
+
+**Bundle verificado:** `npx expo export --platform android` compiló 958 módulos sin errores (exit 0).
+
+**Para correr en Expo Go:**
+```bash
+npx expo start -c
+# Escaneá el QR con Expo Go (SDK 54 compatible)
+```
 
 ---
 
@@ -913,29 +930,20 @@ cd C:\dev\CB\android
 
 ## 🚀 Comandos útiles
 
-```powershell
-# Levantar Metro (dejar corriendo siempre)
-npx expo start --clear
+```bash
+# Levantar Metro para Expo Go (target actual)
+npx expo start -c
 
-# Compilar APK — SIEMPRE desde C:\dev\CB para evitar error de path largo
-cd C:\dev\CB\android
-.\gradlew.bat app:assembleDebug
+# Verificar bundle sin correr servidor
+npx expo export --platform android
 
-# Instalar APK en emulador
-adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
+# Verificar estado de dependencias
+npx expo-doctor
 
-# Ver dispositivos conectados
-adb devices
-
-# Limpiar build (si hay errores raros)
-cd C:\dev\CB\android
-.\gradlew.bat clean
-
-# Recrear el junction si se perdió (PowerShell)
-cmd /c mklink /J "C:\dev\CB" "c:\Users\Agustin\Escritorio\TP_FACULTAD-1\PROGRAMACION III - PULJIZ\TP INTEGRADOR\ComparadorBilleteras"
-
-# SHA-1 del debug keystore (para Google Cloud Console)
-keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
+# --- Comandos APK (desactivados — target es Expo Go) ---
+# cd android && .\gradlew.bat app:assembleDebug
+# adb install app\build\outputs\apk\debug\app-debug.apk
+# cd android && .\gradlew.bat clean
 ```
 
 > 💡 Los cambios solo en JS (pantallas, lógica) se aplican con `r` en Metro sin recompilar. Solo recompilá cuando cambiés archivos nativos (AndroidManifest.xml, package.json con nuevos módulos nativos, etc.).
@@ -997,39 +1005,34 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 - [x] Junction `C:\dev\CB` creado para resolver el problema de path largo en Windows
 - [x] Intent filter Google OAuth en AndroidManifest.xml
 
-### Pantallas implementadas (18/23)
-- [x] `SplashScreen.js` — Pantalla 1: logo + tagline "El mejor cambio para Brasil 🇧🇷", auto-navega a Onboarding en 2.5s
-- [x] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides con dots animados, navega a Login al finalizar
-- [x] `HomeScreen.js` — Pantalla 4: comparador con Brasil PIX fijo + input de monto
-- [x] `NumericKeyboardScreen.js` — Pantalla 5: teclado numérico custom 3x4 (modal bottom sheet)
-- [x] `ResultsScreen.js` — Pantalla 7: ranking de 10 billeteras + chip "Comparar 2" + ícono compare en header
-- [x] `EmptyResultsScreen.js` — Pantalla 8: empty state con ícono search, mensaje y botón "Nueva consulta"
-- [x] `LoadingResultsScreen.js` — Pantalla 9: skeleton loaders animados (opacity loop) para best card y 2 cards normales
-- [x] `WalletDetailScreen.js` — Pantalla 10: detalle con tipo de cambio, comisión, límite, tiempo, total y botón ir a la app
-- [x] `CompareScreen.js` — Pantalla 11: tabla comparativa 5 criterios + selector de billetera por columna + resumen
+### Pantallas implementadas (9/25)
+- [x] `HomeScreen.js` — Pantalla 4: comparador con selector de país, input de monto, últimas consultas
+- [x] `ResultsScreen.js` — Pantalla 7: ranking de 10 billeteras con logos, ahorro y animaciones
 - [x] `HistoryScreen.js` — Pantalla 12: historial de consultas con datos mock, tap para repetir búsqueda
-- [x] `AlertsScreen.js` — Pantalla 13: lista de 3 alertas mock con Toggle que cambia estado activa/pausada
-- [x] `CreateAlertScreen.js` — Pantalla 14: formulario con selector billetera (Modal), radio condición, input valor, preview dinámico
-- [x] `WalletsScreen.js` — Pantalla 16: directorio con búsqueda, ratings mock, logo circular, botón "Ver perfil"
-- [x] `WalletProfileScreen.js` — Pantalla 17: hero con logo, pros/contras desde WALLET_META, "IR AL SITIO OFICIAL" con Linking
-- [x] `ProfileScreen.js` — Pantalla 18: avatar con inicial del email, datos reales de useAuth(), historial mock, botón cerrar sesión
-- [x] `LoginScreen.js` — Pantalla 21: login con email/contraseña + Google Sign-In (Desktop OAuth client), validaciones, opción "Continuar sin cuenta"
-- [x] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña con Firebase, estado de éxito/error
-- [x] `ErrorScreen.js` — Pantalla 23: sin conexión, ícono wifi, botón "Reintentar" (goBack)
+- [x] `PushNotificationScreen.js` — Pantalla 15: mockup de pantalla bloqueada con banner de notificación
+- [x] `ProfileScreen.js` — Pantalla 18: perfil del usuario con acceso a Settings y Favorites
+- [x] `SettingsScreen.js` — Pantalla 19: ajustes (moneda, notificaciones, tema, idioma) con toggles
+- [x] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos, empty state, chips eliminables
+- [x] `ExternalRedirectModal.js` — Pantalla 24: modal reutilizable en `src/components/` (no una ruta)
+- [x] `LoadingSplashScreen.js` — Pantalla 25: splash azul con animación de logo + barra de progreso
 
-### Datos compartidos
-- [x] `src/data/wallets.js` — `WALLET_META`, `PROVIDERS`, `formatARS`, `buildResults`, `getWalletMeta`
-
-### Pantallas fuera de alcance (MVP solo AR→BR PIX)
-- ~~Pantalla 2 `CountryResidenceScreen.js`~~ — eliminada (usuario siempre argentino)
-- ~~Pantalla 6 `CountrySelectorScreen.js`~~ — eliminada (Brasil PIX único destino)
-
-### Pantallas pendientes (5/23)
-- [ ] `PushNotificationScreen.js` — Pantalla 15: mockup estático de notificación push recibida
-- [ ] `SettingsScreen.js` — Pantalla 19: ajustes (moneda, notificaciones, tema, idioma)
-- [ ] `FavoritesScreen.js` — Pantalla 20: billeteras y pares favoritos del usuario
-- [ ] `ExternalRedirectModal.js` — Pantalla 24: confirmación modal antes de abrir app externa
-- [ ] `LoadingSplashScreen.js` — Pantalla 25: splash de carga con barra de progreso y versión
+### Pantallas pendientes (16/25)
+- [ ] `SplashScreen.js` — Pantalla 1: logo + tagline, auto-navega al onboarding
+- [ ] `CountryResidenceScreen.js` — Pantalla 2: selección de país de residencia
+- [ ] `OnboardingScreen.js` — Pantalla 3: carrusel 3 slides con funciones de la app
+- [ ] `NumericKeyboardScreen.js` — Pantalla 5: teclado numérico custom (modal)
+- [ ] `CountrySelectorScreen.js` — Pantalla 6: selector de destino con buscador (modal)
+- [ ] `EmptyResultsScreen.js` — Pantalla 8: estado vacío cuando no hay cotizaciones
+- [ ] `LoadingResultsScreen.js` — Pantalla 9: skeleton loaders de carga
+- [ ] `WalletDetailScreen.js` — Pantalla 10: detalle de billetera (tipo de cambio, límites, comisiones)
+- [ ] `CompareScreen.js` — Pantalla 11: tabla comparativa lado a lado de 2 billeteras
+- [ ] `AlertsScreen.js` — Pantalla 13: lista de alertas configuradas
+- [ ] `CreateAlertScreen.js` — Pantalla 14: formulario para nueva alerta
+- [ ] `WalletsScreen.js` — Pantalla 16: directorio de billeteras con rating y países
+- [ ] `WalletProfileScreen.js` — Pantalla 17: perfil estático de billetera (pros/contras, link)
+- [ ] `LoginScreen.js` — Pantalla 21: login con email/contraseña y Google
+- [ ] `ForgotPasswordScreen.js` — Pantalla 22: recuperar contraseña (con estado de éxito)
+- [ ] `ErrorScreen.js` — Pantalla 23: sin conexión con botón reintentar
 
 ### Funcionalidad pendiente
 - [ ] Historial persistente con AsyncStorage
@@ -1051,26 +1054,28 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 | `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ |
 | `src/screens/CompareScreen.js` | 11 — Comparación 2 billeteras | ✅ |
 | `src/screens/HistoryScreen.js` | 12 — Historial | ✅ |
-| `src/data/wallets.js` | Datos compartidos (meta, rates, helpers) | ✅ |
-| ~~`src/screens/CountryResidenceScreen.js`~~ | ~~2 — País de residencia~~ | ❌ Fuera de alcance |
-| ~~`src/screens/CountrySelectorScreen.js`~~ | ~~6 — Selector destino~~ | ❌ Fuera de alcance |
-| `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ✅ |
-| `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ✅ |
-| `src/screens/AlertsScreen.js` | 13 — Lista alertas | ✅ |
-| `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ✅ |
-| `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ⏳ |
-| `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ✅ |
-| `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ✅ |
+| `src/screens/SplashScreen.js` | 1 — Splash | ⏳ |
+| `src/screens/CountryResidenceScreen.js` | 2 — País de residencia | ⏳ |
+| `src/screens/OnboardingScreen.js` | 3 — Tutorial carrusel | ⏳ |
+| `src/screens/NumericKeyboardScreen.js` | 5 — Teclado numérico | ⏳ |
+| `src/screens/CountrySelectorScreen.js` | 6 — Selector destino | ⏳ |
+| `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ⏳ |
+| `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ⏳ |
+| `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ⏳ |
+| `src/screens/CompareScreen.js` | 11 — Comparación 2 billeteras | ⏳ |
+| `src/screens/AlertsScreen.js` | 13 — Lista alertas | ⏳ |
+| `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ⏳ |
+| `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ✅ |
+| `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ⏳ |
+| `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ⏳ |
 | `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ✅ |
-| `src/screens/SettingsScreen.js` | 19 — Configuración | ⏳ |
-| `src/screens/FavoritesScreen.js` | 20 — Favoritos | ⏳ |
-| `src/config/firebase.js` | Config Firebase + Web Client ID | ✅ |
-| `src/context/AuthContext.js` | Auth context (email + Google) | ✅ |
-| `src/screens/LoginScreen.js` | 21 — Login / Registro | ✅ |
-| `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ✅ |
-| `src/screens/ErrorScreen.js` | 23 — Sin conexión | ✅ |
-| `src/screens/ExternalRedirectModal.js` | 24 — Confirmación redirección | ⏳ |
-| `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ⏳ |
+| `src/screens/SettingsScreen.js` | 19 — Configuración | ✅ |
+| `src/screens/FavoritesScreen.js` | 20 — Favoritos | ✅ |
+| `src/screens/LoginScreen.js` | 21 — Login / Registro | ⏳ |
+| `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ⏳ |
+| `src/screens/ErrorScreen.js` | 23 — Sin conexión | ⏳ |
+| `src/components/ExternalRedirectModal.js` | 24 — Confirmación redirección (componente) | ✅ |
+| `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ✅ |
 
 ---
 

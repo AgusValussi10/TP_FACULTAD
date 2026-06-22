@@ -1,12 +1,19 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  StatusBar,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
 
 const colors = {
   primary: '#3b82f6',
-  danger: '#ef4444',
+  primaryDark: '#2563eb',
+  success: '#10b981',
   background: '#ffffff',
   surface: '#f8f9fa',
   border: '#dee2e6',
@@ -16,88 +23,119 @@ const colors = {
   divider: '#e0e0e0',
 };
 
-const RECENT_SEARCHES = [
-  { id: 1, amount: 500, currency: 'BRL', wallet: 'Mercado Pago', when: 'hace 2hs' },
-  { id: 2, amount: 1000, currency: 'BRL', wallet: 'Ualá', when: 'ayer' },
-  { id: 3, amount: 250, currency: 'BRL', wallet: 'Bimo', when: 'hace 3 días' },
+const SAVED_SEARCHES = [
+  { id: '1', amount: 500, currency: 'BRL', provider: 'Mercado Pago', date: 'Hace 2hs' },
+  { id: '2', amount: 1000, currency: 'BRL', provider: 'Ualá', date: 'Ayer' },
+  { id: '3', amount: 250, currency: 'BRL', provider: 'Bimo', date: 'Hace 3 días' },
 ];
 
+function MenuRow({ icon, label, value, onPress, danger }) {
+  return (
+    <TouchableOpacity style={styles.menuRow} onPress={onPress} activeOpacity={0.7}>
+      <Ionicons
+        name={icon}
+        size={20}
+        color={danger ? '#ef4444' : colors.textSecondary}
+        style={styles.menuIcon}
+      />
+      <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>{label}</Text>
+      {value ? <Text style={styles.menuValue}>{value}</Text> : null}
+      {!danger && <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
+    </TouchableOpacity>
+  );
+}
+
 export default function ProfileScreen({ navigation }) {
-  const { user, signOut } = useAuth();
-
-  const displayName = user?.displayName || user?.email || 'Invitado';
-  const initial = displayName.charAt(0).toUpperCase();
-  const email = user?.email ?? null;
-
-  const handleSignOut = () => {
-    Alert.alert('Cerrar sesión', '¿Seguro que querés cerrar sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Cerrar sesión',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          navigation.replace('Login');
-        },
-      },
-    ]);
-  };
-
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mi Perfil</Text>
-        <Ionicons name="pencil-outline" size={22} color={colors.textMuted} />
+        <TouchableOpacity style={styles.editBtn}>
+          <Ionicons name="pencil-outline" size={20} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {/* Avatar */}
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Avatar block */}
         <View style={styles.avatarBlock}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            <Text style={styles.avatarInitial}>J</Text>
           </View>
-          <Text style={styles.displayName}>{displayName}</Text>
-          {email && <Text style={styles.email}>{email}</Text>}
+          <Text style={styles.userName}>Juan Pérez</Text>
+          <Text style={styles.userEmail}>juan@email.com</Text>
           <View style={styles.countryBadge}>
             <Text style={styles.countryBadgeText}>🇦🇷 Argentina — ARS</Text>
           </View>
         </View>
 
-        {/* Configuración rápida */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Configuración rápida</Text>
-          <View style={styles.configRow}>
-            <Text style={styles.configLabel}>Moneda base</Text>
-            <Text style={styles.configValue}>ARS</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.configRow}>
-            <Text style={styles.configLabel}>País</Text>
-            <Text style={styles.configValue}>Argentina</Text>
-          </View>
+        {/* Quick settings */}
+        <Text style={styles.sectionLabel}>Configuración rápida</Text>
+        <View style={styles.card}>
+          <MenuRow
+            icon="cash-outline"
+            label="Moneda base"
+            value="ARS"
+          />
+          <View style={styles.cardDivider} />
+          <MenuRow
+            icon="location-outline"
+            label="País"
+            value="Argentina"
+          />
         </View>
 
-        {/* Búsquedas recientes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Búsquedas guardadas</Text>
-          {RECENT_SEARCHES.map((item) => (
-            <View key={item.id} style={styles.searchItem}>
-              <View style={styles.searchDot} />
-              <Text style={styles.searchText}>
-                {item.amount} {item.currency} — {item.wallet} — {item.when}
-              </Text>
+        {/* Navigation to Settings and Favorites */}
+        <Text style={styles.sectionLabel}>Mi cuenta</Text>
+        <View style={styles.card}>
+          <MenuRow
+            icon="create-outline"
+            label="Editar perfil"
+            onPress={() => navigation.navigate('EditProfile')}
+          />
+          <View style={styles.cardDivider} />
+          <MenuRow
+            icon="settings-outline"
+            label="Configuración"
+            onPress={() => navigation.navigate('Settings')}
+          />
+          <View style={styles.cardDivider} />
+          <MenuRow
+            icon="star-outline"
+            label="Favoritos"
+            onPress={() => navigation.navigate('Favorites')}
+          />
+        </View>
+
+        {/* Saved searches */}
+        <Text style={styles.sectionLabel}>Búsquedas guardadas</Text>
+        <View style={styles.card}>
+          {SAVED_SEARCHES.map((item, index) => (
+            <View key={item.id}>
+              {index > 0 && <View style={styles.cardDivider} />}
+              <View style={styles.searchRow}>
+                <View style={styles.searchDot} />
+                <View style={styles.searchInfo}>
+                  <Text style={styles.searchAmount}>
+                    {item.amount} {item.currency}
+                  </Text>
+                  <Text style={styles.searchProvider}>{item.provider}</Text>
+                </View>
+                <Text style={styles.searchDate}>{item.date}</Text>
+              </View>
             </View>
           ))}
         </View>
 
-        {/* Cerrar sesión */}
-        {user && (
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.7}>
-            <Ionicons name="log-out-outline" size={18} color={colors.danger} />
-            <Text style={styles.signOutText}>CERRAR SESIÓN</Text>
-          </TouchableOpacity>
-        )}
+        {/* Logout */}
+        <TouchableOpacity style={styles.logoutBtn}>
+          <Text style={styles.logoutText}>CERRAR SESIÓN</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <BottomNav active="Profile" navigation={navigation} />
@@ -108,7 +146,7 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     height: 64,
@@ -116,127 +154,151 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.divider,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.textPrimary,
+  },
+  editBtn: {
+    padding: 4,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
   },
   avatarBlock: {
     alignItems: 'center',
     paddingVertical: 28,
-    paddingHorizontal: 20,
+    gap: 6,
   },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: 36,
     backgroundColor: colors.primary,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center',
+    marginBottom: 4,
   },
-  avatarText: {
-    color: '#ffffff',
-    fontSize: 28,
+  avatarInitial: {
+    fontSize: 32,
     fontWeight: '700',
+    color: '#ffffff',
   },
-  displayName: {
+  userName: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  email: {
+  userEmail: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 4,
   },
   countryBadge: {
-    marginTop: 10,
-    backgroundColor: colors.surface,
+    backgroundColor: '#eff6ff',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginTop: 4,
   },
   countryBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.primary,
   },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-  },
-  sectionTitle: {
-    fontSize: 16,
+  sectionLabel: {
+    fontSize: 13,
     fontWeight: '600',
-    color: colors.textPrimary,
-    paddingVertical: 14,
-  },
-  configRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  configLabel: {
-    fontSize: 15,
     color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginTop: 16,
   },
-  configValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textPrimary,
+  card: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
-  divider: {
+  cardDivider: {
     height: 1,
     backgroundColor: colors.divider,
+    marginLeft: 52,
   },
-  searchItem: {
+  menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  menuIcon: {
+    width: 24,
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  menuLabelDanger: {
+    color: '#ef4444',
+  },
+  menuValue: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginRight: 4,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
   },
   searchDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.primary,
   },
-  searchText: {
-    fontSize: 14,
+  searchInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  searchAmount: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  searchProvider: {
+    fontSize: 13,
     color: colors.textSecondary,
   },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginHorizontal: 20,
-    marginTop: 8,
-    borderWidth: 2,
-    borderColor: colors.danger,
-    borderRadius: 12,
-    paddingVertical: 14,
+  searchDate: {
+    fontSize: 12,
+    color: colors.textMuted,
   },
-  signOutText: {
-    fontSize: 15,
+  logoutBtn: {
+    marginTop: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#ef4444',
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  logoutText: {
+    fontSize: 14,
     fontWeight: '700',
-    color: colors.danger,
+    color: '#ef4444',
     letterSpacing: 0.5,
   },
 });

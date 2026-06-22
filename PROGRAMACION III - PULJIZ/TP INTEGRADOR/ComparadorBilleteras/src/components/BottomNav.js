@@ -5,7 +5,7 @@ const TABS = [
   { icon: 'stats-chart',                screen: 'Home'    },
   { icon: 'card-outline',               screen: 'Wallets' },
   { icon: 'time-outline',               screen: 'History' },
-  { icon: 'notifications-outline',      screen: 'Alerts'  },
+  { icon: 'notifications-outline',      screen: null      },
   { icon: 'information-circle-outline', screen: 'Profile' },
 ];
 
