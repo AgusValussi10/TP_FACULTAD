@@ -2,6 +2,9 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   GoogleAuthProvider,
@@ -38,6 +41,18 @@ export function AuthProvider({ children }) {
   const signInWithEmail = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 
+  const register = async (email, password, name) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    if (name) await updateProfile(cred.user, { displayName: name });
+    await sendEmailVerification(cred.user);
+    return cred;
+  };
+
+  const resendVerification = () => {
+    if (!auth.currentUser) throw new Error('No hay sesión activa');
+    return sendEmailVerification(auth.currentUser);
+  };
+
   const signInWithGoogleCredential = (idToken) => {
     const credential = GoogleAuthProvider.credential(idToken);
     return signInWithCredential(auth, credential);
@@ -49,7 +64,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading: user === undefined, signInWithEmail, signInWithGoogleCredential, resetPassword, signOut }}
+      value={{ user, loading: user === undefined, signInWithEmail, register, resendVerification, signInWithGoogleCredential, resetPassword, signOut }}
     >
       {children}
     </AuthContext.Provider>
