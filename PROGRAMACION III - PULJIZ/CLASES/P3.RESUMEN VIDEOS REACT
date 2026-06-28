@@ -1,0 +1,189 @@
+[00:00:01]  
+**Resumen inicial y revisión de la clase pasada:**  
+Se repasa la estructura base del proyecto en React Native con Expo Router. Se tiene un layout principal ubicado en el directorio `app`, que contiene una pila (stack) de pantallas. La navegación se condiciona mediante un estado booleano `isLogin` que controla si el usuario está logueado:
+
+- Si `isLogin` es verdadero, se redirige hacia el directorio `main`.  
+- Si es falso, el usuario es enviado al layout `a` (pantalla de inicio).  
+
+La pantalla inicial es `index`, que contiene una vista simple con un texto, concretando la estructura base hasta el momento.
+
+---
+
+[00:02:06]  
+**Organización y navegación según diseño en Figma:**  
+Se rememora el prototipo de navegación basado en un diseño de Figma, donde se manejan varias pantallas:
+
+- Splash screen inicial.  
+- Pantalla de carga inicial.  
+- Pantalla de bienvenida (welcome).  
+
+El objetivo de la clase actual es avanzar y desarrollar la pantalla inicial detalladamente y entender algunos conceptos fundamentales de la programación en React Native.
+
+---
+
+[00:03:52]  
+**Construcción de la pantalla inicial - Safe Area View y división en secciones:**  
+La pantalla inicial se estructura con un componente `SafeAreaView` que garantiza que el contenido se muestre correctamente dentro del área visible del dispositivo, evitando interferir con elementos como la barra de notificaciones.
+
+- La pantalla se divide en tres secciones principales: `header`, `body` y `footer`.  
+- Se gestionan los estilos mediante una constante llamada `styles` creada con `StyleSheet.create()`, que se importa desde React Native para evitar escribir estilos en línea y mejorar la organización del código.  
+
+Este esquema permite organizar visualmente la pantalla y manejar estilos de manera limpia.
+
+---
+
+[00:06:21]  
+**Uso del sistema Flexbox en React Native:**  
+Se explica el sistema de Layout basado en Flexbox, que es el sistema de diseño utilizado en React Native para distribuir espacios y elementos:
+
+- Un contenedor con `flex: 1` se expande para ocupar todo el espacio disponible.  
+- El eje principal por defecto es vertical (`flexDirection: column`).  
+- El eje secundario es horizontal.  
+
+Prácticas detalladas:
+
+| Propiedad           | Función                                              | Valores comunes                                     |
+|---------------------|------------------------------------------------------|-----------------------------------------------------|
+| `alignItems`        | Alinea hijos en el eje secundario (transversal)      | `flex-start`, `center`, `flex-end`                  |
+| `justifyContent`    | Alinea hijos en el eje principal                     | `flex-start`, `center`, `flex-end`, `space-between` |
+
+Se ejemplifica con los estilos:
+
+- `alignItems: 'center'` para centrar horizontalmente (eje secundario).  
+- `justifyContent: 'space-between'` para distribuir hijos con espacios equidistantes verticalmente (eje principal).
+
+---
+
+[00:12:27]  
+**Implementación visual inicial con colores y dimensiones fijas:**  
+Se colocan `View`s para `header`, `body` y `footer` y se les asignan colores de fondo visibles para comprender la distribución:
+
+- Header: rojo.  
+- Body: azul.  
+- Footer: verde.  
+
+Luego se explica con ejemplos cómo cambia la orientación cuando se cambia `flexDirection` entre `row` y `column`.
+
+---
+
+[00:18:37]  
+**Incorporación de imagen y textos a la pantalla inicial:**  
+Se añade para el `body` una imagen del logo de WhatsApp y se incluye el texto “WhatsApp”. En el `footer` se colocan dos textos: "from" y "Facebook". Se utiliza el componente `Image` de React Native con la propiedad `source` que apunta al asset mediante una constante de importación para facilitar su reutilización.
+
+La imagen y textos reciben estilos específicos para ajustar tamaño y posicionamiento.
+
+---
+
+[00:29:40]  
+**Diseño responsivo con la librería react-native-size-matters:**  
+Se introduce la librería `react-native-size-matters` para facilitar el manejo de dimensiones responsivas en los dispositivos móviles, respondiendo a distintas resoluciones y tamaños de pantalla mediante las funciones:
+
+| Función          | Descripción                                                      |
+|------------------|------------------------------------------------------------------|
+| `scale`          | Escala basada en el ancho del dispositivo                        |
+| `verticalScale`  | Escala basada en la altura del dispositivo                       |
+| `moderateScale`  | Escala moderada considerando resolución para tamaño proporcional |
+
+Se muestra cómo instalar la librería y aplicarla para escalar dinámicamente estilos, por ejemplo, los tamaños de logo, fuentes y márgenes, logrando un diseño adaptable que acerca el resultado al diseño original de Figma.
+
+---
+
+[00:38:01]  
+**Manejo de carga con estados y animación de Activity Indicator:**  
+Se explica cómo simular una pantalla de carga (loading) con React:
+
+- Se crea un estado `isLoading` usando `useState`.  
+- Se usa `useEffect` para disparar un `setTimeout` que cambia `isLoading` a `true` después de 2 o 3 segundos, simulando carga de datos inicial.  
+- Si el estado está `true`, se muestra el componente `ActivityIndicator` (spinner de carga) estilizado con tamaño y color escalados proporcionalmente con `moderateScale`.  
+- Si está en `false`, se muestra el texto normal (“from Facebook”).
+
+Esta simulación ayuda a mejorar la experiencia de usuario en tiempos de carga, evitando aparentar que la aplicación está bloqueada.
+
+---
+
+[00:48:13]  
+**Navegación automatizada hacia la pantalla de términos y condiciones:**  
+Se ejecuta una navegación automática hacia la pantalla `termsAgree` después de simular la carga con estado y `setTimeout`. Para esto:
+
+- Se emplea la función `router.push` de `expo-router` para navegar programáticamente.  
+- La función que cambia la ruta se llama dentro del `setTimeout` luego de que termina la carga, en un flujo ordenado que muestra splash screen → pantalla inicial → loading → términos y condiciones.  
+
+Se corrigen errores sintácticos para que el flujo funcione correctamente. Esta navegación es clave para controlar el flujo inicial de la app basada en estados del sistema.
+
+---
+
+[01:00:40]  
+**Diseño de la pantalla de términos y condiciones (`termsAgree`):**  
+Se crea la pantalla dividiéndola en dos views principales: `header` y `footer`, dentro de un `SafeAreaView`. En el header se muestra:
+
+- Texto de bienvenida: "Welcome to WhatsApp".  
+- Imagen representativa (importada y referenciada similar al logo).
+
+En el footer se hacia lo que requería el diseño:  
+- Texto con "agree and continue".  
+- Texto con políticas de privacidad y términos, con estilos que diferencian los links (color azul).  
+
+Además, se usa `gap` para espaciar uniformemente elementos hijos dentro del `header`, facilitando un layout limpio y legible.
+
+---
+
+[01:24:03]  
+**Creación de un componente reutilizable de botón (`ButtonComponent`):**  
+Se crea un componente atómico de botón dentro de la estructura `components/atoms/` para mantener modularidad:
+
+- Componente funcional basado en `TouchableOpacity` para tener efecto táctil visual.  
+- Recibe una propiedad `title` para poder mostrar diferentes etiquetas en distintas pantallas.  
+- El botón tiene fondo verde con texto blanco, se le aplican estilos escalables para padding, border-radius y fuentes con `moderateScale`.  
+- El ancho se controla desde la vista que lo instancia para mantener flexibilidad.  
+- El texto se centra tanto vertical como horizontalmente dentro del botón.  
+
+Este enfoque modular permite reutilizar fácilmente el mismo botón con apariencias y funcionalidades consistentes en toda la app.
+
+---
+
+[01:38:35]  
+**Reflexión final sobre diseño y reutilización:**  
+El profesor enfatiza que la mayoría de las pantallas se construyen con una estructura base común:  
+- Un contenedor flexible con `flex: 1` y layout en columna,  
+- Uso frecuente de propiedades flexbox como `alignItems` y `justifyContent`,  
+- Reuso de estilos comunes para lograr coherencia visual y eficiencia en desarrollo.  
+
+Se subraya que si el diseño en Figma es consistente y bien aplicado, el desarrollo de pantallas se agiliza considerablemente, llegando a construirlas en minutos mediante copia y ajuste de estilos comunes.
+
+---
+
+### Tabla resumen de principales conceptos y componentes usados
+
+| Concepto/Componente         | Descripción/Funcionalidad                                        |
+|-----------------------------|------------------------------------------------------------------|
+| `SafeAreaView`              | Área segura para contenido, evita obstrucción por notch o barra  |
+| `Stack Navigator`           | Navegación en pila entre pantallas                               |
+| `useState`                  | Estado reactivo para manejar lógicas (ej: `isLoading`, `isLogin`)|
+| `useEffect`                 | Efectos secundarios y lógica temporal (ej: setTimeout dinámica)  |
+| `ActivityIndicator`         | Indicador visual animado para cargas                             | 
+| `react-native-size-matters` | Librería para medidas responsivas con funciones de escala        |
+| `TouchableOpacity`          | Componente para botones con retroalimentación táctil             |
+| `flexbox`                   | Sistema de diseño para distribución y alineación de elementos    |
+| `gap`                       | Espaciado uniforme entre elementos hijos                         |
+
+---
+
+### Palabras clave destacadas  
+- **SafeAreaView, Stack Navigator, useState, useEffect, ActivityIndicator**  
+- **Flexbox, flex:1, alignItems, justifyContent, gap**  
+- **react-native-size-matters, moderateScale, responsive design**  
+- **TouchableOpacity, componente atómico, modularidad, reutilización**  
+- **Navegación programada, splash screen, loading state, termsAgree screen**  
+
+---
+
+### Conclusiones relevantes  
+- **La organización modular y escalable es clave para un desarrollo eficiente en React Native, usando componentes reutilizables y estilos centralizados.**  
+- **El diseño responsivo se puede lograr con librerías especializadas adaptando tamaños y espacios al dispositivo de manera simple.**  
+- **Implementar estados de carga informativos mejora notablemente la experiencia de usuario durante la inicialización de la app y movimientos entre pantallas.**  
+- **La navegación declarativa combinada con hooks y funciones programáticas permite controlar flujos complejos de forma clara y mantenible.**  
+- **El entendimiento del sistema Flexbox para layouts es fundamental para distribuir y alinear contenido visualmente en React Native.**  
+
+---
+
+Esta clase cubre desde la estructura inicial del proyecto hasta detalles básicos y avanzados para construir interfaces limpias, responsivas y funcionales, incorporando buenas prácticas de diseño, navegación y experiencia de usuario en React Native con Expo Router.

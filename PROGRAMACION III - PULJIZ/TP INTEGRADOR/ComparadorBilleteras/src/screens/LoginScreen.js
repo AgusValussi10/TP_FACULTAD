@@ -7,16 +7,35 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
+
+WebBrowser.maybeCompleteAuthSession();
+
+// Desktop app client — no requiere client_secret, usa PKCE
+// El redirect URI está registrado en AndroidManifest.xml como intent-filter
+const DESKTOP_CLIENT_ID =
+  '276300901779-kdko463f6u3hq58fv0r0duattluo7l1m.apps.googleusercontent.com';
+const NATIVE_REDIRECT =
+  'com.googleusercontent.apps.276300901779-kdko463f6u3hq58fv0r0duattluo7l1m:/';
+
+const GOOGLE_DISCOVERY = {
+  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+  tokenEndpoint: 'https://oauth2.googleapis.com/token',
+};
+
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 const colors = {
   primary: '#3b82f6',
-  primaryDark: '#2563eb',
-  success: '#10b981',
   background: '#ffffff',
   surface: '#f8f9fa',
   border: '#dee2e6',
@@ -41,7 +60,7 @@ function getFirebaseError(code) {
 }
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  const { signInWithEmail, signInWithGoogleCredential } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,6 +70,18 @@ export default function LoginScreen({ navigation }) {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
+  // Flujo OAuth para APK: Desktop client + PKCE + scheme nativo
+  const [request, , promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: DESKTOP_CLIENT_ID,
+      redirectUri: NATIVE_REDIRECT,
+      responseType: AuthSession.ResponseType.Code,
+      scopes: ['openid', 'email', 'profile'],
+      usePKCE: true,
+    },
+    GOOGLE_DISCOVERY
+  );
+
   const handleLogin = async () => {
     if (!email.trim() || !password) {
       setError('Completá todos los campos');
@@ -59,10 +90,51 @@ export default function LoginScreen({ navigation }) {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await signInWithEmail(email.trim(), password);
       navigation.replace('Home');
     } catch (e) {
       setError(getFirebaseError(e.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    // En Expo Go el scheme nativo no está registrado → informar al usuario
+    if (isExpoGo) {
+      Alert.alert(
+        'Disponible en la app instalada',
+        'El inicio de sesión con Google requiere la app instalada como APK. En Expo Go usá email y contraseña.',
+        [{ text: 'Entendido' }]
+      );
+      return;
+    }
+
+    if (!request) return;
+    setError('');
+    setLoading(true);
+    try {
+      const result = await promptAsync();
+      if (result.type === 'success') {
+        const tokenResponse = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: DESKTOP_CLIENT_ID,
+            redirectUri: NATIVE_REDIRECT,
+            code: result.params.code,
+            extraParams: { code_verifier: request.codeVerifier },
+          },
+          { tokenEndpoint: GOOGLE_DISCOVERY.tokenEndpoint }
+        );
+        const idToken = tokenResponse.idToken ?? tokenResponse.params?.id_token;
+        if (!idToken) throw new Error('No se recibió id_token de Google');
+        await signInWithGoogleCredential(idToken);
+        navigation.replace('Home');
+      } else if (result.type === 'error') {
+        setError('Error al iniciar sesión con Google');
+      }
+    } catch (e) {
+      console.error('[Google Sign-In]', e);
+      setError('No se pudo iniciar sesión con Google. Intentá de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -171,7 +243,12 @@ export default function LoginScreen({ navigation }) {
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={[styles.googleBtn, loading && styles.googleBtnDisabled]}
+              onPress={handleGoogleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
               <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
               <Text style={styles.googleBtnText}>Continuar con Google</Text>
             </TouchableOpacity>
@@ -190,13 +267,8 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
   content: {
     flexGrow: 1,
     paddingHorizontal: 20,
@@ -204,11 +276,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     justifyContent: 'center',
   },
-  logoBlock: {
-    alignItems: 'center',
-    marginBottom: 40,
-    gap: 8,
-  },
+  logoBlock: { alignItems: 'center', marginBottom: 40, gap: 8 },
   logoIcon: {
     width: 72,
     height: 72,
@@ -218,20 +286,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  appName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
+  appName: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
   tagline: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
-  form: {
-    gap: 12,
-  },
+  form: { gap: 12 },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -243,11 +305,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  errorText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#ef4444',
-  },
+  errorText: { flex: 1, fontSize: 14, color: '#ef4444' },
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,27 +320,11 @@ const styles = StyleSheet.create({
     borderColor: colors.borderFocus,
     backgroundColor: colors.background,
   },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  eyeBtn: {
-    padding: 4,
-    marginLeft: 4,
-  },
-  forgotLink: {
-    alignSelf: 'flex-end',
-    marginTop: 2,
-  },
-  forgotText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
-  },
+  inputIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16, color: colors.textPrimary },
+  eyeBtn: { padding: 4, marginLeft: 4 },
+  forgotLink: { alignSelf: 'flex-end', marginTop: 2 },
+  forgotText: { fontSize: 14, color: colors.primary, fontWeight: '500' },
   primaryBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -291,9 +333,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  primaryBtnDisabled: {
-    opacity: 0.6,
-  },
+  primaryBtnDisabled: { opacity: 0.6 },
   primaryBtnText: {
     fontSize: 15,
     fontWeight: '700',
@@ -306,15 +346,8 @@ const styles = StyleSheet.create({
     gap: 12,
     marginVertical: 4,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.divider,
-  },
-  dividerLabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
+  dividerLabel: { fontSize: 13, color: colors.textSecondary },
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -326,24 +359,14 @@ const styles = StyleSheet.create({
     height: 52,
     backgroundColor: colors.background,
   },
-  googleBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
+  googleBtnDisabled: { opacity: 0.5 },
+  googleBtnText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 32,
   },
-  footerText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  footerLink: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
+  footerText: { fontSize: 14, color: colors.textSecondary },
+  footerLink: { fontSize: 14, color: colors.primary, fontWeight: '600' },
 });

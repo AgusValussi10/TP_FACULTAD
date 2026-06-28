@@ -1,0 +1,218 @@
+[00:00:00]  
+**Introducción a Reducers y Redux Toolkit en React Redux**  
+- Se comienza explicando qué son los **reducers** y cómo se usan en el contexto de **Redux** para manejar el estado global en 
+una aplicación React Native.  
+- Se introduce la **Redux Toolkit** como una herramienta que facilita la definición de reducers con funciones más pequeñas y 
+ayuda a diseñar un estado global modular y escalable.  
+- Se plantea el principio de **separación de responsabilidades** en el desarrollo:  
+  - **Estado**  
+  - **Lógica**  
+  - **Interfaz de usuario**  
+
+[00:00:55]  
+**Cuándo usar Redux vs Context API**  
+- Se discute la comparación entre Redux y alternativas como **Context API**:  
+  - La Context API funciona bien para casos muy básicos y configuraciones iniciales, por ejemplo, para temas de fuentes o 
+  configuraciones simples.  
+  - Redux es más apropiado para estados complejos, flujos asincrónicos y manejo estructurado de estados.  
+- Se aclara que Redux es útil para aplicaciones medianas a grandes, multi-pantalla, con múltiples roles de usuario.
+
+[00:02:50]  
+**Definición y funcionamiento de Reducers**  
+- Un **reducer** es una función pura que recibe dos parámetros:  
+  - El **estado actual**  
+  - Una **acción** que representa un cambio que debe realizarse  
+- Los reducers no modifican el estado original de forma directa. En lugar de eso, **devuelven una nueva copia actualizada del estado**, 
+respetando el principio de **inmutabilidad**.  
+- El estado original se mantiene intacto; la función genera una nueva versión con los cambios aplicados.  
+- Esto crea un tipo de registro o historial de estados, pero no accesible directamente como manejo explícito de versiones.
+
+[00:05:06]  
+**Principios fundamentales de los reducers**  
+- El reducer:  
+  - No muta el objeto estado original.  
+  - Siempre devuelve un nuevo objeto con la estructura y comportamiento definidos, actualizando solo los datos necesarios.  
+  - Es **predecible**: dado el mismo estado y la misma acción, siempre produce el mismo resultado con la misma estructura.  
+  - Es **componible**: múltiples reducers se pueden combinar para formar uno más grande que maneje el estado global.  
+
+[00:08:08]  
+**Errores comunes al usar reducers**  
+- No se debe modificar directamente el estado dentro del reducer (por ejemplo, asignando sin pasar por las acciones). 
+Esto es un error conceptual y práctico.  
+- Las mutaciones deben hacerse mediante **acciones específicas** que definen cómo cambiar el estado.  
+- No se debe usar `console.log`, `setTimeout` ni hacer llamadas API dentro del reducer, porque el reducer debe ser una función 
+pura que sólo decida cómo actualizar el estado basándose en datos ya existentes.  
+
+[00:10:17]  
+**Redux Toolkit: ventajas y simplificación del código**  
+- Redux en su forma original tiene mucho **boilerplate**: código repetitivo y estructuras rígidas que deben seguirse.  
+- Redux Toolkit reduce ese "boilerplate" simplificando la creación de reducers, acciones y estados con herramientas como:  
+  - **createSlice** para definir slices o trozos de estado con reducers y acciones agrupadas.  
+  - **Slices** como unidades modulares que encapsulan la lógica y estado de un dominio (usuarios, productos, autenticación, etc).  
+- Redux Toolkit permite **mutaciones seguras** internamente usando librerías como "immer", facilitando escribir código como si 
+mutaras el estado, pero preservando la inmutabilidad en realidad.  
+
+[00:12:44]  
+**createSlice: concepto y funcionalidad**  
+- **createSlice** automatiza la generación del estado inicial y las acciones para un slice específico.  
+- El estado inicial es fácilmente definible, por ejemplo:  
+  - Estado default para un tema visual (modo oscuro).  
+  - Estado inicial para un usuario no autenticado (campos vacíos o nulos).  
+- Cada slice representa una **porción modular del estado global**, ideal para organizar proyectos grandes.  
+
+[00:14:20]  
+**Importancia y estructura de los slices**  
+- Los slices:  
+  - Organizan el código y encapsulan la lógica del dominio (ejemplo: usuarios, contactos, productos).  
+  - Evitan conflicto de nombres en las acciones, permitiendo tener acciones "setUser" y "setProduct" sin colisiones.  
+  - Facilitan la reutilización y el testing unitario.  
+- Se definen con objetos que contienen:  
+  - Nombre del slice  
+  - Estado inicial (estado por defecto o vacío)  
+  - Reducers para definir funciones que actualizan el estado  
+
+[00:16:16]  
+**Ejemplo práctico de un slice de usuario**  
+- Se describe un slice para un usuario con propiedades esenciales:  
+  - $uid$: identificador único.  
+  - $name$, $lastName$, $email$, $tipoDocumento$, $numeroDocumento$, $fotoPerfil$, $isLinked$ (vinculado).  
+- Se muestra cómo el **setUser** recibe un payload con los datos completos del usuario para actualizar el estado.  
+- TypeScript asegura que los datos recibidos sigan una interfaz estricta, evitando errores por campos faltantes.  
+- Se realiza el guardado simultáneo en el almacenamiento local con MMKV, serializando el objeto en JSON para almacenamiento en texto plano.  
+
+| Propiedad          | Función                                        |
+|--------------------|------------------------------------------------|
+| $uid$              | Identificador único generado por Google Auth   |
+| $name$             | Nombre del usuario                             |
+| $lastName$         | Apellido del usuario                           |
+| $email$            | Correo electrónico                             |
+| $tipoDocumento$    | Tipo de documento oficial                      |
+| $numeroDocumento$  | Número del documento                           |
+| $fotoPerfil$       | URL o referencia de la foto de perfil          |
+| $isLinked$         | Indicador de si el usuario está vinculado      |
+
+[00:28:35]  
+**Manejo del estado de sesión con acciones específicas**  
+- Acción **setUser**: setear o actualizar el usuario cuando inicia sesión.  
+- Acción **clearState**: limpiar el estado cuando el usuario cierra sesión, eliminando datos en el estado y la base local (borrando storage).  
+- Estos dos casos cubren el flujo típico de autenticación en aplicaciones.  
+
+[00:32:10]  
+**Cómo usar slices y store en la aplicación**  
+- El slice exporta funciones que disparan acciones (`dispatch`) para modificar el estado.  
+- Ejemplo: en el login, se recibe un token y se hace `fetchUser` con ese token.  
+- El dispatch actualiza el estado del usuario basándose en la respuesta enviada desde el backend.  
+- La lógica está separada: el componente UI hace llamadas a funciones del slice que modifican estado y storage.  
+
+[00:34:38]  
+**Almacenamiento local con MMKV y manejo centralizado**  
+- Se usa la librería **MMKV** para un almacenamiento rápido y eficiente en React Native.  
+- Se exportan funciones para:  
+  - `setItem` (guardar dato clave-valor)  
+  - `getItem` (obtener dato por clave)  
+  - `removeItem` (eliminar dato por clave)  
+- Estas funciones están centralizadas para ser usadas en cualquier archivo de la app, evitando duplicación de código.  
+
+[00:36:23]  
+**Hooks personalizados para interactuar con Redux**  
+- Se crean hooks `useAppDispatch` y `useAppSelector`, que son wrappers para usar el dispatch y seleccionar estados 
+desde React Redux con tipado adecuado.  
+- Esto permite que cualquier componente pueda acceder a la store y disparar acciones de forma sencilla y tipada.  
+
+[00:38:38]  
+**Flujo de autenticación basado en token y fetch de usuario**  
+- Cuando el usuario inicia sesión, recibe un token de autenticación (por ejemplo, Google).  
+- Con ese token se dispara una acción para hacer `fetchUser` a la API y recuperar información adicional.  
+- La respuesta actualiza el estado global, permitiendo que la interfaz se adapte a la sesión activa automáticamente.  
+- En la pantalla inicial se usan esos datos para cargar, por ejemplo, contactos o datos relacionados.  
+
+[00:40:25]  
+**Manejo de sesión vs expiración de token**  
+- Algunos apps (ej. Mercado Pago) cierran sesión automáticamente al cerrar la app por razones de seguridad.  
+- En otras apps sociales no es necesario cerrar sesión al matar la app.  
+- El token puede caducar; antes de cualquier fetch se debe verificar y renovar el token para evitar errores 401 (Unauthorized).  
+- La sesión del usuario puede mantenerse aunque el token haya caducado, dependiendo del sistema y lógica.  
+
+[00:43:02]  
+**Organización de archivos y estructura de proyecto para Redux**  
+- Posibles estructuras para organizar slices y store:  
+  - Carpeta `/source/store` con:  
+    - `store.ts` para configuración global del store y reducers combinados  
+    - Carpeta `/slices` para almacenar los diferentes slices  
+  - Alternativamente, carpeta `/features` con subdivisiones por dominio (usuarios, contactos, etc) y múltiples slices internos por cada dominio.  
+- La organización depende del tamaño y crecimiento de la app y preferencias del equipo.  
+
+[00:44:31]  
+**Cuándo usar Redux en React Native**  
+Se recomienda el uso de Redux:  
+- En aplicaciones medianas o grandes con múltiples pantallas y tipos o roles de usuarios.  
+- Cuando se necesita debugear estados con claridad y estructura.  
+- Si el flujo de datos es complejo y se manejan muchos estados asincrónicos.  
+
+Cuándo evitar Redux:  
+- Proyectos muy pequeños o sencillos.  
+- Cuando solo se requiere compartir datos simples entre pocas pantallas (en ese caso mejor usar Context API).  
+- Evitar usar Redux en aplicaciones simples tipo calculadora o características mínimas donde añadir la complejidad no compensa.  
+
+[00:46:44]  
+**Introducción al concepto de puente (bridge) entre JavaScript y código nativo en React Native**  
+- React Native funciona mediante un **puente (bridge)** que comunica el código JavaScript con el código nativo 
+(Java/Kotlin en Android, Swift/Obj-C en iOS).  
+- El puente permite la comunicación asíncrona necesaria para acceder a funcionalidades propias del dispositivo y hardware 
+(como cámara, GPS, sensores).  
+- JavaScript corre en un solo hilo de ejecución, por lo que la arquitectura debe garantizar sincronización y performance adecuada.  
+
+[00:49:12]  
+**Características del entorno JavaScript en React Native**  
+- JavaScript es un lenguaje de un solo hilo (single-threaded) con un solo proceso de ejecución.  
+- Aunque se habla de multitarea (multithreading), en realidad el multihilo lo emulan características como Web Workers o APIs específicas.  
+- El event loop y la gestión del DOM/Eventos son conceptos fundamentales para comprender cómo reacciona y ejecuta JavaScript.  
+
+[00:52:28]  
+**Funcionamiento del puente en React Native**  
+- Cuando JavaScript necesita una funcionalidad nativa, envía un mensaje asíncrono a través del puente al código nativo.  
+- El código nativo ejecuta la tarea (abre cámara, lee sensor, etc) y puede devolver resultados a JavaScript.  
+- Esto permite que React Native sea multiplataforma usando un solo código base, pero el puente introduce cierta latencia y 
+limitaciones de rendimiento.  
+
+[00:54:02]  
+**Cuándo es necesario crear módulos nativos personalizados**  
+- Cuando se necesitan funcionalidades no expuestas por React Native o bibliotecas existentes (por ejemplo, acceso a hardware 
+especializado, impresoras térmicas, sensores poco comunes).  
+- Cuando se requiere rendimiento extremo en ciertas funciones en tiempo real que el puente no puede manejar eficientemente.  
+- En estos casos, se crea una **envoltura (wrapper)** nativa que expone funcionalidades directamente al código JavaScript.  
+
+[00:55:19]  
+**Enfoques para crear módulos nativos en React Native**  
+- **Módulo nativo clásico**: uso del puente tradicional que soporta callback y promesas.  
+- **Turbo Modules**: nuevo mecanismo para comunicación directa entre JavaScript y código nativo, eliminando el puente para mejorar performance.  
+- Se mostrará un ejemplo práctico para crear un módulo nativo clásico paso a paso.
+
+[00:56:14]  
+**Ejercicio práctico y recomendaciones para creación de módulos nativos**  
+- Se planteará una demo para crear un módulo nativo Android (ejemplo: módulo de batería).  
+- Se recomienda investigar el desarrollo sin depender únicamente de GPT u otras herramientas automáticas para comprender bien el proceso.  
+- Estructura típica Android: `/app/src/main/java/...` para el código nativo.  
+- El módulo nativo debe registrarse correctamente en el paquete y la app nativa para que React Native pueda acceder a él.  
+- Se enfatiza la importancia de aprender a hacer esto manualmente para entender bien la plataforma.
+
+[00:59:23]  
+**Resumen sobre creación de módulo nativo (Android) y uso en React Native**  
+- El módulo nativo se crea con funciones que acceden directamente a funcionalidades del dispositivo, por ejemplo, obtener estado de la batería.  
+- Luego, esta funcionalidad puede ser llamada desde React Native y mostrada en la interfaz.  
+- El ejercicio se realiza en equipo para practicar y consolidar conocimientos.
+
+---
+
+### **Conclusiones clave**  
+- **Reducers son funciones puras y fundamentales para manejar el estado inmutable en Redux.**  
+- **Redux Toolkit simplifica mucho la creación y mantenimiento de estados mediante slices y createSlice.**  
+- **La organización modular de estados con slices facilita el escalamiento y mantenimiento.**  
+- **El puente en React Native es la clave para la interoperabilidad entre código JS y nativo, pero introduce limitaciones de 
+rendimiento que a veces requieren módulos nativos personalizados.**  
+- **Es importante entender profundamente JavaScript y la arquitectura de React Native para crear aplicaciones robustas y eficientes.**  
+- **El uso de Redux debe ser consciente según la complejidad del proyecto, evitando su uso innecesario en aplicaciones simples.**  
+- **La integración con almacenamiento local (como MMKV) es esencial para persistencia en dispositivos móviles.**  
+
+Este contenido ofrece un panorama amplio y detallado para comprender desde fundamentos de Redux hasta conceptos avanzados
+en la arquitectura de React Native y desarrollo nativo.

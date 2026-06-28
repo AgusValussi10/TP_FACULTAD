@@ -18,25 +18,26 @@ if ($usuario === '' || $password === '' || $rol_seleccionado === '') {
     exit;
 }
 
-// Mapear la opción del select al valor en la base de datos
+// Mapear la opción del select a los roles válidos en la base de datos.
+// "Docentes / Personal / Autoridades" incluye también al administrador (rol oculto).
 $roles_map = [
-    'Docentes / Personal / Autoridades' => 'docente',
-    'Padres / Tutores'                  => 'padre',
-    'Alumnos'                           => 'alumno',
-    'Administrador'                     => 'admin',
+    'Docentes / Personal / Autoridades' => ['docente', 'admin'],
+    'Padres / Tutores'                  => ['padre'],
+    'Alumnos'                           => ['alumno'],
 ];
 
-$rol_db = $roles_map[$rol_seleccionado] ?? null;
+$roles_db = $roles_map[$rol_seleccionado] ?? null;
 
-if ($rol_db === null) {
+if ($roles_db === null) {
     echo json_encode(['success' => false, 'message' => 'Rol no válido.']);
     exit;
 }
 
+$placeholders = implode(',', array_fill(0, count($roles_db), '?'));
 $stmt = $conn->prepare(
-    "SELECT id, nombre, password_hash, rol FROM usuarios WHERE usuario = ? AND rol = ? AND activo = 1"
+    "SELECT id, nombre, password_hash, rol FROM usuarios WHERE usuario = ? AND rol IN ($placeholders) AND activo = 1"
 );
-$stmt->bind_param('ss', $usuario, $rol_db);
+$stmt->bind_param(str_repeat('s', 1 + count($roles_db)), $usuario, ...$roles_db);
 $stmt->execute();
 $result = $stmt->get_result();
 

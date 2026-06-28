@@ -1,0 +1,218 @@
+[00:00:01]  
+**Resumen general sobre el ciclo de vida y manejo de estado en React Native**
+
+- Se introducen los fundamentos del ciclo de vida y manejo de estado en aplicaciones React Native.  
+- Objetivo: mejorar el entendimiento sobre estado y ciclo de vida para proyectos móviles.  
+- Se destacan tres hooks principales: **useState**, **useEffect** y **useRef**.  
+- Se hará un contraste con React Web para distinguir diferencias clave.
+
+[00:00:58]  
+**Diferencias entre React Native y React Web**
+
+- **useState** en React Native permite rerenderizar componentes funcionales, pero debe usarse con 
+cuidado especialmente en pantallas de navegación para evitar sobrecargas de render.  
+- React Native no utiliza el **DOM** (Document Object Model), mientras que React Web sí.  
+- React Native usa renderizado nativo, sin acceso a un objeto DOM como en navegador web.  
+- Existen "listeners" o manejadores de eventos en ambos entornos, pero con eventos propios y 
+diferentes para web y móvil.
+
+[00:05:18]  
+**Detalles sobre useRef y eventos en React Native**
+
+- **useRef** permite mantener valores persistentes entre renders sin volver a renderizar el componente, 
+ideal para guardar referencias a componentes como ScrollView, timers o listeners.  
+- En React Web, se usan selectores (querySelector) para obtener referencia de elementos DOM, 
+esta funcionalidad no existe en React Native.  
+- En React Native se maneja la referencia a componentes nativos mediante useRef a través de diferencias 
+técnicas en el entorno móvil.  
+- Eventos en React Web incluyen onClick, onChange, eventos de teclado con múltiples variaciones.  
+- En React Native, los eventos comunes son **onPress** (al presionar) y **onChangeText** para 
+cambios de texto en inputs.
+
+[00:10:11]  
+**Navegación y manejo de rutas en React Native**
+
+- React Web usa **React Router** para navegar entre vistas en aplicaciones Single Page Application.  
+- React Native migra de React Navigation hacia el uso de **Expo Router**, con arquitectura basada 
+en pilas (stack) y tabs donde los componentes se apilan y desapilan para navegación hacia adelante y atrás.
+
+[00:14:05]  
+**Manejo del estado con useState**
+
+- useState devuelve un arreglo con dos posiciones:  
+  - Posición 0: el valor del estado.  
+  - Posición 1: función para actualizar dicho valor (setState).  
+- Ejemplo básico con **TextInput**: el valor del input se asocia al estado y se actualiza en 
+tiempo real con onChangeText, mostrando cambios inmediatos en la UI.  
+- Estado implica datos que **cambian con el tiempo** y afectan la interfaz de usuario.  
+- Los estados declarados con useState son locales al componente donde se usan.
+
+[00:17:58]  
+**Consideraciones avanzadas con useState y rerender**
+
+- Cada cambio de estado provoca un rerender del componente completo.  
+- Se debe evitar mutar el estado directamente (ejemplo: no se debe hacer $count++$ directamente), 
+sino usar la función setter proporcionada por useState.  
+- Rerenderizar excesivamente puede deteriorar rendimiento, especialmente en componentes grandes o 
+con muchas vistas.
+
+[00:19:30]  
+**El ciclo de vida con useEffect**
+
+- Tradicionalmente en React existían métodos como **componentDidMount**, **componentDidUpdate** 
+y **componentWillUnmount**.  
+- En React Native estos fueron reemplazados por el hook unificado **useEffect** que emula estos 
+tres comportamientos dependiendo de cómo se use.  
+- useEffect recibe dos argumentos: una función y un arreglo de dependencias.
+
+[00:21:00]  
+**Patrones de uso del hook useEffect**
+
+- Si el arreglo de dependencias es vacío ($[]$), el efecto se ejecuta **una sola vez al montar el 
+componente**, simulando componentDidMount.  
+- Si se pasa una variable en el arreglo, el efecto se ejecutará cada vez que esa variable 
+cambie — simulando componentDidUpdate para esa variable específica.  
+- Al interior de useEffect se puede retornar una función que se ejecutará al desmontar el 
+componente — simulando componentWillUnmount (limpieza de listeners, timers, estado, etc.).  
+- Ejemplo: manejo de timers en useEffect que se limpia al desmontar para evitar fugas de memoria.
+
+[00:29:03]  
+**Contextos y manejo global del estado (Context API)**
+
+- React Native permite manejar estado global con **Context API**, lo que elimina la necesidad de 
+pasar props entre múltiples niveles de componentes.  
+- Los contextos se definen e inicializan, idealmente tipados (preferentemente con TypeScript) 
+para evitar errores comunes y mejorar autocompletado.  
+- El contexto global debe encerrar la estructura principal (ej. layout o index) para proveer 
+sus valores a todos los hijos.  
+- Cuando el contexto cambia, todos los componentes clientes se rerenderizan.  
+- Buenas prácticas:  
+  - No usar contexto para datos que cambian frecuentemente como inputs o listas muy dinámicas.  
+  - Dividir contextos por dominio (ej. UserContext, ThemeContext, LanguageContext).  
+  - Usar hooks personalizados para encapsular lógica de acceso al contexto (ej. useUser, useTheme).  
+  - Evitar pasar múltiples funciones o estado directamente sin usar memorization como useMemo o 
+  useCallback para optimizar renderizados.
+
+[00:46:01]  
+**Context API vs Redux**
+
+| Característica                  | Context API                         | Redux                                          |
+| --------------------------------| ------------------------------------| -----------------------------------------------|
+| Uso recomendado                 | Estado compartido simple            | Estados complejos, anidados o asincrónicos     |
+| Manejo de múltiples contextos   | Puede generar anidamiento complejo  | Mejor manejo de múltiples contextos            |
+| Manejo de asincronía            | Limitado                            | Robusto y sofisticado                          |
+| Arquitectura                    | Basado en Provider y hooks          | Basado en reducer y flujo unidireccional       |
+| Persistencia de estado          | Básica                              | Avanzada con middleware y herramientas         |
+| Escalabilidad                   | Limitada para proyectos grandes     | Ideal para aplicaciones grandes y complejas    |
+
+- En casos de alta complejidad, Redux es más adecuado y es ampliamente adoptado y documentado en React Native.
+
+[00:48:39]  
+**Persistencia local con AsyncStorage**
+
+- AsyncStorage es almacenamiento nativo clave-valor para datos simples (token, flags, configuraciones).  
+- No es base de datos relacional, funciona en dispositivos móviles, smartwatches, etc., sirve para guardar datos 
+locales simples entre sesiones.  
+- Se recomienda usar claves y valores estandarizados y evitar almacenar grandes cantidades de datos en AsyncStorage para no 
+saturar espacio y afectar rendimiento.
+
+[00:50:56]  
+**Importancia del Onboarding en UX**
+
+- Onboarding es el proceso guiado que acompaña al usuario durante su primera experiencia en la aplicación.  
+- Es fundamental para garantizar que el usuario entienda cómo usar la app y no se pierda o frustré.  
+- Se puede marcar en AsyncStorage una variable que indique si el usuario ya completó el onboarding, para no mostrarlo repetidamente.  
+- El onboarding mejora la experiencia, especialmente para usuarios menos tecnológicos.
+
+[00:56:30]  
+**Manejo correcto de bases de datos no relacionales**
+
+- React Native usa bases de datos NoSQL (ej. Real Time Database, Firestore) que son flexibles para múltiples tipos de datos y escalabilidad.  
+- Importancia de rediseñar y optimizar cómo se almacenan datos para evitar sobrecargar el dispositivo o la base de datos.  
+- Ejemplo práctico: optimizar la estructura de contactos y mensajes para aplicaciones tipo WhatsApp, evitando cargar todos 
+los mensajes y contactos a la vez para mejorar rendimiento.  
+- Refactorización constante es necesaria para evitar costos económicos y técnicos elevados.
+
+[01:03:39]  
+**Abstracción y reutilización del acceso a AsyncStorage**
+
+- Se puede crear un módulo que abstraiga las funciones comunes: get, set, remove para AsyncStorage.  
+- Esto reduce código repetido en cada componente y mejora mantenimiento.  
+- Ejemplo de uso con funciones asincrónicas que usan await y permiten usar el storage de forma centralizada.  
+- Se fomenta la escritura de código limpio, testable y organizado.
+
+[01:07:46]  
+**Ejemplo avanzado de abstracción combinada con useState y AsyncStorage**
+
+- Crear una función que al mismo tiempo gestione un estado local y su persistencia en AsyncStorage.  
+- Esto permite sincronizar estado en UI y almacenamiento local simultáneamente con un solo hook personalizado.  
+- Genera código más robusto y profesional para mantener el estado entre sesiones sin esfuerzo adicional.
+
+[01:20:00]  
+**Gestión del contexto de usuario (UserContext) y autenticación**
+
+- UserContext puede manejar datos globales del usuario como nombre, email, token, y funciones como login y logout.  
+- Logout elimina tokens y datos guardados para cerrar sesión correctamente.  
+- Extensible para manejar tipos de usuarios, datos personales, números telefónicos, etc.
+
+[01:21:00]  
+**Consumo de APIs y networking con fetch y Axios**
+
+- **Fetch**: API nativa de JavaScript para hacer peticiones HTTP, requiere parsear manualmente JSON y no soporta 
+cancelaciones ni interceptores.  
+- **Axios**: librería externa que maneja automáticamente JSON, soporta cancelación de peticiones y proporciona 
+interceptores para manipular requests y responses.  
+- Recomendación clara: usar Axios para proyectos React Native por mayor funcionalidad y comodidad.  
+- Ejemplo de configuración con interceptores: agregar token automáticamente a encabezados, manejar errores globalmente y parsear respuestas.
+
+[01:27:15]  
+**Arquitectura para llamadas a API con Axios**
+
+- Definir un archivo de servicio donde se crea la instancia de Axios con base URL, tiempo máximo de espera (timeout) y configuración global.  
+- Implementar interceptores para manejar autenticación y errores de forma centralizada.  
+- Facilita el uso de get, post, delete y otros métodos HTTP con rutas dinámicas concatenadas a la base URL predefinida.
+
+[01:29:42]  
+**Introducción a Firebase como backend en la nube**
+
+- Firebase es una plataforma que provee Backend as a Service (BaaS), liberando la necesidad de manejar servidores propios.  
+- Permite gestionar hosting, funciones en la nube (Cloud Functions), autenticación, base de datos en tiempo real, almacenamiento, entre otros.  
+- Cloud Functions se usan como microservicios especializados para funcionalidades específicas.  
+- La plataforma escala automáticamente con la carga de usuarios, creando instancias paralelas para manejar múltiples
+peticiones concurrentes sin intervención del desarrollador.  
+- Firebase facilita métodos de autenticación múltiples: Google, Facebook, correo electrónico, Apple, GitHub, Twitter, entre otros.
+
+[01:35:54]  
+**Ecosistema Firebase y ventajas para móviles**
+
+- Maneja autorizaciones y persistencia de tokens automáticamente.  
+- Permite desplegar aplicaciones web, móviles y otros formatos con gestión integral.  
+- Incluye herramientas para asegurar compatibilidad y calidad para diversos dispositivos y modelos.  
+- Ofrece bases de datos como **Realtime Database**, **Firestore**, y almacenamiento estático.  
+- Ideal para acelerar desarrollo y disminuir complejidad operativa.
+
+[01:37:14]  
+**Temas futuros y cierre**
+
+- Próximas clases enfocadas en integrar login con Firebase, gestión de usuarios y prácticas avanzadas.  
+- Enfoque en reutilización de código, abstracción, y buenas prácticas para mantenimiento y escalabilidad.
+
+---
+
+**Conclusiones clave**
+
+- El manejo de estado en React Native se basa en three hooks principales: **useState**, **useEffect** y **useRef**, 
+cada uno con responsabilidades específicas y diferencias con React Web por la ausencia del DOM.  
+- El ciclo de vida del componente se controla con useEffect, simulando montado, actualización y desmontado.  
+- Para estados globales, usar **Context API** para caso simples y **Redux** para casos complejos y asincrónicos.  
+- AsyncStorage permite persistencia local sencilla y se recomienda abstraer su uso para mantener código limpio.  
+- Es crítico optimizar la estructura de bases de datos para evitar problemas de rendimiento y costos económicos, 
+con ejemplos claros en manejo de contactos y mensajes.  
+- Para consumo de APIs, Axios es la opción recomendada por funcionalidad adicional frente a fetch.  
+- Firebase es una solución robusta para backend serverless con escalabilidad automática, múltiples métodos de 
+autenticación y servicios integrados que facilitan el trabajo en aplicaciones móviles.  
+- El onboarding y la experiencia de usuario son vitales para la adopción exitosa de aplicaciones, especialmente para 
+usuarios con menos habilidades técnicas.
+
+Este material es esencial para avanzar en desarrollo de aplicaciones React Native profesionales, con un fuerte énfasis en 
+arquitectura limpia, rendimiento, experiencia de usuario y buenas prácticas en manejo de estado y persistencia.

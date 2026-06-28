@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../context/AuthContext';
 
 const colors = {
   primary: '#3b82f6',
@@ -46,6 +47,13 @@ function MenuRow({ icon, label, value, onPress, danger }) {
 }
 
 export default function ProfileScreen({ navigation }) {
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigation.replace('Login');
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
@@ -133,7 +141,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* Logout */}
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleSignOut} activeOpacity={0.8}>
           <Text style={styles.logoutText}>CERRAR SESIÓN</Text>
         </TouchableOpacity>
       </ScrollView>

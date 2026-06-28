@@ -1,0 +1,229 @@
+[00:00:00]  
+**Resumen general de la estructura inicial del proyecto Expo con React Native**
+
+- Al crear un proyecto con Expo, se presenta una estructura de directorios predeterminada:  
+  - `app`  
+  - `asset`  
+  - `component`  
+  - `constant`  
+  - `hooks`  
+  - `script`  
+- En la práctica, se recomienda limpiar esta estructura borrando las carpetas predefinidas para crear una organización propia más clara.  
+- Se propone crear una carpeta principal llamada `src` (de "source") donde se alojarán las demás carpetas y archivos del proyecto.  
+
+[00:01:04]  
+- La carpeta `assets` no se elimina porque contiene archivos estáticos esenciales (imágenes, fuentes, etc.) que son necesarios para la plataforma. Se traslada dentro de `src`.
+
+[00:03:03]  
+- Dentro de `src`, se crean nuevas carpetas para organizar mejor el código:  
+  - `app`: manejo de rutas y navegación  
+  - `components`: componentes reutilizables de interfaz sin lógica de negocio  
+  - `constants`: variables constantes globales  
+  - `hooks`: funciones especiales para manejar estados y efectos en React  
+  - `styles`: definición de temas globales (colores, tipografías)  
+  - `translation`: internacionalización de la app (distintos idiomas)  
+  - `utils`: funciones genéricas y utilitarias  
+
+[00:03:51]  
+**Concepto clave: Ruteo basado en archivos en Expo**  
+- Cada archivo o carpeta dentro de la carpeta `app` representa una ruta en la aplicación móvil, similar a frameworks web como Next.js o Laravel.  
+- Esto permite el manejo sencillo de la navegación sin necesidad de declarar rutas manualmente.  
+- La carpeta `assets` contiene recursos estáticos usados en la interfaz, por ejemplo: iconos, splash screen (pantalla de bienvenida), tipografías, imágenes o audios.  
+
+[00:07:21]  
+**Carpeta `components`**  
+- Contiene componentes reutilizables sin lógica compleja.  
+- Los componentes:  
+  - Reciben propiedades y emiten eventos.  
+  - Son agnósticos al contexto global para poder usarse en cualquier lugar.  
+  - Ejemplos: botones, inputs, headers.  
+- Si un componente tiene más de una funcionalidad, se recomienda organizarlos en subcarpetas.
+
+[00:09:21]  
+**Carpeta `hooks` y explicación de hooks y webhooks**
+
+- Se diferencia entre `webhooks` y `hooks` (gancho) en React:  
+  - *Webhook*: mecanismo para recibir notificaciones externas (ejemplo de Mercado Pago notificando pago de suscripción).  
+  - *Hook en React*: funciones especiales que permiten manejar estados, efectos y otras funcionalidades en componentes funcionales sin usar clases.  
+
+- Hooks nativos comunes en React:  
+  - `useState`, `useEffect`, `useRef`, `useContext`, etc.
+
+[00:14:01]  
+- La carpeta `hooks` se usará para encapsular lógica compleja que maneje efectos secundarios y se utilice en distintos lugares de la app.  
+- Convenciones para hooks:  
+  - Nombres que comiencen con `use` (minúscula).  
+  - No deben llamarse dentro de condicionales.  
+- Ejemplos prácticos de hooks en una app móvil:  
+  - Verificar conexión a internet (`useOnlineStatus`).  
+  - Implementar cuentas regresivas.  
+  - Manejar permisos (ejemplo usar cámara).  
+
+[00:17:26]  
+**Carpeta `styles`**  
+- Contendrá definiciones globales para temas, incluyendo:  
+  - Tipografías  
+  - Paletas de colores  
+  - Tamaños de fuente  
+- Esto facilita aplicar estilos de forma consistente en toda la aplicación sin repetir en cada vista.  
+
+[00:18:02]  
+**Carpeta `translation`**  
+- Utilizada para la internacionalización (i18n) de la aplicación.  
+- Define idiomas con estructuras JSON que contienen etiquetas (tags) para identificar textos a traducir.  
+- Por defecto puede usarse español, inglés, portugués o cualquier otro según necesidad.  
+- Se pueden aprovechar herramientas de Google para compilar las traducciones o utilizar inteligencia artificial para facilitar el proceso.  
+
+[00:20:03]  
+**Carpeta `utils`**  
+- Contendrá funciones genéricas útiles a lo largo de la app que no dependen de componentes.  
+- Ejemplos:  
+  - Formateo de fecha para mantener consistencia sin importar el idioma del dispositivo.  
+  - Validación de correos electrónicos con expresiones regulares u otras reglas.  
+
+[00:21:16]  
+**Primeros archivos fundamentales en `app`: `layout.tsx` e `index.tsx`**  
+- `layout.tsx` funcionará como un punto de ingreso base y manejará la navegación raíz.  
+- Se utiliza un snippet (`RNF`) para crear rápidamente funciones React Native.  
+
+[00:23:20]  
+- Al crear estos archivos limpios y correr el sistema, la app muestra únicamente el texto "Root Navigation" por defecto, ya que se han eliminado componentes y carpetas anteriores para empezar desde cero.  
+
+[00:24:05]  
+**Implementación de navegación con pila (stack navigation)**  
+- Se muestra un ejemplo con un stack de rutas usando Expo Router.  
+- El stack permite definir pantallas como `index`, `login`, `register`, etc., y navegar entre ellas.  
+- Por defecto, aparece un encabezado (header) encima de la pantalla que puede manipularse con la opción `headerShown: false` para ocultarlo y permitir que la vista ocupe toda la pantalla.  
+
+[00:28:06]  
+**Uso de fuentes personalizadas y splash screen**  
+- Se recomienda instalar `expo-font` y fuentes de Google Fonts mediante comandos:  
+  $$ npx \, expo \, install \, expo-font $$  
+  $$ npx \, expo \, install \, @expo-google-fonts/roboto $$  
+- Se utiliza el hook `useFonts` para cargar fuentes antes de mostrarlas en la app.  
+- Se muestra uso de estilos con propiedades como:  
+  - `flex: 1` para tomar todo el espacio disponible  
+  - `alignItems: center` y `justifyContent: center` para centrar contenido tanto horizontal como vertical.  
+- El cuidado en la selección de fuentes es importante, con recomendación de máximo 2 fuentes visualmente coherentes.  
+
+[00:37:28]  
+**Ajustes en la aplicación tras mover la carpeta `assets`**  
+- Luego de mover `assets` dentro de `src`, es necesario actualizar las rutas en `app.json` para que la app reconozca dónde están los recursos estáticos (logos, splash screen), evitando errores o falta de recursos cargados.  
+
+[00:39:21]  
+**Cómo crear y gestionar el icono de la app y el splash screen con Figma**  
+- Puede usarse la plantilla oficial de Expo para Splash Screen en Figma, donde:  
+  - Se coloca el logo de la app.  
+  - Se ajustan tamaños y márgenes.  
+  - Se generan imágenes para iconos y splash screen en distintos estados (modo claro y oscuro).  
+- Luego, estos elementos exportados se reemplazan dentro de la carpeta `assets/image` y se recarga la app.  
+- Se puede usar el método `SplashScreen.preventAutoHideAsync()` para controlar manualmente cuándo ocultar la pantalla splash, usualmente cuando están listas las fuentes o inicialización.  
+
+[00:49:47]  
+**Implementación práctica e importancia del splash screen**  
+- El splash screen se muestra hasta que la aplicación termine ciertas operaciones (ejemplo, carga de fuentes).  
+- Se usa un hook `useEffect` que ejecuta el ocultamiento del splash en el momento adecuado.  
+
+[00:50:34]  
+**Manejo de rutas y pantallas de la app: importancia del índice (`index.tsx`)**  
+- Si se elimina el archivo `index.tsx`, la aplicación pierde la ruta principal y genera error.  
+- Se entienden las rutas como únicas en nombre (ejemplo, no puede haber dos archivos `login.tsx`).  
+- Se busca organizar en subcarpetas para mantener claridad y escalabilidad.  
+
+[00:54:13]  
+**Diferencias entre layouts y stacks en la navegación**  
+- `Layout` puede retornar diferentes tipos de navegación (vista simple o pila).  
+- Cambiar entre `Stack` o `View` impacta en el comportamiento y encabezado que se muestra.  
+- El encabezado puede ocultarse fácilmente con la opción `screenOptions={{ headerShown: false }}`.  
+
+[00:58:33]  
+**Control del flujo de autenticación: bifurcación según estado de login**  
+- En el layout principal se puede implementar una lógica para redirigir al usuario dependiendo de si está logueado o no.  
+- Se usa un estado booleano hardcodeado `isLogin` que puede alternar entre verdadero o falso para simular sesión activa o cerrada.  
+- El control con operador ternario:  
+  - Si `isLogin === true` → redirigir a `main` (dashboard)  
+  - Si `isLogin === false` → redirigir a `out` (pantalla de login/logout)  
+- El backend real se conectará luego para obtener el estado real del usuario.  
+
+[01:02:42]  
+- Se ejemplifica cómo definir pantallas `index` para autenticación y `main` para la app principal.  
+- Cambiar el valor del estado permite ver la navegación condicional funcionando para flujos de acceso.  
+
+[01:07:03]  
+**Uso de almacenamiento local y gestión de usuarios**  
+- La app puede usar almacenamiento local (por ejemplo con `AsyncStorage`) para guardar datos del usuario logueado.  
+- Esto permite manejar sesiones, tipos de usuario (administrador, cliente, etc.) y flujos específicos para cada rol.  
+
+[01:08:33]  
+**Consejo para la presentación visual de la aplicación**  
+- Se muestra nuevamente cómo ocultar encabezados para que la pantalla use el 100% del espacio del dispositivo móvil.  
+
+[01:09:21]  
+**Tareas para próximas clases y recomendaciones**  
+- Completar los prototipos en Figma, con todos los flujos de navegación planeados.  
+- Tener definidos:  
+  - La paleta de colores (primaria, secundaria, terciaria)  
+  - Tipografías y logos  
+- Se recomienda dividir el trabajo entre los integrantes de cada grupo para agilizar el desarrollo.  
+- La presentación debe incluir: mocks o prototipos tanto digitales (Figma) como bocetos a mano alzada si es necesario.  
+- Usar Git para versionar y compartir el proyecto con el profesor como colaborador.  
+- Probar la aplicación usando emuladores (Android Studio) o dispositivos físicos en la misma red WiFi y usando Expo QR para validar que funciona en ambos entornos.  
+
+[01:14:30]  
+**Importancia de definir los flujos y pantallas desde el diseño**  
+- Ejemplo basado en WhatsApp:  
+  - Pantalla splash > pantalla inicial > términos y condiciones > ingreso de teléfono > validación con código > pantalla dashboard > vistas de conversación  
+- Cada acción debe estar diseñada claramente para estimar tiempos de desarrollo.  
+
+[01:16:47]  
+**Conclusión y línea a seguir**  
+- El avance en diseño y prototipos definirá el alcance del desarrollo posterior.  
+- Se enfatiza la necesidad de planificación previa para evitar atrasos.  
+- El flujo completo debe diseñarse antes de iniciar el código. Esto contribuye a la organización, reparto del trabajo y calidad general del proyecto.  
+
+---
+
+### Tabla resumen de carpetas recomendadas en `src`
+
+| Carpeta      | Contenido / Función                                                                                               |
+|--------------|------------------------------------------------------------------------------------------------------------------|
+| `app`        | Manejo de rutas (cada archivo/carpeta = una ruta); navegación de la aplicación móvil                              |
+| `assets`     | Recursos estáticos (imágenes, fuentes, íconos, splash screen, audios, videos, tipografías)                        |
+| `components` | Componentes reutilizables UI, sin lógica de negocio (botones, inputs, headers, etc.)                              |
+| `constants`  | Variables globales constantes utilizadas en la aplicación                                                       |
+| `hooks`      | Funciones especiales para manejo de estados y lógica compleja reutilizable en múltiples componentes (React hooks)|
+| `styles`     | Temas y estilos globales (paleta colores, tipografías, tamaño de fuentes)                                         |
+| `translation`| Archivos JSON para internacionalización (i18n): definición de idiomas y traducciones                             |
+| `utils`      | Funciones utilitarias genéricas (ej. validadores, formateadores de fecha)                                        |
+
+---
+
+### Palabras clave destacadas  
+- **Expo**  
+- **React Native**  
+- **Ruteo basado en archivos (File Based Routing)**  
+- **Stack navigation (Navegación en pila)**  
+- **Hooks (useState, useEffect, useFonts, etc.)**  
+- **Assets (recursos estáticos)**  
+- **Splash screen**  
+- **Internationalización (i18n)**  
+- **Componentes reutilizables**  
+- **Almacenamiento local**  
+- **Git y control de versiones**  
+- **Prototipado en Figma**  
+
+---
+
+### Conclusiones importantes  
+- La estructura modular propuesta mejora la organización y escalabilidad del proyecto.  
+- React Native con Expo y Expo Router facilita el manejo de rutas sin configuración manual de URLs.  
+- Los hooks son fundamentales para gestionar estado y lógica en componentes funcionales, respetando sus reglas de uso.  
+- La carga y uso adecuado de fuentes mejora la experiencia visual.  
+- El splash screen es clave en la primera impresión y se puede controlar la duración mediante el código.  
+- La definición clara de flujos, prototipos y tareas facilita el desarrollo grupal ordenado y la entrega exitosa.  
+- Usar Git es indispensable para el trabajo colaborativo y seguimiento del proyecto.  
+- Poder emular la app en diferentes dispositivos es fundamental para pruebas reales.  
+
+---
+
+Este resumen ofrece una descripción amplia, profesional y técnica basada estrictamente en el contenido proporcionado, organizado para facilitar la consulta y comprensión del proceso de estructuración, diseño y desarrollo inicial de una aplicación móvil en Expo con React Native.

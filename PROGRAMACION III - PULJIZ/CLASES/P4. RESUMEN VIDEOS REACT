@@ -1,0 +1,242 @@
+[00:00:07]  
+**Resumen general de la clase sobre Expo Router y arquitectura de la aplicación**  
+Se introduce la arquitectura de **Expo Router**, herramienta que extiende React Navigation y utiliza el sistema de archivos para 
+definir rutas, similar a NextJS. Se destaca la importancia de comprender la organización para separar funcionalidades, 
+reutilizar código y facilitar la navegación declarativa en aplicaciones React Native basadas en Expo.
+
+---
+
+[00:01:09]  
+**Fundamentos técnicos y organización del ruteo con Expo Router**  
+- Expo Router define rutas automáticamente por el nombre de archivos y carpetas dentro del directorio **app**.  
+- Cada archivo representa una ruta única; no debe haber archivos del mismo nombre en un mismo directorio para evitar conflictos.  
+- Se permite repetir archivos llamados **index** o **layout** en distintos directorios, pero no en el mismo nivel.  
+- Se usan carpetas como **out** para agrupar rutas de contexto funcional (ej. autenticación y registro) y **tabs** para 
+la organización del menú inferior de pestañas.  
+
+---
+
+[00:04:19]  
+**Concepto y uso de Tabs en Expo Router**  
+- Las pestañas (tabs) se usan para el menú inferior (footer) y ayudan a mejorar la organización y mantenimiento del código a largo plazo.  
+- Sugerencia oficial: mínimo 3 y máximo 5 pestañas para optimizar UX.  
+- Ejemplos estándar de tabs: home, perfil de usuario (profile), configuración (settings).  
+- Ejemplo analizado: WhatsApp, con 4 pestañas – estados, llamadas, comunidad, chats – prioridad estratégica definida para 
+promover visualización y uso.  
+
+---
+
+[00:07:11]  
+**Estrategias de UX basadas en uso de tabs y comportamiento del usuario**  
+- Los usuarios no exploran profundamente cada sección; solo acceden puntualmente cuando necesitan funciones específicas.  
+- Es importante diseñar pensando en comportamientos ya instaurados en usuarios (p.ej., la navegación en WhatsApp usada como referencia).  
+- Mantener la simplicidad y evitar saturar al usuario con demasiadas opciones o información innecesaria.  
+
+---
+
+[00:09:30]  
+**Implementación práctica básica de Tabs con Expo Router (Ejemplo con 3 pantallas)**  
+- Se crea carpeta **Tabs** con archivos: **index.tsx, profile.tsx, set.tsx** (pages o pantallas independientes).  
+- El **layout** dentro de **Tabs** contiene el componente Tabs de Expo Router para colocar y controlar las pestañas.  
+- El estado de login (logueado o no) direcciona automáticamente a Tabs o a out (login/logout).  
+- Mejor organización: eliminar **main** y usar Tabs para el menú inferior.  
+
+---
+
+[00:27:22]  
+**Ajustes y personalización de Tabs**  
+- Opciones para Tabs: ocultar encabezado mediante `headerShown: false` para usar toda la pantalla.  
+- Se pueden cambiar iconos, tamaños y títulos de pestañas.  
+- Uso de iconos provenientes de librerías como Material Icons, Font Awesome o Material Community Icons provistos por Expo.  
+
+---
+
+[00:30:06]  
+**Elección de iconos y adaptación según plataforma (iOS vs Android)**  
+- Se puede optar por iconos específicos para Android (Material Icons) o iOS para mantener coherencia con UI nativa.  
+- Importante considerar las diferencias de experiencia del usuario nativo en ambas plataformas (p.ej., ubicación del botón "volver atrás").  
+- Recomendación: en función del público objetivo (usuarios iOS o Android) diseñar acorde al estilo nativo predominante.  
+
+---
+
+[00:34:07]  
+**Uso de ChatGPT para generación de estructuras de proyectos en React Native**  
+- Se prueba generación automática de estructura básica para proyectos React Native usando ChatGPT.  
+- Se observan diferencias en las respuestas, reflejando múltiples formas válidas de organización.  
+- Se enfatiza en que cada desarrollador puede adaptar su estructura según comodidad, necesidad y contexto del equipo de trabajo.  
+
+---
+
+[00:37:21]  
+**Ejemplo de arquitectura basada en características (feature-based structure)**  
+- Organización propuesta por GPT: dividir código en carpetas por funciones o pantallas, con subcarpetas para vistas, componentes y servicios.  
+- Esta organización mejora la mantenibilidad y claridad al permitir agrupar características funcionales de manera modular.  
+- Se sugiere que los desarrolladores elijan el patrón que más se ajuste a su equipo y proyecto, siempre buscando claridad 
+y facilidad de mantenimiento.  
+
+---
+
+[00:42:36]  
+**Gestión de iconos mediante constantes y componentes reutilizables**  
+- Se sugiere crear un archivo `icons.ts` para definir una función que exporte iconos con parámetros de nombre, tamaño y color.  
+- Esto facilita cambiar iconos en un solo lugar sin tener que buscar y reemplazar en toda la aplicación.  
+- El ejemplo mostrado utiliza `MaterialCommunityIcons` de Expo Vector Icons.  
+
+---
+
+[00:50:01]  
+**Demostración práctica: definición y uso del componente Icon personalizado**  
+- Componente `Icon` que renderiza el icono basado en nombre, tamaño y color recibidos como props.  
+- Ejemplo de iconos: home, setting, account con variantes outline para los bordes.  
+- Recomendación de mantener coherencia en el uso de un tipo de iconos para evitar mezclas visuales poco armoniosas.  
+
+---
+
+[00:52:57]  
+**Documentación oficial y opciones avanzadas de Tabs**  
+- Los Tabs deben residir dentro de `app/(tabs)` y deben contener un `layout` y un archivo `index` (screen inicial).  
+- El layout configura el componente Tabs de Expo Router con opciones para color activo, iconos, título, visibilidad del encabezado, etc.  
+- Se destaca la posibilidad de manejar rutas no encontradas con `hrefNull` y pasar parámetros adicionales para navegación avanzada.  
+
+---
+
+[00:56:55]  
+**Concepto y aplicación de Contextos en React Native para gestión global**  
+- Un **contexto** es un mecanismo para compartir datos globales en la aplicación sin necesidad de pasarlos manualmente a 
+cada componente (prop drilling).  
+- Se usa para manejar información global como sesión de usuario, idioma, tema (dark/light mode) y otros.  
+- El contexto facilita la **persistencia** y sincronización de datos globales.  
+
+---
+
+[01:00:39]  
+**Uso de almacenamiento local en React Native: comparación de librerías**  
+| Librería                      | Tipo                   | Rendimiento              | Uso común                                                                        |
+|-------------------------------|------------------------|--------------------------|----------------------------------------------------------------------------------|
+| `AsyncStorage`                | Almacenamiento local   | Medio (1 seg aprox.)     | Guarda datos clave-valor simples (tokens, flags)                                 |
+| `react-native-mmkv-storage`   | Almacenamiento local   | Muy rápido               | Uso preferido por rapidez, alta frecuencia de lectura/escritura                  |
+| `SQLite`                      | Base de datos local    | Bueno, más pesado        | Para datos complejos y estructurados                                             |
+| `Firestore` (Firebase)        | Base de datos remota   | Rápido, en la nube       | Base documental con filtrado avanzado                                            |
+| `Realtime Database`(Firebase) | Base de datos remota   | Muy rápido (tiempo real) | Mensajes, chat, notificaciones en tiempo real, limitación conexiones simultáneas |
+
+- **Conclusión clave:** Mmkv Storage es recomendado para optimizar velocidad y rendimiento en almacenamiento local.  
+- El uso adecuado del almacenamiento local mejora la experiencia offline y reduce dependencias de red.
+
+---
+
+[01:05:23]  
+**Importancia del almacenamiento local para experiencia offline y performance**  
+- Almacenar información crítica localmente (ej. sesiones, perfil, rutinas, datos de usuario) permite que la aplicación funcione sin conexión.  
+- Se usan **banderas** que monitorean conexión a internet y envían datos en segundo plano cuando hay conectividad.  
+- Ejemplo real: gestión de vacunas en zonas rurales de Chile donde la app funciona offline sincronizando datos al reconectarse.  
+
+---
+
+[01:11:30]  
+**Bases de datos en tiempo real vs bases documentales**  
+- Firebase Realtime Database: NoSQL, estructurada en nodos, limite de conexiones simultáneas (~200,000), ideal para chat en tiempo real.  
+- Firestore: más potente para consultas complejas y filtrado, pero menos rápida para datos en caliente.  
+- Elección depende de la necesidad: velocidad en tiempo real vs capacidades avanzadas de consulta y filtrado.  
+
+---
+
+[01:18:34]  
+**Uso de Cloud Functions para procesamiento pesado (estadísticas)**  
+- Procesos intensivos (estadísticas) requieren más memoria (2GB o 4GB), lo que implica costo en cloud.  
+- La limitación de memoria de instancias gratuitas puede generar timeouts, evidenciado en experiencia propia con Firebase.  
+- Balance entre rendimiento en tiempo real y coste operativo es un punto clave en arquitectura backend.  
+
+---
+
+[01:27:03]  
+**Arquitectura recomendada para manejo de contextos (ejemplo de contexto de autenticación)**  
+- Situar el contexto dentro de la carpeta `utils/context`.  
+- Crear el contexto con valores por defecto:  
+  - `user: null`  
+  - Funciones `signIn` (login) y `signOut` (logout) asíncronas.  
+- Implementar un **proveedor (Provider)** que envuelva la app para compartir el contexto.  
+
+---
+
+[01:35:01]  
+**Implementación del contexto de autenticación con React y AsyncStorage (persistencia)**  
+- Uso de hooks: `useState`, `useEffect`, y `createContext`.  
+- Al iniciar, mediante `useEffect`, se verifica en AsyncStorage si ya existe una sesión guardada para setear el usuario automáticamente.  
+- `signIn` guarda el usuario (convertido a string JSON) en AsyncStorage y cambia el estado global.  
+- `signOut` elimina el usuario del almacenamiento y setea el estado a `null`.  
+
+---
+
+[01:43:18]  
+**Manejo centralizado de colores y temas en la aplicación**  
+- Crear archivo `colors.ts` exportando un objeto con colores primarios, secundarios, backgrounds, textos, etc.  
+- Definición de **temas claros y oscuros (light mode / dark mode)** usando merge de objetos y spread operators (`...`).  
+- Esta centralización permite cambiar estéticas fácilmente sin modificar cada componente.  
+
+---
+
+[01:51:37]  
+**Detección dinámica del modo (dark/light) y aplicación del tema**  
+- Al iniciar la app se recupera la preferencia guardada en el almacenamiento local.  
+- Según el modo detectado, se aplica el tema correspondiente para toda la aplicación.  
+- Se crea un hook personalizado para acceder y manejar el contexto y los temas globales.  
+
+---
+
+[02:32:47]  
+**Consumir contexto para condición de autenticación dentro del layout principal**  
+- El layout consulta el estado global `user` a través del hook creado.  
+- Si existe usuario logueado, navega hacia `tabs`, en caso contrario hacia `out`.  
+- Esto simplifica la gestión de rutas basada en la sesión del usuario.  
+
+---
+
+[02:34:51]  
+**Importancia de estructurar correctamente el contexto y hook de uso**  
+- Se corrigen errores típicos de mezcla de contextos de diferentes proyectos.  
+- Se caracteriza la necesidad de definir un estado (`useState`) para retener datos de usuario.  
+- Uso de hook personalizado (`useOut`) para evitar repetición de código y facilitar acceso al contexto.  
+
+---
+
+[02:37:56]  
+**Mejoras en la estructura y flujo de navegación basado en estado de sesión**  
+- Se reorganiza el index principal para gestionar la pantalla splash y redirección condicional.  
+- Ajuste para retornar pantalla blank (loading) mientras se chequea estado de autenticación.  
+- Dependiendo del estado (`user` o `loading`) se renderiza la ruta adecuada (`tabs` o `out`).  
+
+---
+
+[02:43:23]  
+**Persistencia correcta de usuario en AsyncStorage (corrección de await)**  
+- Se añade `await` en la función de escritura para evitar que no se guarde la sesión correctamente.  
+- Esto asegura que al reiniciar la app, el usuario permanezca logueado y no se realice login repetidamente.  
+
+---
+
+[02:50:08]  
+**Detalle final sobre librería recomendada: React Native Async Storage vs MMKV Storage**  
+- Async Storage es oficial y ampliamente usado, pero tiene menor rendimiento que MMKV.  
+- MMKV tiene mayor comunidad de usuarios, mejor rendimiento y es recomendado para aplicaciones de alta necesidad en almacenamiento local.  
+- Elegir la librería más apropiada depende del proyecto, pero tener en cuenta rendimiento y soporte.  
+
+---
+
+[02:53:23]  
+**Consejos para simular datos y estructurar aplicación**  
+- Se recomienda crear datos hardcoded (simulados) para desarrollo (ej. usuarios, listas, notificaciones) antes de integrar backend real.  
+- Esto permite que el frontend funcione independientemente y facilita pruebas.  
+- Luego integrar el fetch real para conectar con la API o base de datos en la nube.  
+
+---
+
+### **Conclusiones clave**  
+
+- **Expo Router facilita el ruteo declarativo basado en estructura de archivos**, permitiendo fácil mantenimiento y escalabilidad.  
+- Organización mediante contextos **(out para autenticación, tabs para menú inferior)** mejora claridad del proyecto.  
+- Uso de **contextos de React con AsyncStorage o MMKV Storage provee persistencia y gestión eficiente de sesión**.  
+- La gestión centralizada de temas y colores facilita el mantenimiento visual.  
+- La elección de librerías para almacenamiento y la estructuración adecuada del proyecto son cruciales para rendimiento y escalabilidad.  
+- El diseño UX debe partir del análisis del comportamiento real del usuario para definir la organización y prioridad de pantallas y opciones.  
+
+Este enfoque, ejemplificado en el contenido, proporciona una arquitectura robusta para desarrollar aplicaciones React Native con Expo que sean mantenibles, performantes y con buen UX.
