@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { buildResults, formatARS, getWalletMeta } from '../data/wallets';
+import { buildResults, formatARS, getWalletMeta } from '../../data/wallets';
 
 const colors = {
   primary: '#3b82f6',
@@ -134,7 +134,6 @@ export default function ResultsScreen({ route, navigation }) {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
@@ -172,7 +171,6 @@ export default function ResultsScreen({ route, navigation }) {
           </Animated.View>
         ))}
 
-        {/* Botones de acción */}
         <View style={styles.actions}>
           <TouchableOpacity style={styles.buttonSecondary} onPress={handleShare}>
             <Ionicons name="share-outline" size={18} color={colors.textSecondary} />
@@ -188,10 +186,7 @@ export default function ResultsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -201,33 +196,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  headerIcon: {
-    padding: 4,
-    width: 36,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 32,
-  },
+  headerIcon: { padding: 4, width: 36 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 32 },
   contextRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  contextLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
+  contextLabel: { fontSize: 14, color: colors.textSecondary },
   compareChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -237,13 +216,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  compareChipText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-
-  // Logo
+  compareChipText: { fontSize: 12, fontWeight: '700', color: colors.primary },
   providerLogo: {
     width: 40,
     height: 40,
@@ -251,20 +224,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  providerLogoText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 10,
-  },
-
-  // Cards
+  providerLogoText: { color: '#ffffff', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   card: {
     backgroundColor: colors.background,
     borderRadius: 16,
@@ -273,10 +234,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
   },
-  bestCard: {
-    borderColor: colors.success,
-    backgroundColor: '#f0fdf4',
-  },
+  bestCard: { borderColor: colors.success, backgroundColor: '#f0fdf4' },
   bestBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#dcfce7',
@@ -285,54 +243,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     marginBottom: 12,
   },
-  bestBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.success,
-  },
-  providerName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  priceText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    letterSpacing: -1,
-    marginBottom: 8,
-  },
-  priceTextNormal: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  savingsText: {
-    fontSize: 14,
-    color: colors.success,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  savingsTextNormal: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 10,
-  },
-  seeMoreLink: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-
-  // Botones
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
+  bestBadgeText: { fontSize: 12, fontWeight: '600', color: colors.success },
+  providerName: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, flex: 1 },
+  priceText: { fontSize: 32, fontWeight: '700', color: colors.textPrimary, letterSpacing: -1, marginBottom: 8 },
+  priceTextNormal: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5, marginBottom: 6 },
+  savingsText: { fontSize: 14, color: colors.success, fontWeight: '600', marginBottom: 12 },
+  savingsTextNormal: { fontSize: 13, color: colors.textSecondary, marginBottom: 10 },
+  seeMoreLink: { fontSize: 14, color: colors.primary, fontWeight: '600' },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   buttonSecondary: {
     flex: 1,
     flexDirection: 'row',
@@ -345,12 +263,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: colors.background,
   },
-  buttonSecondaryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    letterSpacing: 0.5,
-  },
+  buttonSecondaryText: { fontSize: 14, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5 },
   buttonPrimary: {
     flex: 1,
     alignItems: 'center',
@@ -359,10 +272,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: colors.primary,
   },
-  buttonPrimaryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 0.5,
-  },
+  buttonPrimaryText: { fontSize: 14, fontWeight: '700', color: '#ffffff', letterSpacing: 0.5 },
 });

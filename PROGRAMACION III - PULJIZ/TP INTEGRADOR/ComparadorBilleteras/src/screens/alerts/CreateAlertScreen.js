@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, StatusBar, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { WALLET_META, getWalletMeta } from '../data/wallets';
+import { WALLET_META, getWalletMeta } from '../../data/wallets';
 
 const colors = {
   primary: '#3b82f6',

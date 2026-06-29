@@ -1,29 +1,37 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
-import SplashScreen from '../screens/SplashScreen';
-import OnboardingScreen from '../screens/OnboardingScreen';
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import EmailVerificationScreen from '../screens/EmailVerificationScreen';
-import HomeScreen from '../screens/HomeScreen';
-import ResultsScreen from '../screens/ResultsScreen';
-import EmptyResultsScreen from '../screens/EmptyResultsScreen';
-import LoadingResultsScreen from '../screens/LoadingResultsScreen';
-import WalletDetailScreen from '../screens/WalletDetailScreen';
-import WalletProfileScreen from '../screens/WalletProfileScreen';
-import WalletCompareScreen from '../screens/WalletCompareScreen';
-import WalletsScreen from '../screens/WalletsScreen';
-import HistoryScreen from '../screens/HistoryScreen';
-import AlertsScreen from '../screens/AlertsScreen';
-import CreateAlertScreen from '../screens/CreateAlertScreen';
-import PushNotificationScreen from '../screens/PushNotificationScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import EditProfileScreen from '../screens/EditProfileScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import FavoritesScreen from '../screens/FavoritesScreen';
-import LoadingSplashScreen from '../screens/LoadingSplashScreen';
+import SplashScreen from '../screens/onboarding/SplashScreen';
+import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
+import LoadingSplashScreen from '../screens/onboarding/LoadingSplashScreen';
+
+import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
+
+import HomeScreen from '../screens/home/HomeScreen';
+
+import ResultsScreen from '../screens/results/ResultsScreen';
+import EmptyResultsScreen from '../screens/results/EmptyResultsScreen';
+import LoadingResultsScreen from '../screens/results/LoadingResultsScreen';
+
+import WalletDetailScreen from '../screens/wallets/WalletDetailScreen';
+import WalletProfileScreen from '../screens/wallets/WalletProfileScreen';
+import WalletCompareScreen from '../screens/wallets/WalletCompareScreen';
+import WalletsScreen from '../screens/wallets/WalletsScreen';
+
+import HistoryScreen from '../screens/profile/HistoryScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
+import EditProfileScreen from '../screens/profile/EditProfileScreen';
+import SettingsScreen from '../screens/profile/SettingsScreen';
+import FavoritesScreen from '../screens/profile/FavoritesScreen';
+
+import AlertsScreen from '../screens/alerts/AlertsScreen';
+import CreateAlertScreen from '../screens/alerts/CreateAlertScreen';
+import PushNotificationScreen from '../screens/alerts/PushNotificationScreen';
+
+import ErrorScreen from '../screens/error/ErrorScreen';
 
 const Stack = createStackNavigator();
 
@@ -54,6 +62,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Favorites" component={FavoritesScreen} />
         <Stack.Screen name="LoadingSplash" component={LoadingSplashScreen} />
+        <Stack.Screen name="Error" component={ErrorScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

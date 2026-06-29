@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { WALLETS } from '../data/wallets';
-import BottomNav from '../components/BottomNav';
+import { WALLETS } from '../../data/wallets';
+import BottomNav from '../../components/BottomNav';
 
 const colors = {
   primary: '#3b82f6',

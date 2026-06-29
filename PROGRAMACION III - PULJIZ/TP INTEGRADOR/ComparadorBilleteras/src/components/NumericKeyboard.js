@@ -35,7 +35,7 @@ function formatDisplay(val) {
   return dec !== undefined ? `${intFormatted},${dec}` : intFormatted;
 }
 
-export default function NumericKeyboardScreen({
+export default function NumericKeyboard({
   visible,
   onClose,
   onConfirm,
@@ -94,13 +94,11 @@ export default function NumericKeyboardScreen({
         >
           <View style={styles.handle} />
 
-          {/* Display */}
           <View style={styles.display}>
             <Text style={styles.prefix}>{prefix}</Text>
             <Text style={styles.amount}>{formatDisplay(value)}</Text>
           </View>
 
-          {/* Teclado */}
           <View style={styles.keyboard}>
             {KEYS.map((row, rowIdx) => (
               <View key={rowIdx} style={styles.row}>
@@ -122,7 +120,6 @@ export default function NumericKeyboardScreen({
             ))}
           </View>
 
-          {/* Confirmar */}
           <TouchableOpacity
             style={[styles.confirmButton, !canConfirm && styles.confirmDisabled]}
             onPress={handleConfirm}

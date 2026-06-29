@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { WALLETS, getWalletByName } from '../data/wallets';
+import { WALLETS, getWalletByName } from '../../data/wallets';
 
 const colors = {
   primary: '#3b82f6',
@@ -494,7 +494,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     letterSpacing: 0.5,
   },
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',

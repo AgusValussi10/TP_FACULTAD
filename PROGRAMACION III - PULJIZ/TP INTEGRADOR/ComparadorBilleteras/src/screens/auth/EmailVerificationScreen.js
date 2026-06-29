@@ -8,7 +8,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const colors = {
   primary: '#3b82f6',
@@ -110,10 +110,7 @@ export default function EmailVerificationScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -124,22 +121,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap: 16,
-  },
-  iconWrapper: {
-    position: 'relative',
-    marginBottom: 8,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 16 },
+  iconWrapper: { position: 'relative', marginBottom: 8 },
   iconOuter: {
     width: 120,
     height: 120,
@@ -169,17 +153,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.background,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
+  title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  description: { fontSize: 15, color: colors.textSecondary, textAlign: 'center' },
   emailBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -189,22 +164,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  emailText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  hint: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  actions: {
-    width: '100%',
-    gap: 12,
-    marginTop: 8,
-  },
+  emailText: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  hint: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  actions: { width: '100%', gap: 12, marginTop: 8 },
   outlineBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -215,14 +177,8 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     height: 52,
   },
-  outlineBtnDisabled: {
-    opacity: 0.6,
-  },
-  outlineBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary,
-  },
+  outlineBtnDisabled: { opacity: 0.6 },
+  outlineBtnText: { fontSize: 15, fontWeight: '600', color: colors.primary },
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -232,16 +188,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 52,
   },
-  primaryBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  footerNote: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 8,
-  },
+  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  footerNote: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 8 },
 });

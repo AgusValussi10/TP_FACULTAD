@@ -2,10 +2,10 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const TABS = [
-  { icon: 'stats-chart',                screen: 'Home'    },
   { icon: 'card-outline',               screen: 'Wallets' },
   { icon: 'time-outline',               screen: 'History' },
-  { icon: 'notifications-outline',      screen: null      },
+  { icon: 'stats-chart',                screen: 'Home'    },
+  { icon: 'notifications-outline',      screen: 'Alerts'  },
   { icon: 'information-circle-outline', screen: 'Profile' },
 ];
 

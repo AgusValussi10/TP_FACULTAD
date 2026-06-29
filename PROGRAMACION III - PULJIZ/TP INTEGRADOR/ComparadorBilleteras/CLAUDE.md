@@ -60,20 +60,31 @@ npx expo start -c
 ```
 ComparadorBilleteras/
 ├── src/
-│   ├── screens/          ← Una pantalla por archivo
-│   │   ├── HomeScreen.js
-│   │   ├── ResultsScreen.js
-│   │   └── ...
-│   ├── components/       ← Componentes reutilizables
-│   ├── navigation/       ← Configuración de navegación
+│   ├── screens/
+│   │   ├── onboarding/       ← SplashScreen, OnboardingScreen, LoadingSplashScreen
+│   │   ├── auth/             ← LoginScreen, RegisterScreen, ForgotPasswordScreen, EmailVerificationScreen
+│   │   ├── home/             ← HomeScreen
+│   │   ├── results/          ← ResultsScreen, EmptyResultsScreen, LoadingResultsScreen
+│   │   ├── wallets/          ← WalletsScreen, WalletDetailScreen, WalletProfileScreen, WalletCompareScreen
+│   │   ├── alerts/           ← AlertsScreen, CreateAlertScreen, PushNotificationScreen
+│   │   ├── profile/          ← ProfileScreen, EditProfileScreen, SettingsScreen, FavoritesScreen, HistoryScreen
+│   │   └── error/            ← ErrorScreen
+│   ├── components/           ← Componentes reutilizables
+│   │   ├── BottomNav.js
+│   │   ├── NumericKeyboard.js
+│   │   └── modals/
+│   │       └── ExternalRedirectModal.js
+│   ├── navigation/           ← Configuración de navegación
 │   │   └── AppNavigator.js
+│   ├── theme/
+│   │   └── colors.js         ← Paleta centralizada (opcional, cada pantalla también define colors inline)
 │   ├── config/
-│   │   └── firebase.js   ← Config Firebase + GOOGLE_WEB_CLIENT_ID
+│   │   └── firebase.js       ← Config Firebase + GOOGLE_WEB_CLIENT_ID
 │   ├── context/
-│   │   └── AuthContext.js ← AuthProvider, useAuth, getAuthErrorMessage
-│   └── data/             ← Datos compartidos (billeteras, helpers)
+│   │   └── AuthContext.js    ← AuthProvider, useAuth, getAuthErrorMessage
+│   └── data/                 ← Datos compartidos (billeteras, helpers)
 │       └── wallets.js
-├── App.js                ← Entry point, monta AuthProvider + Navigator
+├── App.js                    ← Entry point, monta AuthProvider + Navigator
 ├── android/
 │   ├── app/src/main/AndroidManifest.xml  ← Intent filter Google OAuth
 │   ├── gradle/wrapper/gradle-wrapper.properties  ← Gradle 8.8
@@ -840,7 +851,7 @@ Context de autenticación. Exporta:
 - `useAuth()` — hook que devuelve `{ user, signInWithEmail, signInWithGoogleCredential, signOut, loading }`
 - `getAuthErrorMessage(err)` — traduce errores de Firebase a mensajes en español
 
-> Las cards de proveedor (`ProviderCard`) y los modales (`NumericKeyboardScreen`) viven inline dentro de su pantalla por simplicidad. Si una necesidad real obliga a reutilizarlas en otra pantalla, recién ahí extraerlas a `src/components/`.
+> `NumericKeyboard` y `ExternalRedirectModal` viven en `src/components/` y `src/components/modals/` respectivamente — fueron extraídos de sus pantallas originales. Las cards de proveedor (`ProviderCard`) viven inline dentro de su pantalla por simplicidad.
 
 ---
 
@@ -1052,42 +1063,41 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 |---|---|---|
 | `src/navigation/AppNavigator.js` | Navigator principal | ✅ |
 | `src/components/BottomNav.js` | Barra de navegación inferior | ✅ |
+| `src/components/NumericKeyboard.js` | 5 — Teclado numérico (modal) | ✅ |
+| `src/components/modals/ExternalRedirectModal.js` | 24 — Confirmación redirección | ✅ |
 | `src/data/wallets.js` | Datos y helpers centralizados | ✅ |
-| `src/screens/SplashScreen.js` | 1 — Splash | ✅ |
-| `src/screens/OnboardingScreen.js` | 3 — Tutorial carrusel | ✅ |
-| `src/screens/HomeScreen.js` | 4 — Comparador (Brasil fijo) | ✅ |
-| `src/screens/NumericKeyboardScreen.js` | 5 — Teclado numérico | ✅ |
-| `src/screens/ResultsScreen.js` | 7 — Resultados | ✅ |
-| `src/screens/EmptyResultsScreen.js` | 8 — Resultados vacíos | ✅ |
-| `src/screens/LoadingResultsScreen.js` | 9 — Skeleton carga | ✅ |
-| `src/screens/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ ⚠️ ver bugs |
-| `src/screens/WalletCompareScreen.js` | 11 — Comparación 2 billeteras | ✅ |
-| `src/screens/HistoryScreen.js` | 12 — Historial | ✅ |
-| `src/screens/AlertsScreen.js` | 13 — Lista alertas | ✅ |
-| `src/screens/CreateAlertScreen.js` | 14 — Crear alerta | ✅ |
-| `src/screens/PushNotificationScreen.js` | 15 — Notificación push | ✅ |
-| `src/screens/WalletsScreen.js` | 16 — Directorio billeteras | ✅ |
-| `src/screens/WalletProfileScreen.js` | 17 — Perfil billetera | ✅ |
-| `src/screens/ProfileScreen.js` | 18 — Perfil usuario | ✅ |
-| `src/screens/SettingsScreen.js` | 19 — Configuración | ✅ |
-| `src/screens/FavoritesScreen.js` | 20 — Favoritos | ✅ |
-| `src/screens/LoginScreen.js` | 21 — Login | ✅ |
-| `src/screens/RegisterScreen.js` | Extra — Registro | ✅ |
-| `src/screens/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ✅ |
-| `src/screens/EmailVerificationScreen.js` | Extra — Verificación email | ✅ |
-| `src/screens/ErrorScreen.js` | 23 — Sin conexión | ✅ |
-| `src/components/ExternalRedirectModal.js` | 24 — Confirmación redirección | ✅ |
-| `src/screens/LoadingSplashScreen.js` | 25 — Splash de carga | ✅ |
-| `src/screens/EditProfileScreen.js` | Extra — Editar perfil | ✅ |
+| `src/screens/onboarding/SplashScreen.js` | 1 — Splash | ✅ |
+| `src/screens/onboarding/OnboardingScreen.js` | 3 — Tutorial carrusel | ✅ |
+| `src/screens/onboarding/LoadingSplashScreen.js` | 25 — Splash de carga | ✅ |
+| `src/screens/auth/LoginScreen.js` | 21 — Login | ✅ |
+| `src/screens/auth/RegisterScreen.js` | Extra — Registro | ✅ |
+| `src/screens/auth/ForgotPasswordScreen.js` | 22 — Recuperar contraseña | ✅ |
+| `src/screens/auth/EmailVerificationScreen.js` | Extra — Verificación email | ✅ |
+| `src/screens/home/HomeScreen.js` | 4 — Comparador (Brasil fijo) | ✅ |
+| `src/screens/results/ResultsScreen.js` | 7 — Resultados | ✅ |
+| `src/screens/results/EmptyResultsScreen.js` | 8 — Resultados vacíos | ✅ |
+| `src/screens/results/LoadingResultsScreen.js` | 9 — Skeleton carga | ✅ |
+| `src/screens/wallets/WalletsScreen.js` | 16 — Directorio billeteras | ✅ |
+| `src/screens/wallets/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ ⚠️ ver bugs |
+| `src/screens/wallets/WalletProfileScreen.js` | 17 — Perfil billetera | ✅ |
+| `src/screens/wallets/WalletCompareScreen.js` | 11 — Comparación 2 billeteras | ✅ |
+| `src/screens/alerts/AlertsScreen.js` | 13 — Lista alertas | ✅ |
+| `src/screens/alerts/CreateAlertScreen.js` | 14 — Crear alerta | ✅ |
+| `src/screens/alerts/PushNotificationScreen.js` | 15 — Notificación push | ✅ |
+| `src/screens/profile/HistoryScreen.js` | 12 — Historial | ✅ |
+| `src/screens/profile/ProfileScreen.js` | 18 — Perfil usuario | ✅ |
+| `src/screens/profile/EditProfileScreen.js` | Extra — Editar perfil | ✅ |
+| `src/screens/profile/SettingsScreen.js` | 19 — Configuración | ✅ |
+| `src/screens/profile/FavoritesScreen.js` | 20 — Favoritos | ✅ |
+| `src/screens/error/ErrorScreen.js` | 23 — Sin conexión | ✅ |
 
 ---
 
 ## 🔜 Próximos pasos
 
 1. **Fix bug params WalletDetail**: alinear `ResultsScreen` (que pasa `{ wallet }`) con `WalletDetailScreen` (que espera `{ walletName }`). Lo más limpio es que ResultsScreen pase `walletName: wallet.name`.
-2. **Eliminar `CompareScreen.js`**: archivo legacy no usado, puede borrarse para evitar confusión.
-3. **Historial persistente**: usar `AsyncStorage` para guardar cada búsqueda al navegar a Results.
-4. **API real de cotizaciones**: reemplazar los rates hardcodeados en `PROVIDERS` por llamadas a una API.
+2. **Historial persistente**: usar `AsyncStorage` para guardar cada búsqueda al navegar a Results.
+3. **API real de cotizaciones**: reemplazar los rates hardcodeados en `PROVIDERS` por llamadas a una API.
 
 ---
 
