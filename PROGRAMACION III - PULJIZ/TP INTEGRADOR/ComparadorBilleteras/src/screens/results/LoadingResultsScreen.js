@@ -49,7 +49,6 @@ export default function LoadingResultsScreen({ navigation }) {
       <View style={styles.scroll}>
         <Skeleton width={120} height={14} style={{ marginBottom: 20 }} />
 
-        {/* Card grande (best) */}
         <View style={styles.card}>
           <Skeleton width={60} height={20} style={{ marginBottom: 12 }} />
           <View style={styles.row}>
@@ -60,7 +59,6 @@ export default function LoadingResultsScreen({ navigation }) {
           <Skeleton width={150} height={14} style={{ marginTop: 8 }} />
         </View>
 
-        {/* Cards normales */}
         {[0, 1].map((i) => (
           <View key={i} style={[styles.card, styles.cardSmall]}>
             <View style={styles.row}>
@@ -78,10 +76,7 @@ export default function LoadingResultsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -91,15 +86,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  scroll: {
-    flex: 1,
-    padding: 20,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  scroll: { flex: 1, padding: 20 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -108,11 +96,6 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
   },
-  cardSmall: {
-    paddingVertical: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  cardSmall: { paddingVertical: 16 },
+  row: { flexDirection: 'row', alignItems: 'center' },
 });

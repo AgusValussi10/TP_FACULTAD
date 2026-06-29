@@ -61,7 +61,7 @@ export default function LoadingSplashScreen({ navigation }) {
         </Animated.View>
 
         <Animated.Text style={[styles.appName, { opacity: opacityAnim }]}>
-          ComparaBilleteras
+          BrasilPagos
         </Animated.Text>
 
         <View style={styles.progressTrack}>

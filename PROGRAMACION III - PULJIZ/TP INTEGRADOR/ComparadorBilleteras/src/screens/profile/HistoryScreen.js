@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import BottomNav from '../components/BottomNav';
+import BottomNav from '../../components/BottomNav';
 
 const colors = {
   primary: '#3b82f6',

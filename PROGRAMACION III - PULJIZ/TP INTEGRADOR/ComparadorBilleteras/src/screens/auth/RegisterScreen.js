@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const colors = {
   primary: '#3b82f6',
@@ -222,13 +222,8 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -239,20 +234,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  headerRight: {
-    width: 36,
-  },
+  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  headerRight: { width: 36 },
   content: {
     flexGrow: 1,
     paddingHorizontal: 20,
@@ -271,11 +255,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  errorText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#ef4444',
-  },
+  errorText: { flex: 1, fontSize: 14, color: '#ef4444' },
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -286,22 +266,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 52,
   },
-  inputGroupFocused: {
-    borderColor: colors.borderFocus,
-    backgroundColor: colors.background,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  eyeBtn: {
-    padding: 4,
-    marginLeft: 4,
-  },
+  inputGroupFocused: { borderColor: colors.borderFocus, backgroundColor: colors.background },
+  inputIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16, color: colors.textPrimary },
+  eyeBtn: { padding: 4, marginLeft: 4 },
   primaryBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -310,28 +278,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  primaryBtnDisabled: {
-    opacity: 0.6,
-  },
-  primaryBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 0.5,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  footerText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  footerLink: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
+  primaryBtnDisabled: { opacity: 0.6 },
+  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#ffffff', letterSpacing: 0.5 },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 },
+  footerText: { fontSize: 14, color: colors.textSecondary },
+  footerLink: { fontSize: 14, color: colors.primary, fontWeight: '600' },
 });

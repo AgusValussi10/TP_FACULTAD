@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getWalletMeta } from '../data/wallets';
-import BottomNav from '../components/BottomNav';
+import { getWalletMeta } from '../../data/wallets';
+import BottomNav from '../../components/BottomNav';
 
 const colors = {
   primary: '#3b82f6',

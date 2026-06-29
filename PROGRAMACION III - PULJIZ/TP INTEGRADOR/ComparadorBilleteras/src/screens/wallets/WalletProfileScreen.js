@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getWalletByName } from '../data/wallets';
-import ExternalRedirectModal from '../components/ExternalRedirectModal';
+import { getWalletByName } from '../../data/wallets';
+import ExternalRedirectModal from '../../components/modals/ExternalRedirectModal';
 
 const colors = {
   primary: '#3b82f6',

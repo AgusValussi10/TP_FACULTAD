@@ -45,10 +45,7 @@ export default function EmptyResultsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -58,37 +55,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  suggestion: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, gap: 12 },
+  title: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginTop: 8, textAlign: 'center' },
+  subtitle: { fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 },
+  suggestion: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 18 },
   button: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -97,10 +68,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
+  buttonText: { color: '#ffffff', fontSize: 15, fontWeight: '700', letterSpacing: 0.5 },
 });

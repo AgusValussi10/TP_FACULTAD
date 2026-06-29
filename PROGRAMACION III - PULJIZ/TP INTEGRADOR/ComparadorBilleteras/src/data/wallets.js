@@ -146,6 +146,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Sin comisión para transferencias vía PIX. Aplica el tipo de cambio oficial del momento.',
     appUrl: 'https://mercadopago.com.ar',
+    pros: ['Sin comisión para PIX', 'Límite diario alto', 'Disponible 24/7'],
+    cons: ['Requiere cuenta verificada', 'Tipo de cambio variable'],
+    requirements: ['DNI argentino', 'Cuenta de Mercado Pago activa', 'Verificación de identidad'],
+    reviews: [
+      { user: 'Lucía M.', rating: 5, date: 'jun 2025', comment: 'Muy fácil de usar, el PIX llegó en segundos.' },
+      { user: 'Tomás R.', rating: 4, date: 'may 2025', comment: 'La cotización es buena, aunque varía bastante.' },
+    ],
   },
   {
     id: '2',
@@ -163,6 +170,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Sin comisión para PIX. El tipo de cambio se aplica al momento del envío.',
     appUrl: 'https://uala.com.ar',
+    pros: ['Sin comisión', 'App muy intuitiva', 'Tarjeta Mastercard incluida'],
+    cons: ['Límite diario más bajo', 'Solo 3 países destino'],
+    requirements: ['DNI argentino', 'Mayor de 13 años', 'Celular con chip activo'],
+    reviews: [
+      { user: 'Sofía G.', rating: 5, date: 'jun 2025', comment: 'Usé Ualá para pagar en Brasil, llegó al instante.' },
+      { user: 'Martín L.', rating: 4, date: 'abr 2025', comment: 'Buena app, el límite diario queda corto para viajes largos.' },
+    ],
   },
   {
     id: '3',
@@ -180,6 +194,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Sin comisión. Requiere cuenta Macro verificada.',
     appUrl: 'https://bimo.com.ar',
+    pros: ['Sin comisión', 'Respaldo del Banco Macro', 'Transferencia instantánea'],
+    cons: ['Requiere cuenta en Banco Macro', 'Límite diario bajo'],
+    requirements: ['Cuenta en Banco Macro', 'DNI argentino', 'Verificación biométrica'],
+    reviews: [
+      { user: 'Diego F.', rating: 4, date: 'may 2025', comment: 'Funciona bien para pagos chicos en Brasil.' },
+      { user: 'Ana P.', rating: 4, date: 'mar 2025', comment: 'Confiable, aunque el límite es bajo para compras grandes.' },
+    ],
   },
   {
     id: '4',
@@ -197,6 +218,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Comisión del 0,5% sobre el monto enviado en BRL.',
     appUrl: 'https://prexcard.com.ar',
+    pros: ['Tarjeta Mastercard física', 'Disponible en Uruguay', 'App moderna'],
+    cons: ['Comisión del 0,5%', 'Menos conocida en Argentina'],
+    requirements: ['DNI argentino', 'Mayor de 18 años', 'Dirección de email válida'],
+    reviews: [
+      { user: 'Camila V.', rating: 4, date: 'jun 2025', comment: 'La tarjeta física es muy útil para Brasil.' },
+      { user: 'Nicolás S.', rating: 5, date: 'may 2025', comment: 'La comisión es mínima y el servicio es excelente.' },
+    ],
   },
   {
     id: '5',
@@ -214,6 +242,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Sin comisión para transferencias PIX internacionales.',
     appUrl: 'https://naranjax.com',
+    pros: ['Sin comisión', 'Buen límite diario', 'Beneficios con comercios'],
+    cons: ['Solo Brasil como destino', 'Requiere cuenta activa Naranja'],
+    requirements: ['DNI argentino', 'Cuenta Naranja X activa', 'Email verificado'],
+    reviews: [
+      { user: 'Valentina H.', rating: 4, date: 'jun 2025', comment: 'Muy buena para viajes a Brasil, sin costo extra.' },
+      { user: 'Rodrigo B.', rating: 4, date: 'abr 2025', comment: 'Fácil de usar, aunque la app a veces tarda.' },
+    ],
   },
   {
     id: '6',
@@ -231,6 +266,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Sin comisión. Tipo de cambio actualizado en tiempo real.',
     appUrl: 'https://brubank.com',
+    pros: ['Sin comisión', 'Banco regulado por BCRA', 'Cotización en tiempo real'],
+    cons: ['Solo para usuarios Brubank', 'Proceso de alta lleva días'],
+    requirements: ['DNI argentino', 'Mayor de 18 años', 'Selfie de validación'],
+    reviews: [
+      { user: 'Julia C.', rating: 5, date: 'jun 2025', comment: 'El mejor banco digital de Argentina. PIX instantáneo.' },
+      { user: 'Ignacio M.', rating: 4, date: 'may 2025', comment: 'Muy confiable. El alta es lenta pero después funciona genial.' },
+    ],
   },
   {
     id: '7',
@@ -248,6 +290,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Comisión del 0,5%. Disponible solo para clientes Personal.',
     appUrl: 'https://personalpay.com.ar',
+    pros: ['Integrado con servicios Personal', 'Transferencia instantánea'],
+    cons: ['Solo para clientes de Telecom Personal', 'Comisión del 0,5%', 'Límite diario bajo'],
+    requirements: ['Línea de celular Personal activa', 'DNI argentino'],
+    reviews: [
+      { user: 'Federico A.', rating: 4, date: 'may 2025', comment: 'Práctica si ya usás Personal. La comisión no molesta.' },
+      { user: 'Laura T.', rating: 4, date: 'mar 2025', comment: 'Funciona bien, aunque el límite es muy bajo.' },
+    ],
   },
   {
     id: '8',
@@ -265,6 +314,13 @@ export const WALLETS = [
     estimatedTime: 'Hasta 5 min',
     commissionDetail: 'Comisión del 1% sobre el monto en BRL. Conversión vía USDT.',
     appUrl: 'https://lemon.me',
+    pros: ['Límite diario alto', 'Tarjeta Visa incluida', 'Soporte cripto y fiat'],
+    cons: ['Comisión del 1%', 'Tiempo de hasta 5 minutos', 'Conversión vía cripto puede variar'],
+    requirements: ['DNI argentino', 'Mayor de 18 años', 'Verificación KYC completa'],
+    reviews: [
+      { user: 'Matías E.', rating: 4, date: 'jun 2025', comment: 'El límite alto es ideal para viajes largos. La comisión es aceptable.' },
+      { user: 'Florencia K.', rating: 5, date: 'abr 2025', comment: 'Me encanta la app, aunque el PIX tardó 3 minutos.' },
+    ],
   },
   {
     id: '9',
@@ -282,6 +338,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Sin comisión. Requiere cuenta bancaria verificada en Argentina.',
     appUrl: 'https://modo.com.ar',
+    pros: ['Sin comisión', 'Respaldo de bancos argentinos', 'Transferencia instantánea'],
+    cons: ['Requiere cuenta bancaria activa', 'Menos funcionalidades que otras billeteras'],
+    requirements: ['Cuenta bancaria argentina', 'DNI argentino', 'Cuenta verificada en el banco'],
+    reviews: [
+      { user: 'Pablo N.', rating: 4, date: 'may 2025', comment: 'Confiable por el respaldo bancario. La app puede mejorar.' },
+      { user: 'Gabriela O.', rating: 3, date: 'abr 2025', comment: 'Funciona, aunque la experiencia de usuario no es la mejor.' },
+    ],
   },
   {
     id: '10',
@@ -299,6 +362,13 @@ export const WALLETS = [
     estimatedTime: 'Instantáneo',
     commissionDetail: 'Sin comisión. Disponible para mayores de 13 años con DNI argentino.',
     appUrl: 'https://cuentadni.bancoprovincia.com.ar',
+    pros: ['Sin comisión', 'Disponible desde los 13 años', 'Respaldo Banco Provincia'],
+    cons: ['Límite diario muy bajo', 'Solo para provincia de Buenos Aires'],
+    requirements: ['DNI argentino', 'Mayor de 13 años', 'Domicilio en Argentina'],
+    reviews: [
+      { user: 'Belén Q.', rating: 4, date: 'jun 2025', comment: 'Ideal para pagos pequeños en Brasil, sin comisión.' },
+      { user: 'Sebastián W.', rating: 4, date: 'mar 2025', comment: 'El límite bajo es la única contra. Por lo demás, perfecto.' },
+    ],
   },
 ];
 

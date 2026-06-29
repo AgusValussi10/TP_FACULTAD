@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const colors = {
   primary: '#3b82f6',
@@ -172,13 +172,8 @@ export default function ForgotPasswordScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -189,33 +184,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  headerRight: {
-    width: 36,
-  },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 32,
-  },
-  formContainer: {
-    gap: 16,
-  },
-  iconBlock: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
+  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  headerRight: { width: 36 },
+  content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 32 },
+  formContainer: { gap: 16 },
+  iconBlock: { alignItems: 'center', marginBottom: 8 },
   keyIcon: {
     width: 96,
     height: 96,
@@ -224,12 +198,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
+  subtitle: { fontSize: 15, color: colors.textSecondary, lineHeight: 22, textAlign: 'center' },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -241,11 +210,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  errorText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#ef4444',
-  },
+  errorText: { flex: 1, fontSize: 14, color: '#ef4444' },
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -256,18 +221,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 52,
   },
-  inputGroupFocused: {
-    borderColor: colors.borderFocus,
-    backgroundColor: colors.background,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
+  inputGroupFocused: { borderColor: colors.borderFocus, backgroundColor: colors.background },
+  inputIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16, color: colors.textPrimary },
   primaryBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -275,15 +231,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryBtnDisabled: {
-    opacity: 0.6,
-  },
-  primaryBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 0.5,
-  },
+  primaryBtnDisabled: { opacity: 0.6 },
+  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#ffffff', letterSpacing: 0.5 },
   backToLoginBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,39 +241,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginTop: 4,
   },
-  backToLoginText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  successContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: 20,
-    gap: 16,
-  },
-  successIcon: {
-    marginBottom: 8,
-  },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  successMessage: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  emailHighlight: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  successHint: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
+  backToLoginText: { fontSize: 14, color: colors.primary, fontWeight: '500' },
+  successContainer: { flex: 1, alignItems: 'center', paddingTop: 20, gap: 16 },
+  successIcon: { marginBottom: 8 },
+  successTitle: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
+  successMessage: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  emailHighlight: { fontSize: 15, fontWeight: '600', color: colors.primary },
+  successHint: { fontSize: 13, color: colors.textMuted, textAlign: 'center' },
 });

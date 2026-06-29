@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, StatusBar } from 'react-native';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const colors = {
   primary: '#3b82f6',
@@ -58,7 +58,7 @@ export default function SplashScreen({ navigation }) {
         style={[styles.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
       >
         <Text style={styles.logo}>💳</Text>
-        <Text style={styles.name}>ComparaBilleteras</Text>
+        <Text style={styles.name}>BrasilPagos</Text>
         <Text style={styles.tagline}>El mejor cambio para Brasil 🇧🇷</Text>
       </Animated.View>
 

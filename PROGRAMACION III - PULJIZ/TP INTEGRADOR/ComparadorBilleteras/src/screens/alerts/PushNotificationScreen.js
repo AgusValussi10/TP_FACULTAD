@@ -39,7 +39,7 @@ export default function PushNotificationScreen({ navigation }) {
             <View style={styles.appIconContainer}>
               <Ionicons name="card" size={14} color={colors.primary} />
             </View>
-            <Text style={styles.appName}>ComparaBilleteras</Text>
+            <Text style={styles.appName}>BrasilPagos</Text>
             <Text style={styles.timestamp}>hace un momento</Text>
           </View>
           <Text style={styles.bannerBody}>

@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import BottomNav from '../components/BottomNav';
-import NumericKeyboardScreen from './NumericKeyboardScreen';
+import BottomNav from '../../components/BottomNav';
+import NumericKeyboard from '../../components/NumericKeyboard';
 
 const colors = {
   primary: '#3b82f6',
@@ -78,20 +78,18 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerIcon}>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="menu-outline" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerIcon}>
           <Ionicons name="home" size={26} color={colors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerIcon}>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="person-circle-outline" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
-      {/* Contenido scrollable */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -99,7 +97,6 @@ export default function HomeScreen({ navigation }) {
       >
         <Text style={styles.title}>Pagá en Brasil{'\n'}al mejor cambio</Text>
 
-        {/* Card de destino (fijo Brasil PIX) */}
         <View style={styles.destinationCard}>
           <Text style={styles.flag}>{DESTINATION.flag}</Text>
           <View style={styles.destinationInfo}>
@@ -115,7 +112,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Input de monto — abre teclado custom */}
         <Text style={styles.label}>¿Cuánto vas a pagar?</Text>
         <TouchableOpacity
           style={styles.amountContainer}
@@ -130,7 +126,6 @@ export default function HomeScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* Botón comparar */}
         <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
           <TouchableOpacity
             style={[styles.button, !amount && styles.buttonDisabled]}
@@ -141,10 +136,8 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Divider */}
         <View style={styles.divider} />
 
-        {/* Últimas consultas */}
         <Text style={styles.sectionTitle}>Últimas consultas</Text>
         {RECENT_QUERIES.map((item) => (
           <View key={item.id} style={styles.recentItem}>
@@ -156,7 +149,7 @@ export default function HomeScreen({ navigation }) {
 
       <BottomNav active="Home" navigation={navigation} />
 
-      <NumericKeyboardScreen
+      <NumericKeyboard
         visible={keyboardVisible}
         onClose={() => setKeyboardVisible(false)}
         onConfirm={(val) => setAmount(val)}
@@ -168,10 +161,7 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -181,17 +171,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  headerIcon: {
-    padding: 4,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 28,
-    paddingBottom: 24,
-  },
+  headerIcon: { padding: 4 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 24 },
   title: {
     fontSize: 32,
     fontWeight: '700',
@@ -210,44 +192,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 12,
   },
-  destinationInfo: {
-    flex: 1,
-  },
-  destinationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  flag: {
-    fontSize: 26,
-  },
-  destinationName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  destinationSubtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: colors.brasil,
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  label: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 10,
-    fontWeight: '500',
-  },
+  destinationInfo: { flex: 1 },
+  destinationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  flag: { fontSize: 26 },
+  destinationName: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  destinationSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  badge: { backgroundColor: colors.brasil, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  badgeText: { fontSize: 11, fontWeight: '700', color: '#ffffff' },
+  label: { fontSize: 14, color: colors.textSecondary, marginBottom: 10, fontWeight: '500' },
   amountContainer: {
     backgroundColor: colors.surface,
     borderRadius: 16,
@@ -260,25 +212,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  currencyPrefix: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  amountText: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    letterSpacing: -1,
-  },
-  amountPlaceholder: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.textMuted,
-    letterSpacing: -1,
-  },
+  currencyPrefix: { fontSize: 28, fontWeight: '700', color: colors.textSecondary },
+  amountText: { flex: 1, fontSize: 32, fontWeight: '700', color: colors.textPrimary, letterSpacing: -1 },
+  amountPlaceholder: { flex: 1, fontSize: 32, fontWeight: '700', color: colors.textMuted, letterSpacing: -1 },
   button: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -286,40 +222,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  buttonDisabled: {
-    backgroundColor: colors.textMuted,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.divider,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 14,
-  },
-  recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 10,
-  },
-  bullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  recentText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
+  buttonDisabled: { backgroundColor: colors.textMuted },
+  buttonText: { color: '#ffffff', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
+  divider: { height: 1, backgroundColor: colors.divider, marginBottom: 20 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, marginBottom: 14 },
+  recentItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
+  bullet: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  recentText: { fontSize: 14, color: colors.textSecondary },
 });

@@ -31,7 +31,7 @@ export default function ExternalRedirectModal({ visible, walletName = 'Mercado P
               <Text style={styles.title}>¿Ir a {walletName}?</Text>
 
               <Text style={styles.body}>
-                Vas a salir de ComparaBilleteras y abriremos la app de{' '}
+                Vas a salir de BrasilPagos y abriremos la app de{' '}
                 {walletName} para que completes tu transferencia.
               </Text>
 

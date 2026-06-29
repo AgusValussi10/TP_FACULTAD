@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "ComparadorBilleteras",
-    "slug": "ComparadorBilleteras",
+    "name": "BrasilPagos",
+    "slug": "BrasilPagos",
     "owner": "agusvalussi10",
-    "scheme": "comparadorbilleteras",
+    "scheme": "brasilpagos",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon.jpg",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,10 +18,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/adaptive-icon.jpg",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.ComparadorBilleteras"
+      "package": "com.anonymous.BrasilPagos"
     },
     "web": {
       "favicon": "./assets/favicon.png"
