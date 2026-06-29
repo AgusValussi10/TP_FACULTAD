@@ -58,7 +58,7 @@ export default function SplashScreen({ navigation }) {
         style={[styles.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
       >
         <Text style={styles.logo}>💳</Text>
-        <Text style={styles.name}>ComparaBilleteras</Text>
+        <Text style={styles.name}>BrasilPagos</Text>
         <Text style={styles.tagline}>El mejor cambio para Brasil 🇧🇷</Text>
       </Animated.View>
 

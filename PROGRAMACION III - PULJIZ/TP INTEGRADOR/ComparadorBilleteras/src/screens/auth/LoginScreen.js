@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -152,10 +153,11 @@ export default function LoginScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.logoBlock}>
-            <View style={styles.logoIcon}>
-              <Ionicons name="card" size={36} color={colors.primary} />
-            </View>
-            <Text style={styles.appName}>ComparaBilleteras</Text>
+            <Image
+              source={require('../../../assets/icon.jpg')}
+              style={styles.logoIcon}
+            />
+            <Text style={styles.appName}>BrasilPagos</Text>
             <Text style={styles.tagline}>
               Iniciá sesión para guardar{'\n'}tus alertas y favoritos
             </Text>
@@ -281,9 +283,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: '#eff6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 4,
   },
   appName: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },

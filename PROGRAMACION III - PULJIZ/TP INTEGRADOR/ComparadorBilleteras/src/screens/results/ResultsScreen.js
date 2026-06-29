@@ -105,7 +105,7 @@ export default function ResultsScreen({ route, navigation }) {
     try {
       await Share.share({
         message:
-          `Comparador de Billeteras 💳\n` +
+          `BrasilPagos 💳\n` +
           `Pagando ${amount} ${currency} (${country})\n\n` +
           results
             .map((r, i) => `${i + 1}. ${r.name}: ${formatARS(r.price)}`)
@@ -118,7 +118,7 @@ export default function ResultsScreen({ route, navigation }) {
   };
 
   const handleSeeMore = (wallet) => {
-    navigation.navigate('WalletDetail', { wallet, amount, currency });
+    navigation.navigate('WalletDetail', { walletName: wallet.name, amount, currency });
   };
 
   const handleCompare = () => {

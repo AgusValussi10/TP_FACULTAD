@@ -1,11 +1,11 @@
-# CLAUDE.md — Comparador de Billeteras
+# CLAUDE.md — BrasilPagos
 > Guía completa para Claude Code. Leé esto antes de tocar cualquier archivo.
 
 ---
 
 ## 🧠 ¿Qué es esta app?
 
-Una app mobile (React Native + Expo SDK 51) **dedicada exclusivamente a usuarios argentinos que viajan a Brasil** y necesitan saber, en el momento exacto del pago, **qué billetera virtual argentina les conviene más para pagar vía PIX**.
+Una app mobile (React Native + Expo SDK 54) **dedicada exclusivamente a usuarios argentinos que viajan a Brasil** y necesitan saber, en el momento exacto del pago, **qué billetera virtual argentina les conviene más para pagar vía PIX**.
 
 **Caso de uso único (MVP):**
 - Usuario: argentino en Brasil
@@ -151,7 +151,7 @@ const colors = {
 ```
 Fondo (azul primario #3b82f6, centrado)
   ├── Logo (ícono 💳 grande, 80px, color blanco) — fade-in + scale spring
-  ├── Nombre: "ComparaBilleteras" (28px bold, blanco)
+  ├── Nombre: "BrasilPagos" (28px bold, blanco)
   ├── Tagline: "El mejor cambio para Brasil 🇧🇷" (14px, blanco 80%)
   └── Loading indicator (3 puntos animados con loop opacity, abajo centrado)
 ```
@@ -353,7 +353,7 @@ Nota visual: todas las barras skeleton son gris #e0e0e0, con shimmer animado (lo
 
 **Descripción:** Aparece al tocar "Ver más →" en una card de resultados. Muestra tipo de cambio exacto, comisiones, límites y tiempo estimado. Botón "IR A LA APP" usa `Linking.openURL` con la URL oficial de la billetera. Botón compartir usa la `Share` API.
 
-**Recibe como parámetro:** `wallet` (objeto completo con price, rate, savings, etc.), `amount` (number), `currency` (string)
+**Recibe como parámetro:** `walletName` (string), `amount` (number), `currency` (string)
 
 **Estructura:**
 ```
@@ -498,8 +498,8 @@ Botón "GUARDAR ALERTA" (azul, full width, fijo abajo)
 Fondo: pantalla bloqueada (gris oscuro, hora 09:41)
 
 Notificación banner (blanco, radio 14)
-  ├── Ícono app ComparaBilleteras (pequeño, izquierda)
-  ├── Título: "ComparaBilleteras" (bold, 13px)
+  ├── Ícono app BrasilPagos (pequeño, izquierda)
+  ├── Título: "BrasilPagos" (bold, 13px)
   ├── Cuerpo: "💱 Mercado Pago superó tu objetivo:
   │            $ 978 ARS/BRL — ¡Es un buen momento!"
   └── Timestamp: "hace un momento"
@@ -677,8 +677,8 @@ Empty state (si vacío)
 Fondo blanco, sin header
 
 Bloque superior (logo + título)
-  ├── Logo app (48px, azul)
-  ├── "ComparaBilleteras" (24px bold)
+  ├── Logo app (imagen `assets/icon.jpg`, 72×72, borderRadius 20)
+  ├── "BrasilPagos" (24px bold)
   └── "Iniciá sesión para guardar\ntus alertas y favoritos" (gris)
 
 Formulario
@@ -755,7 +755,7 @@ Overlay semitransparente oscuro
 Modal centrado (radio 20, fondo blanco)
   ├── Ícono de la billetera (MP azul, 48px)
   ├── Título: "¿Ir a Mercado Pago?" (18px bold)
-  ├── Cuerpo: "Vas a salir de ComparaBilleteras
+  ├── Cuerpo: "Vas a salir de BrasilPagos
   │            y abriremos la app de Mercado Pago
   │            para que completes tu transferencia."
   │
@@ -776,7 +776,7 @@ Fondo azul primario (#3b82f6), pantalla completa
 
 Centrado vertical
   ├── Logo animado (💳 con fade-in + escala 0.8→1.0)
-  ├── Nombre: "ComparaBilleteras" (24px bold, blanco)
+  ├── Nombre: "BrasilPagos" (24px bold, blanco)
   └── Barra de progreso
         ├── Fondo: blanco 20%
         └── Relleno: blanco, animado de 0 a 100%
@@ -834,11 +834,13 @@ Barra de navegación inferior usada por las pantallas con tabs (Home, History, e
 
 ### `src/data/wallets.js`
 Datos y helpers centralizados. Exporta:
-- `WALLET_META` — meta de cada billetera: `color`, `initials`, `description`, `commission`, `dailyLimit`, `estimatedTime`, `appUrl`
+- `WALLET_META` — meta liviana por billetera: `color`, `initials`, `description`, `commission`, `dailyLimit`, `estimatedTime`, `appUrl`
+- `WALLETS` — array completo con todos los campos: incluye `pros`, `cons`, `requirements`, `reviews` (usado por `WalletDetailScreen` y `WalletProfileScreen`)
 - `PROVIDERS` — tarifas por moneda (clave `BRL` por ahora)
 - `formatARS(amount)` — formatea a `$ 12.345 ARS`
 - `buildResults(amount, currency = 'BRL')` — devuelve array ordenado con `price`, `savings`, `savingsPct`, `isBest`
 - `getWalletMeta(name)` — meta con fallback si el nombre no está
+- `getWalletByName(name)` — busca en `WALLETS` por nombre exacto, devuelve `null` si no existe
 
 ### `src/config/firebase.js`
 Inicializa Firebase y exporta:
@@ -876,9 +878,20 @@ sdk.dir=C\:\\Users\\Agustin\\AppData\\Local\\Android\\Sdk
 
 ### app.json — scheme
 ```json
-"scheme": "comparadorbilleteras"
+"scheme": "brasilpagos"
 ```
 Requerido por `expo-auth-session` para manejar deep links OAuth.
+
+### app.json — assets de ícono
+Los archivos de ícono están en formato **JPG** (no PNG):
+
+```json
+"icon": "./assets/icon.jpg",
+"splash": { "image": "./assets/splash.jpg" },
+"android": { "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.jpg" } }
+```
+
+> El único archivo que sigue siendo PNG es `assets/favicon.png` (usado solo en web).
 
 ### Firebase (src/config/firebase.js)
 - Proyecto: `comparabilleteras-1e6b7`
@@ -1013,6 +1026,8 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 - [x] Firebase Auth configurado (email/contraseña + Google Sign-In)
 - [x] Junction `C:\dev\CB` creado para resolver el problema de path largo en Windows
 - [x] Intent filter Google OAuth en AndroidManifest.xml
+- [x] Íconos de la app actualizados (`icon.jpg`, `splash.jpg`, `adaptive-icon.jpg`) — formato JPG, `app.json` apunta a los nuevos archivos
+- [x] App renombrada a **BrasilPagos** en todos los archivos (`app.json`, pantallas, modales)
 
 ### Pantallas implementadas (23/23 en alcance MVP)
 
@@ -1051,7 +1066,8 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 - ⚠️ `CompareScreen.js` — versión anterior de la pantalla 11, **no registrada en AppNavigator**. Puede eliminarse; la activa es `WalletCompareScreen.js`.
 
 ### Bugs conocidos pendientes de fix
-- [ ] **WalletDetailScreen params**: `ResultsScreen` navega con `{ wallet, amount, currency }` (objeto wallet completo) pero `WalletDetailScreen` espera `{ walletName }` (string). Hay que alinear uno de los dos.
+- [x] ~~**WalletDetailScreen params**~~: corregido — `ResultsScreen` ahora pasa `{ walletName: wallet.name, amount, currency }`.
+- [x] ~~**WalletProfileScreen crash**~~: corregido — `wallets.js` ahora incluye `pros`, `cons`, `requirements` y `reviews` en cada entrada de `WALLETS`.
 - [ ] **Historial persistente**: sin AsyncStorage, el historial se pierde al cerrar la app.
 - [ ] **API real de cotizaciones**: actualmente los rates son datos hardcodeados en `PROVIDERS`.
 
@@ -1078,7 +1094,7 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 | `src/screens/results/EmptyResultsScreen.js` | 8 — Resultados vacíos | ✅ |
 | `src/screens/results/LoadingResultsScreen.js` | 9 — Skeleton carga | ✅ |
 | `src/screens/wallets/WalletsScreen.js` | 16 — Directorio billeteras | ✅ |
-| `src/screens/wallets/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ ⚠️ ver bugs |
+| `src/screens/wallets/WalletDetailScreen.js` | 10 — Detalle billetera | ✅ |
 | `src/screens/wallets/WalletProfileScreen.js` | 17 — Perfil billetera | ✅ |
 | `src/screens/wallets/WalletCompareScreen.js` | 11 — Comparación 2 billeteras | ✅ |
 | `src/screens/alerts/AlertsScreen.js` | 13 — Lista alertas | ✅ |
@@ -1095,9 +1111,8 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 
 ## 🔜 Próximos pasos
 
-1. **Fix bug params WalletDetail**: alinear `ResultsScreen` (que pasa `{ wallet }`) con `WalletDetailScreen` (que espera `{ walletName }`). Lo más limpio es que ResultsScreen pase `walletName: wallet.name`.
-2. **Historial persistente**: usar `AsyncStorage` para guardar cada búsqueda al navegar a Results.
-3. **API real de cotizaciones**: reemplazar los rates hardcodeados en `PROVIDERS` por llamadas a una API.
+1. **Historial persistente**: usar `AsyncStorage` para guardar cada búsqueda al navegar a Results.
+2. **API real de cotizaciones**: reemplazar los rates hardcodeados en `PROVIDERS` por llamadas a una API.
 
 ---
 
@@ -1154,7 +1169,7 @@ cd android
 .\gradlew.bat app:assembleDebug
 adb install -r app\build\outputs\apk\debug\app-debug.apk
 
-# 7. Abrir la app "ComparadorBilleteras" en el emulador
+# 7. Abrir la app "BrasilPagos" en el emulador
 #    Desde ese momento los cambios se recargan con R en Metro
 ```
 
