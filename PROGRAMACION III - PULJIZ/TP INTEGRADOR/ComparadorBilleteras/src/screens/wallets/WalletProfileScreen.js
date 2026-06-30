@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Linking,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getWalletByName } from '../../data/wallets';
 import ExternalRedirectModal from '../../components/modals/ExternalRedirectModal';
+import { useAuth } from '../../context/AuthContext';
+import { getFavoritos, addFavorito, removeFavorito } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -66,7 +69,31 @@ function ReviewCard({ review }) {
 export default function WalletProfileScreen({ route, navigation }) {
   const { walletName } = route.params;
   const wallet = getWalletByName(walletName);
+  const { apiToken } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (!apiToken || !wallet) return;
+    getFavoritos(apiToken)
+      .then(favs => setIsFavorite(favs.some(f => String(f.billetera_id) === String(wallet.id))))
+      .catch(() => {});
+  }, [apiToken, wallet]);
+
+  const toggleFavorite = async () => {
+    if (!apiToken) return;
+    try {
+      if (isFavorite) {
+        await removeFavorito(apiToken, wallet.id);
+        setIsFavorite(false);
+      } else {
+        await addFavorito(apiToken, wallet.id);
+        setIsFavorite(true);
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message ?? 'No se pudo actualizar favoritos.');
+    }
+  };
 
   if (!wallet) {
     return (
@@ -94,7 +121,13 @@ export default function WalletProfileScreen({ route, navigation }) {
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{wallet.name}</Text>
-        <View style={styles.headerRight} />
+        <TouchableOpacity onPress={toggleFavorite} style={styles.starBtn}>
+          <Ionicons
+            name={isFavorite ? 'star' : 'star-outline'}
+            size={22}
+            color={isFavorite ? '#f59e0b' : colors.textMuted}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -234,13 +267,11 @@ export default function WalletProfileScreen({ route, navigation }) {
         visible={modalVisible}
         walletName={wallet.name}
         onCancel={() => setModalVisible(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           setModalVisible(false);
-          Alert.alert(
-            'Redirigiendo...',
-            `La app de ${wallet.name} no está disponible en el simulador.`,
-            [{ text: 'OK' }]
-          );
+          if (wallet.appUrl) {
+            try { await Linking.openURL(wallet.appUrl); } catch { /* silent */ }
+          }
         }}
       />
     </SafeAreaView>
@@ -275,6 +306,12 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     width: 36,
+  },
+  starBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scroll: {
     flex: 1,

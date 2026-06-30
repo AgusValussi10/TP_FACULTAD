@@ -182,7 +182,7 @@ export default function ResultsScreen({ route, navigation }) {
   };
 
   const handleSeeMore = (wallet) => {
-    navigation.navigate('WalletDetail', { walletName: wallet.name, amount, currency });
+    navigation.navigate('WalletProfile', { walletName: wallet.name });
   };
 
   const handleOpenApp = (wallet) => setModalWallet(wallet);

@@ -157,7 +157,7 @@ export default function WalletsScreen({ navigation }) {
         renderItem={({ item }) => (
           <WalletItem
             wallet={item}
-            onPress={() => navigation.navigate('WalletDetail', { walletName: item.name })}
+            onPress={() => navigation.navigate('WalletProfile', { walletName: item.name })}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

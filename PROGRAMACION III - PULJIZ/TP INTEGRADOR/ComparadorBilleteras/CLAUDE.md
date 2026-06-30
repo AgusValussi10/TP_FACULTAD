@@ -252,14 +252,14 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 ### Flujo principal
 - **HomeScreen** — destino Brasil PIX fijo, input de monto via teclado custom. Muestra últimas 3 consultas reales del usuario (desde API, con `useFocusEffect`). Tocar una consulta reciente navega a Results con `skipSave: true`.
 - **NumericKeyboard** (componente) — bottom sheet con teclado numérico custom
-- **ResultsScreen** — ranking animado de billeteras (desde API), con ahorro vs peor opción. Guarda en historial automáticamente cuando ambos `apiToken` y `bestResult` están disponibles (dos efectos separados para evitar race condition). Acepta `skipSave: true` en params para no guardar (usado desde Historial y consultas recientes del Home). La card ganadora tiene dos botones diferenciados: "Ver detalles" (navega a WalletDetail) y "Ir a [nombre]" (abre `ExternalRedirectModal` → `Linking.openURL(appUrl)`). Brubank abre directo por App Links; otras billeteras abren su sitio web.
+- **ResultsScreen** — ranking animado de billeteras (desde API), con ahorro vs peor opción. Guarda en historial automáticamente cuando ambos `apiToken` y `bestResult` están disponibles (dos efectos separados para evitar race condition). Acepta `skipSave: true` en params para no guardar (usado desde Historial y consultas recientes del Home). La card ganadora tiene dos botones diferenciados: "Ver detalles" (navega directo a WalletProfile) y "Ir a [nombre]" (abre `ExternalRedirectModal` → `Linking.openURL(appUrl)`). Las cards restantes tienen "Ver más →" que también navega directo a WalletProfile. Brubank abre directo por App Links; otras billeteras abren su sitio web.
 - **EmptyResultsScreen** — estado vacío cuando no hay cotizaciones
 - **LoadingResultsScreen** — skeleton loaders mientras carga
 
 ### Billeteras
-- **WalletsScreen** — directorio con buscador, rating y países. Lista solo billeteras activas (desde API).
-- **WalletDetailScreen** — tipo de cambio, comisión, límites, botón IR A LA APP. Botón estrella en el header para agregar/quitar de favoritos (persiste en BD, estado cargado al abrir).
-- **WalletProfileScreen** — pros/contras, requisitos, reseñas
+- **WalletsScreen** — directorio con buscador, rating y países. Lista solo billeteras activas (desde API). Tap en cualquier item navega directo a WalletProfile.
+- **WalletDetailScreen** — pantalla de detalle (comisión, límites, monedas, países). Ya no es el destino primario desde Results ni Wallets; sigue registrada en el navegador.
+- **WalletProfileScreen** — perfil completo: descripción, comisiones, pros/contras, requisitos, países, reseñas. Estrella en header para agregar/quitar favoritos (persiste en BD, estado cargado al abrir). Botón "IR A LA APP DE …" usa `Linking.openURL(wallet.appUrl)` real vía `ExternalRedirectModal`. Es el destino primario desde Results y Wallets.
 - **WalletCompareScreen** — tabla comparativa lado a lado de 2 billeteras. Picker carga solo billeteras activas desde API.
 
 ### Alertas
