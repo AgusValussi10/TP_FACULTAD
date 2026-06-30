@@ -8,10 +8,10 @@ App mobile (React Native + Expo SDK 54) para usuarios argentinos que viajan a Br
 
 | Criterio | Pts | Estado |
 |---|---|---|
-| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | ✅ Completo |
+| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | ✅ Completo — 13 billeteras |
 | 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | ✅ Completo |
-| 3. UI e integración con la API | 20 | ⏳ Falta conectar app a API |
-| 4. Operaciones maestro-detalle | 10 | ✅ BD lista, UI con datos hardcodeados |
+| 3. UI e integración con la API | 20 | ✅ Completo — app conectada a la API |
+| 4. Operaciones maestro-detalle | 10 | ✅ BD + UI conectada a API |
 | 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | ✅ Completo |
 | 6. Documentación técnica | 5 | ⏳ Pendiente redactar |
 
@@ -57,8 +57,10 @@ ComparadorBilleteras/
 │   ├── components/        BottomNav.js, NumericKeyboard.js, modals/ExternalRedirectModal.js
 │   ├── navigation/        AppNavigator.js
 │   ├── config/            firebase.js
-│   ├── context/           AuthContext.js
-│   └── data/              wallets.js (datos hardcodeados — migrar a API)
+│   ├── context/           AuthContext.js  ← guarda apiToken + puente Firebase↔backend
+│   ├── services/
+│   │   └── api.js         ← capa HTTP: todas las funciones fetch a la API REST
+│   └── data/              wallets.js (WALLET_META + WALLETS — 13 billeteras, fallback local)
 ├── server/                ← API REST Node.js + Express
 │   ├── index.js           entrada, monta Express
 │   ├── db.js              pool de conexiones MySQL
@@ -75,7 +77,7 @@ ComparadorBilleteras/
 │       └── index.html     panel web para actualizar cotizaciones manualmente
 ├── database/
 │   ├── brasilpagos_schema.sql   CREATE DATABASE + 11 tablas + FK + índices
-│   └── brasilpagos_datos.sql    seed: 10 billeteras, cotizaciones, usuarios de prueba
+│   └── brasilpagos_datos.sql    seed: 13 billeteras (incl. AstroPay, belo, Cocos Capital)
 ├── App.js
 └── android/
 ```
@@ -171,14 +173,25 @@ node index.js
 - **Firebase Auth:** login con email/contraseña y Google. El email debe estar verificado para poder entrar a la app (`emailVerified` chequeado en login y en `onAuthStateChanged`). Si el email no está verificado, Firebase cierra la sesión automáticamente.
 - **Panel admin:** protegido con `X-Admin-Key` (mismo valor que `JWT_SECRET`).
 
-### Flujo de autenticación Firebase
+### Flujo de autenticación (Firebase + backend JWT)
+
+La app tiene **dos sistemas de auth en paralelo**:
+- **Firebase Auth** → controla acceso a la app (verificación de email)
+- **Backend JWT** → controla acceso a los endpoints protegidos de la API REST
 
 ```
-Registro → Firebase crea cuenta → envía email → cierra sesión → EmailVerificationScreen
-Usuario verifica email → vuelve al Login
-Login → chequea emailVerified → si NO → error + cierra sesión
-Login → chequea emailVerified → si SÍ → entra a la app
-App reabierta → onAuthStateChanged chequea emailVerified → si NO → cierra sesión automático
+Registro:
+  → Firebase crea cuenta → envía email de verificación → backend crea usuario en MySQL
+  → cierra sesión Firebase → va a EmailVerificationScreen
+
+Login (email/contraseña):
+  → Firebase login (chequea emailVerified)
+  → Si OK → llama a POST /api/auth/login → obtiene JWT → guarda en AsyncStorage
+  → JWT disponible en AuthContext como apiToken para todas las pantallas
+
+App reabierta:
+  → AsyncStorage carga apiToken guardado
+  → onAuthStateChanged chequea emailVerified
 ```
 
 ---
@@ -199,7 +212,7 @@ App reabierta → onAuthStateChanged chequea emailVerified → si NO → cierra 
 ### Flujo principal
 - **HomeScreen** — destino Brasil PIX fijo, input de monto via teclado custom
 - **NumericKeyboard** (componente) — bottom sheet con teclado numérico custom
-- **ResultsScreen** — ranking animado de 10 billeteras con ahorro vs peor opción
+- **ResultsScreen** — ranking animado de billeteras (desde API), con ahorro vs peor opción. Guarda en historial automáticamente.
 - **EmptyResultsScreen** — estado vacío cuando no hay cotizaciones
 - **LoadingResultsScreen** — skeleton loaders mientras carga
 
@@ -291,21 +304,44 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 
 ---
 
-## Pendiente
+## Importante para expo / device físico
 
-### Integración app ↔ API (criterio 3 — 20 pts)
-- [ ] Reemplazar `PROVIDERS` hardcodeado en `wallets.js` por `fetch` a `GET /api/cotizaciones`
-- [ ] Guardar cada búsqueda en `POST /api/historial` al navegar a ResultsScreen
-- [ ] Conectar `HistoryScreen` a `GET /api/historial`
-- [ ] Conectar `AlertsScreen` a `GET /api/alertas`
-- [ ] Conectar `CreateAlertScreen` a `POST /api/alertas`
-- [ ] Conectar toggle de alertas a `PATCH /api/alertas/:id`
-- [ ] Conectar `WalletsScreen` y `WalletProfileScreen` a `GET /api/billeteras`
+En `src/services/api.js` cambiar la URL según el entorno:
+```js
+// Emulador Android (default):
+const API_BASE_URL = 'http://10.0.2.2:3000';
+
+// Celular físico en la misma red WiFi (reemplazar con IP real de la PC):
+const API_BASE_URL = 'http://192.168.X.X:3000';
+```
+
+### Iniciar todo en la expo
+```cmd
+# Terminal 1 — servidor
+cd server
+node index.js
+
+# Terminal 2 — app
+npx expo start -c
+# Presionar 'a' para emulador Android, o escanear QR desde Expo Go
+```
+
+### Importar BD en notebook nueva
+```sql
+-- En MySQL Workbench, ejecutar en orden:
+-- 1. brasilpagos_schema.sql
+-- 2. brasilpagos_datos.sql   (incluye las 13 billeteras)
+```
+
+---
+
+## Pendiente
 
 ### Documentación técnica (criterio 6 — 5 pts)
 - [ ] README con arquitectura, instrucciones de instalación y descripción de endpoints
 
 ### Exposición en notebook
-- [ ] Instalar Node.js, MySQL, MySQL Workbench en la notebook
+- [ ] Instalar Node.js 22, MySQL 8, MySQL Workbench, Android Studio
 - [ ] Copiar proyecto, importar BD con los scripts SQL, configurar `.env`
+- [ ] Cambiar `API_BASE_URL` en `api.js` si se usa celular físico
 - [ ] Verificar que Metro + servidor corren bien antes de la expo

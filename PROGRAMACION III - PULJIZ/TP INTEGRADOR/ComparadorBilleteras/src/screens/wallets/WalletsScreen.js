@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WALLETS } from '../../data/wallets';
 import BottomNav from '../../components/BottomNav';
+import { getBilleteras } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -80,12 +81,34 @@ function WalletItem({ wallet, onPress }) {
 export default function WalletsScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [wallets, setWallets] = useState(WALLETS);
+
+  useEffect(() => {
+    getBilleteras()
+      .then(apiData => {
+        const enriched = apiData.map(w => {
+          const local = WALLETS.find(l => l.id === String(w.id)) ?? {};
+          return {
+            id: String(w.id),
+            name: w.nombre,
+            color: w.color_hex,
+            initials: w.iniciales,
+            rating: Number(w.rating_promedio),
+            ratingCount: w.cantidad_resenas,
+            countryFlags: local.countryFlags ?? ['🇦🇷', '🇧🇷'],
+            currencies: local.currencies ?? ['BRL', 'ARS'],
+          };
+        });
+        setWallets(enriched);
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return WALLETS;
-    return WALLETS.filter(w => w.name.toLowerCase().includes(q));
-  }, [query]);
+    if (!q) return wallets;
+    return wallets.filter(w => w.name.toLowerCase().includes(q));
+  }, [query, wallets]);
 
   return (
     <SafeAreaView style={styles.safe}>

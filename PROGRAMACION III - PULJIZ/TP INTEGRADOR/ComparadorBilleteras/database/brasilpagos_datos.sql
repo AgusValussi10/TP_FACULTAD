@@ -237,3 +237,63 @@ INSERT INTO historial_consultas (usuario_id, monto, moneda_destino, mejor_billet
 INSERT INTO favoritos (usuario_id, billetera_id) VALUES
 (1, 1), (1, 2),
 (2, 1), (2, 6);
+
+-- =============================================================
+--  Nuevas billeteras: AstroPay, belo, Cocos Capital
+-- =============================================================
+INSERT INTO billeteras (id, nombre, iniciales, color_hex, descripcion, url_oficial, rating_promedio, cantidad_resenas) VALUES
+(11, 'AstroPay',     'AP', '#1a1a2e', 'Monedero virtual internacional para pagos en línea y PIX.',               'https://astropay.com',   4.1,  8900),
+(12, 'belo',         'BE', '#6c63ff', 'Billetera cripto y fiat con PIX en reales desde ARS.',                    'https://belo.app',       4.3, 14200),
+(13, 'Cocos Capital','CC', '#0d9488', 'Plataforma de inversiones con billetera para pagos internacionales.',      'https://cocos.capital',  4.0,  5300);
+
+INSERT INTO billetera_condiciones (billetera_id, comision_pct, limite_diario_brl, limite_mensual_brl, tiempo_estimado, detalle_comision) VALUES
+(11, 1.50,  3000.00, 30000.00, 'Instantáneo',   'Comisión del 1,5% sobre el monto en BRL.'),
+(12, 0.00,  4000.00, 40000.00, 'Instantáneo',   'Sin comisión para transferencias PIX.'),
+(13, 0.50,  2500.00, 25000.00, 'Hasta 10 min',  'Comisión del 0,5% aplicada al monto convertido.');
+
+INSERT INTO billetera_paises (billetera_id, codigo_pais, metodo_pago) VALUES
+(11, 'AR', 'Transferencia'), (11, 'BR', 'PIX'),
+(12, 'AR', 'Transferencia'), (12, 'BR', 'PIX'),
+(13, 'AR', 'Transferencia'), (13, 'BR', 'PIX');
+
+INSERT INTO billetera_monedas (billetera_id, moneda) VALUES
+(11, 'BRL'), (11, 'ARS'), (11, 'USD'),
+(12, 'BRL'), (12, 'ARS'), (12, 'USD'),
+(13, 'BRL'), (13, 'ARS');
+
+INSERT INTO billetera_pros_contras (billetera_id, tipo, descripcion, orden) VALUES
+(11, 'pro',    'Acepta múltiples monedas',           1),
+(11, 'pro',    'Disponible en más de 150 países',    2),
+(11, 'contra', 'Comisión del 1,5%',                  1),
+(11, 'contra', 'Menos conocida localmente',          2),
+(12, 'pro',    'Sin comisión para PIX',              1),
+(12, 'pro',    'Integra cripto y fiat',              2),
+(12, 'pro',    'App muy intuitiva',                  3),
+(12, 'contra', 'Requiere verificación KYC',          1),
+(13, 'pro',    'Excelente para inversores',          1),
+(13, 'pro',    'Sin comisión sobre rendimientos',    2),
+(13, 'contra', 'Proceso de alta complejo',           1),
+(13, 'contra', 'Tiempo de hasta 10 minutos',         2);
+
+INSERT INTO billetera_requisitos (billetera_id, descripcion, orden) VALUES
+(11, 'Email válido',            1),
+(11, 'Verificación de identidad', 2),
+(12, 'DNI argentino',           1),
+(12, 'Mayor de 18 años',        2),
+(12, 'KYC completo',            3),
+(13, 'DNI argentino',           1),
+(13, 'Mayor de 18 años',        2),
+(13, 'Cuenta verificada',       3);
+
+INSERT INTO resenas (billetera_id, usuario_id, autor_nombre, calificacion, comentario, fecha_resena) VALUES
+(11, NULL, 'Marcos T.',   4, 'Muy útil para pagos internacionales, aunque la comisión molesta un poco.', '2025-05-20'),
+(11, NULL, 'Carla M.',    4, 'Fácil de usar y disponible en muchos países.',                             '2025-04-10'),
+(12, NULL, 'Luciano P.',  5, 'La mejor billetera cripto para PIX. Llegó al instante.',                   '2025-06-15'),
+(12, NULL, 'Agustina R.', 4, 'Sin comisión y muy rápida. El KYC tardó pero valió la pena.',              '2025-05-02'),
+(13, NULL, 'Esteban V.',  4, 'Ideal si ya usás Cocos para inversiones. El proceso de alta es largo.',    '2025-06-08'),
+(13, NULL, 'Natalia C.',  4, 'Buena tasa, aunque el tiempo de acreditación puede llegar a 10 minutos.',  '2025-04-25');
+
+INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa) VALUES
+(11, 'ARS', 'BRL', 1008.50),
+(12, 'ARS', 'BRL',  995.20),
+(13, 'ARS', 'BRL', 1002.80);

@@ -10,7 +10,9 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
 } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../config/firebase';
+import { loginBackend, registerBackend } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -30,8 +32,11 @@ export function getAuthErrorMessage(error) {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
+  const [apiToken, setApiToken] = useState(null);
 
   useEffect(() => {
+    AsyncStorage.getItem('apiToken').then(t => { if (t) setApiToken(t); });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser && !firebaseUser.emailVerified) {
         await firebaseSignOut(auth);
@@ -43,13 +48,27 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const signInWithEmail = (email, password) =>
-    signInWithEmailAndPassword(auth, email, password);
+  const signInWithEmail = async (email, password) => {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    try {
+      const { token } = await loginBackend(email, password);
+      setApiToken(token);
+      await AsyncStorage.setItem('apiToken', token);
+    } catch {
+      // backend no disponible — continúa sin token
+    }
+    return cred;
+  };
 
   const register = async (email, password, name) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     if (name) await updateProfile(cred.user, { displayName: name });
     await sendEmailVerification(cred.user);
+    try {
+      await registerBackend(name ?? email, email, password);
+    } catch {
+      // backend no disponible — continúa
+    }
     await firebaseSignOut(auth);
     return cred;
   };
@@ -66,11 +85,15 @@ export function AuthProvider({ children }) {
 
   const resetPassword = (email) => sendPasswordResetEmail(auth, email);
 
-  const signOut = () => firebaseSignOut(auth);
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+    setApiToken(null);
+    await AsyncStorage.removeItem('apiToken');
+  };
 
   return (
     <AuthContext.Provider
-      value={{ user, loading: user === undefined, signInWithEmail, register, resendVerification, signInWithGoogleCredential, resetPassword, signOut }}
+      value={{ user, loading: user === undefined, apiToken, signInWithEmail, register, resendVerification, signInWithGoogleCredential, resetPassword, signOut }}
     >
       {children}
     </AuthContext.Provider>

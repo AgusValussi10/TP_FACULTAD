@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, StatusBar, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { WALLET_META, getWalletMeta } from '../../data/wallets';
+import { WALLET_META, WALLETS, getWalletMeta } from '../../data/wallets';
+import { useAuth } from '../../context/AuthContext';
+import { createAlerta } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -20,10 +22,12 @@ const colors = {
 const WALLET_NAMES = Object.keys(WALLET_META);
 
 export default function CreateAlertScreen({ navigation }) {
+  const { apiToken } = useAuth();
   const [selectedWallet, setSelectedWallet] = useState(WALLET_NAMES[0]);
   const [conditionType, setConditionType] = useState('supere');
   const [targetValue, setTargetValue] = useState('');
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const conditionLabel = conditionType === 'supere' ? 'supere' : 'baje de';
   const previewText =
@@ -31,14 +35,33 @@ export default function CreateAlertScreen({ navigation }) {
       ? `Te avisaremos cuando ${selectedWallet} ${conditionLabel} $ ${targetValue} ARS por BRL`
       : 'Completá el formulario para ver una vista previa';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!targetValue) {
       Alert.alert('Valor requerido', 'Ingresá el valor objetivo de la alerta.');
       return;
     }
-    Alert.alert('Alerta guardada', `Tu alerta para ${selectedWallet} fue creada.`, [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    if (!apiToken) {
+      Alert.alert('Sin sesión', 'Iniciá sesión para guardar alertas.');
+      return;
+    }
+    const wallet = WALLETS.find(w => w.name === selectedWallet);
+    const billetera_id = wallet ? parseInt(wallet.id) : 1;
+    const condicion = conditionType === 'supere' ? 'supera' : 'baja_de';
+    setSaving(true);
+    try {
+      await createAlerta(apiToken, {
+        billetera_id,
+        condicion,
+        valor_objetivo: parseFloat(targetValue),
+      });
+      Alert.alert('Alerta guardada', `Tu alerta para ${selectedWallet} fue creada.`, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (err) {
+      Alert.alert('Error', err.message ?? 'No se pudo guardar la alerta.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -121,8 +144,8 @@ export default function CreateAlertScreen({ navigation }) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.7}>
-          <Text style={styles.saveButtonText}>GUARDAR ALERTA</Text>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.7} disabled={saving}>
+          <Text style={styles.saveButtonText}>{saving ? 'GUARDANDO...' : 'GUARDAR ALERTA'}</Text>
         </TouchableOpacity>
       </View>
 
