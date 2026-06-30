@@ -28,7 +28,7 @@ const colors = {
 };
 
 export default function EditProfileScreen({ navigation }) {
-  const [name, setName] = useState('Juan Pérez');
+  const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
 
   const handleSave = () => {

@@ -4,9 +4,10 @@
 const API_BASE_URL = 'http://localhost:3000';
 
 async function request(path, options = {}) {
+  const { headers: extraHeaders, ...rest } = options;
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
+    ...rest,
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? 'Error de servidor');
@@ -46,6 +47,13 @@ export function registerBackend(nombre, email, password) {
   });
 }
 
+export function firebaseLoginBackend(idToken) {
+  return request('/api/auth/firebase-login', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}
+
 // ── Historial ─────────────────────────────────────────────────
 export function getHistorial(token) {
   return request('/api/historial', { headers: authHeaders(token) });
@@ -77,5 +85,25 @@ export function toggleAlerta(token, id, activa) {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify({ activa }),
+  });
+}
+
+// ── Favoritos ─────────────────────────────────────────────────
+export function getFavoritos(token) {
+  return request('/api/favoritos', { headers: authHeaders(token) });
+}
+
+export function addFavorito(token, billetera_id) {
+  return request('/api/favoritos', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ billetera_id }),
+  });
+}
+
+export function removeFavorito(token, billetera_id) {
+  return request(`/api/favoritos/${billetera_id}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
   });
 }

@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -5,11 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import BottomNav from '../../components/BottomNav';
 import { useAuth } from '../../context/AuthContext';
+import { getHistorial } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -24,11 +28,17 @@ const colors = {
   divider: '#e0e0e0',
 };
 
-const SAVED_SEARCHES = [
-  { id: '1', amount: 500, currency: 'BRL', provider: 'Mercado Pago', date: 'Hace 2hs' },
-  { id: '2', amount: 1000, currency: 'BRL', provider: 'Ualá', date: 'Ayer' },
-  { id: '3', amount: 250, currency: 'BRL', provider: 'Bimo', date: 'Hace 3 días' },
-];
+function formatFecha(isoString) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffH = Math.floor((now - date) / 3600000);
+  const diffD = Math.floor(diffH / 24);
+  if (diffH < 1) return 'Hace menos de 1 hora';
+  if (diffH < 24) return `Hace ${diffH}hs`;
+  if (diffD === 1) return 'Ayer';
+  if (diffD < 7) return `Hace ${diffD} días`;
+  return `Hace ${Math.floor(diffD / 7)} semana${Math.floor(diffD / 7) > 1 ? 's' : ''}`;
+}
 
 function MenuRow({ icon, label, value, onPress, danger }) {
   return (
@@ -47,7 +57,33 @@ function MenuRow({ icon, label, value, onPress, danger }) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const { signOut } = useAuth();
+  const { user, apiToken, signOut } = useAuth();
+  const [recentHistory, setRecentHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Usuario';
+  const email = user?.email || '';
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const loadHistory = useCallback(async () => {
+    if (!apiToken) { setLoadingHistory(false); return; }
+    try {
+      const rows = await getHistorial(apiToken);
+      setRecentHistory(rows.slice(0, 3).map(r => ({
+        id: String(r.id),
+        amount: r.monto,
+        currency: r.moneda_destino ?? 'BRL',
+        bestProvider: r.mejor_billetera ?? '—',
+        date: formatFecha(r.consultado_en),
+      })));
+    } catch {
+      setRecentHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [apiToken]);
+
+  useFocusEffect(useCallback(() => { loadHistory(); }, [loadHistory]));
 
   const handleSignOut = async () => {
     await signOut();
@@ -60,7 +96,7 @@ export default function ProfileScreen({ navigation }) {
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mi Perfil</Text>
-        <TouchableOpacity style={styles.editBtn}>
+        <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
           <Ionicons name="pencil-outline" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -73,10 +109,10 @@ export default function ProfileScreen({ navigation }) {
         {/* Avatar block */}
         <View style={styles.avatarBlock}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>J</Text>
+            <Text style={styles.avatarInitial}>{initial}</Text>
           </View>
-          <Text style={styles.userName}>Juan Pérez</Text>
-          <Text style={styles.userEmail}>juan@email.com</Text>
+          <Text style={styles.userName}>{displayName}</Text>
+          <Text style={styles.userEmail}>{email}</Text>
           <View style={styles.countryBadge}>
             <Text style={styles.countryBadgeText}>🇦🇷 Argentina — ARS</Text>
           </View>
@@ -85,17 +121,9 @@ export default function ProfileScreen({ navigation }) {
         {/* Quick settings */}
         <Text style={styles.sectionLabel}>Configuración rápida</Text>
         <View style={styles.card}>
-          <MenuRow
-            icon="cash-outline"
-            label="Moneda base"
-            value="ARS"
-          />
+          <MenuRow icon="cash-outline" label="Moneda base" value="ARS" />
           <View style={styles.cardDivider} />
-          <MenuRow
-            icon="location-outline"
-            label="País"
-            value="Argentina"
-          />
+          <MenuRow icon="location-outline" label="País" value="Argentina" />
         </View>
 
         {/* Navigation to Settings and Favorites */}
@@ -118,26 +146,42 @@ export default function ProfileScreen({ navigation }) {
             label="Favoritos"
             onPress={() => navigation.navigate('Favorites')}
           />
+          <View style={styles.cardDivider} />
+          <MenuRow
+            icon="time-outline"
+            label="Ver todo el historial"
+            onPress={() => navigation.navigate('History')}
+          />
         </View>
 
-        {/* Saved searches */}
-        <Text style={styles.sectionLabel}>Búsquedas guardadas</Text>
+        {/* Recent searches */}
+        <Text style={styles.sectionLabel}>Búsquedas recientes</Text>
         <View style={styles.card}>
-          {SAVED_SEARCHES.map((item, index) => (
-            <View key={item.id}>
-              {index > 0 && <View style={styles.cardDivider} />}
-              <View style={styles.searchRow}>
-                <View style={styles.searchDot} />
-                <View style={styles.searchInfo}>
-                  <Text style={styles.searchAmount}>
-                    {item.amount} {item.currency}
-                  </Text>
-                  <Text style={styles.searchProvider}>{item.provider}</Text>
-                </View>
-                <Text style={styles.searchDate}>{item.date}</Text>
-              </View>
+          {loadingHistory ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={colors.primary} />
             </View>
-          ))}
+          ) : recentHistory.length === 0 ? (
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyRowText}>Sin búsquedas aún</Text>
+            </View>
+          ) : (
+            recentHistory.map((item, index) => (
+              <View key={item.id}>
+                {index > 0 && <View style={styles.cardDivider} />}
+                <View style={styles.searchRow}>
+                  <View style={styles.searchDot} />
+                  <View style={styles.searchInfo}>
+                    <Text style={styles.searchAmount}>
+                      {item.amount} {item.currency}
+                    </Text>
+                    <Text style={styles.searchProvider}>{item.bestProvider}</Text>
+                  </View>
+                  <Text style={styles.searchDate}>{item.date}</Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
         {/* Logout */}
@@ -152,10 +196,7 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.surface,
-  },
+  safe: { flex: 1, backgroundColor: colors.surface },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -166,26 +207,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  editBtn: {
-    padding: 4,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
-  avatarBlock: {
-    alignItems: 'center',
-    paddingVertical: 28,
-    gap: 6,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  editBtn: { padding: 4 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 24 },
+  avatarBlock: { alignItems: 'center', paddingVertical: 28, gap: 6 },
   avatar: {
     width: 72,
     height: 72,
@@ -195,20 +221,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  avatarInitial: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
+  avatarInitial: { fontSize: 32, fontWeight: '700', color: '#ffffff' },
+  userName: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
+  userEmail: { fontSize: 14, color: colors.textSecondary },
   countryBadge: {
     backgroundColor: '#eff6ff',
     borderRadius: 20,
@@ -216,11 +231,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginTop: 4,
   },
-  countryBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.primary,
-  },
+  countryBadgeText: { fontSize: 13, fontWeight: '600', color: colors.primary },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
@@ -237,11 +248,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
   },
-  cardDivider: {
-    height: 1,
-    backgroundColor: colors.divider,
-    marginLeft: 52,
-  },
+  cardDivider: { height: 1, backgroundColor: colors.divider, marginLeft: 52 },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -249,22 +256,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 12,
   },
-  menuIcon: {
-    width: 24,
-  },
-  menuLabel: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  menuLabelDanger: {
-    color: '#ef4444',
-  },
-  menuValue: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginRight: 4,
-  },
+  menuIcon: { width: 24 },
+  menuLabel: { flex: 1, fontSize: 16, color: colors.textPrimary },
+  menuLabelDanger: { color: '#ef4444' },
+  menuValue: { fontSize: 16, color: colors.textSecondary, marginRight: 4 },
+  loadingRow: { paddingVertical: 20, alignItems: 'center' },
+  emptyRow: { paddingVertical: 16, paddingHorizontal: 16 },
+  emptyRowText: { fontSize: 14, color: colors.textMuted },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,29 +270,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 12,
   },
-  searchDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-  },
-  searchInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  searchAmount: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  searchProvider: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  searchDate: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
+  searchDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  searchInfo: { flex: 1, gap: 2 },
+  searchAmount: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  searchProvider: { fontSize: 13, color: colors.textSecondary },
+  searchDate: { fontSize: 12, color: colors.textMuted },
   logoutBtn: {
     marginTop: 24,
     borderRadius: 12,
@@ -303,10 +283,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  logoutText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ef4444',
-    letterSpacing: 0.5,
-  },
+  logoutText: { fontSize: 14, fontWeight: '700', color: '#ef4444', letterSpacing: 0.5 },
 });

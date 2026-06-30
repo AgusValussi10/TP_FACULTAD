@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
+import { getFavoritos, removeFavorito } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -23,24 +28,43 @@ const colors = {
   divider: '#e0e0e0',
 };
 
-const INIT_WALLETS = [
-  { id: '1', name: 'Mercado Pago', initials: 'MP', color: '#3b82f6' },
-  { id: '2', name: 'Ualá', initials: 'UA', color: '#8b5cf6' },
-];
-
-const INIT_PAIRS = [
-  { id: '1', label: '🇦🇷 ARS / 🇧🇷 BRL' },
-  { id: '2', label: '🇦🇷 ARS / 🇺🇸 USD' },
-];
-
 export default function FavoritesScreen({ navigation }) {
-  const [wallets, setWallets] = useState(INIT_WALLETS);
-  const [pairs, setPairs] = useState(INIT_PAIRS);
+  const { apiToken } = useAuth();
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const removeWallet = (id) => setWallets((prev) => prev.filter((w) => w.id !== id));
-  const removePair = (id) => setPairs((prev) => prev.filter((p) => p.id !== id));
+  useFocusEffect(
+    useCallback(() => {
+      if (!apiToken) return;
+      setLoading(true);
+      getFavoritos(apiToken)
+        .then(data => setWallets(data))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, [apiToken])
+  );
 
-  const isEmpty = wallets.length === 0 && pairs.length === 0;
+  const handleRemove = (billetera_id, nombre) => {
+    Alert.alert(
+      'Quitar favorito',
+      `¿Querés quitar ${nombre} de tus favoritos?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Quitar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeFavorito(apiToken, billetera_id);
+              setWallets(prev => prev.filter(w => w.billetera_id !== billetera_id));
+            } catch {
+              Alert.alert('Error', 'No se pudo quitar el favorito.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -51,16 +75,19 @@ export default function FavoritesScreen({ navigation }) {
           <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Favoritos</Text>
-        <TouchableOpacity style={styles.manageBtn}>
-          <Text style={styles.manageBtnText}>Gestionar</Text>
-        </TouchableOpacity>
+        <View style={{ width: 36 }} />
       </View>
 
-      {isEmpty ? (
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : wallets.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="star-outline" size={64} color={colors.textMuted} />
+          <Text style={styles.emptyTitle}>Sin favoritos aún</Text>
           <Text style={styles.emptyText}>
-            Guardá tus billeteras favoritas para comparar más rápido
+            Agregá billeteras favoritas desde el detalle de cada una para acceder más rápido.
           </Text>
         </View>
       ) : (
@@ -69,47 +96,22 @@ export default function FavoritesScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {wallets.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Billeteras favoritas</Text>
-              {wallets.map((wallet) => (
-                <View key={wallet.id} style={styles.walletCard}>
-                  <View style={[styles.walletLogo, { backgroundColor: wallet.color }]}>
-                    <Text style={styles.walletInitials}>{wallet.initials}</Text>
-                  </View>
-                  <Text style={styles.walletName}>{wallet.name}</Text>
-                  <Ionicons name="star" size={18} color="#f59e0b" />
-                  <TouchableOpacity
-                    onPress={() => removeWallet(wallet.id)}
-                    style={styles.removeBtn}
-                  >
-                    <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </>
-          )}
-
-          {pairs.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Pares frecuentes</Text>
-              <View style={styles.pairsRow}>
-                {pairs.map((pair) => (
-                  <View key={pair.id} style={styles.pairChip}>
-                    <Text style={styles.pairLabel}>{pair.label}</Text>
-                    <TouchableOpacity onPress={() => removePair(pair.id)}>
-                      <Ionicons name="close" size={14} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+          <Text style={styles.sectionTitle}>Billeteras favoritas</Text>
+          {wallets.map((wallet) => (
+            <View key={wallet.id} style={styles.walletCard}>
+              <View style={[styles.walletLogo, { backgroundColor: wallet.color_hex }]}>
+                <Text style={styles.walletInitials}>{wallet.iniciales}</Text>
               </View>
-            </>
-          )}
-
-          <TouchableOpacity style={styles.addBtn}>
-            <Ionicons name="add" size={18} color={colors.primary} />
-            <Text style={styles.addBtnText}>AGREGAR FAVORITO +</Text>
-          </TouchableOpacity>
+              <Text style={styles.walletName}>{wallet.nombre}</Text>
+              <Ionicons name="star" size={18} color="#f59e0b" />
+              <TouchableOpacity
+                onPress={() => handleRemove(wallet.billetera_id, wallet.nombre)}
+                style={styles.removeBtn}
+              >
+                <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+          ))}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -139,20 +141,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  manageBtn: {
-    padding: 4,
-  },
-  manageBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-    gap: 16,
+    gap: 12,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   emptyText: {
     fontSize: 15,
@@ -205,44 +209,5 @@ const styles = StyleSheet.create({
   },
   removeBtn: {
     padding: 2,
-  },
-  pairsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 24,
-  },
-  pairChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    gap: 6,
-  },
-  pairLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.primary,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    paddingVertical: 14,
-    gap: 8,
-    marginTop: 8,
-  },
-  addBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-    letterSpacing: 0.5,
   },
 });

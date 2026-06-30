@@ -63,6 +63,69 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/auth/firebase-login  (intercambia Firebase ID token por JWT propio)
+router.post('/firebase-login', async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) return res.status(400).json({ error: 'idToken requerido' });
+
+  let email, nombre;
+
+  // Intentar con Firebase Admin SDK si está disponible
+  const firebaseAdmin = require('../firebaseAdmin');
+  if (firebaseAdmin) {
+    try {
+      const decoded = await firebaseAdmin.auth.verifyIdToken(idToken);
+      email = decoded.email;
+      nombre = decoded.name || email.split('@')[0];
+    } catch (err) {
+      console.error('[firebase-login] Admin SDK falló:', err.message);
+      return res.status(401).json({ error: 'Token de Firebase inválido' });
+    }
+  } else {
+    // Fallback: verificar via API pública de Google (no requiere serviceAccountKey)
+    try {
+      const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      const info = await r.json();
+      if (!r.ok || !info.email) {
+        return res.status(401).json({ error: 'Token de Firebase inválido' });
+      }
+      if (info.email_verified !== 'true') {
+        return res.status(401).json({ error: 'Email no verificado' });
+      }
+      email = info.email;
+      nombre = info.name || email.split('@')[0];
+    } catch (err) {
+      console.error('[firebase-login] tokeninfo falló:', err.message);
+      return res.status(503).json({ error: 'No se pudo verificar el token' });
+    }
+  }
+
+  try {
+    let [rows] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+    let usuario;
+    if (rows.length === 0) {
+      const [result] = await pool.query(
+        'INSERT INTO usuarios (nombre, email, password_hash, pais_residencia) VALUES (?, ?, ?, ?)',
+        [nombre, email, '', 'Argentina']
+      );
+      usuario = { id: result.insertId, nombre, email };
+      console.log('[firebase-login] usuario creado en MySQL:', email);
+    } else {
+      usuario = rows[0];
+    }
+
+    const token = jwt.sign(
+      { id: usuario.id, email: usuario.email, nombre: usuario.nombre },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    res.json({ token, usuario: { id: usuario.id, nombre: usuario.nombre, email: usuario.email } });
+  } catch (err) {
+    console.error('[firebase-login] DB error:', err.message);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 // GET /api/auth/me  (requiere token)
 const authMiddleware = require('../middleware/auth');
 router.get('/me', authMiddleware, async (req, res) => {

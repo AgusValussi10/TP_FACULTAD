@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -108,13 +109,14 @@ export default function HistoryScreen({ navigation }) {
     }
   }, [apiToken]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const handleRepeat = (item) => {
     navigation.navigate('Results', {
       amount: item.amount,
       currency: item.currency,
       country: item.country,
+      skipSave: true,
     });
   };
 

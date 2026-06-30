@@ -1,18 +1,20 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
   Animated,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import BottomNav from '../../components/BottomNav';
 import NumericKeyboard from '../../components/NumericKeyboard';
+import { useAuth } from '../../context/AuthContext';
+import { getHistorial } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -38,11 +40,15 @@ const DESTINATION = {
   subtitle: 'Transferencia instantánea',
 };
 
-const RECENT_QUERIES = [
-  { id: '1', text: '500 BRL - Hace 2hs' },
-  { id: '2', text: '1000 BRL - Ayer' },
-  { id: '3', text: '250 BRL - Hace 3 días' },
-];
+function formatFecha(isoString) {
+  const diffH = Math.floor((Date.now() - new Date(isoString)) / 3600000);
+  const diffD = Math.floor(diffH / 24);
+  if (diffH < 1) return 'Hace menos de 1 hora';
+  if (diffH < 24) return `Hace ${diffH}hs`;
+  if (diffD === 1) return 'Ayer';
+  if (diffD < 7) return `Hace ${diffD} días`;
+  return `Hace ${Math.floor(diffD / 7)} semana${Math.floor(diffD / 7) > 1 ? 's' : ''}`;
+}
 
 function formatAmount(val) {
   if (!val) return '';
@@ -52,9 +58,28 @@ function formatAmount(val) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const { apiToken } = useAuth();
   const [amount, setAmount] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [recentQueries, setRecentQueries] = useState([]);
   const buttonScale = useRef(new Animated.Value(1)).current;
+
+  const loadRecent = useCallback(async () => {
+    if (!apiToken) return;
+    try {
+      const rows = await getHistorial(apiToken);
+      setRecentQueries(rows.slice(0, 3).map(r => ({
+        id: String(r.id),
+        text: `${r.monto} ${r.moneda_destino ?? 'BRL'} — ${formatFecha(r.consultado_en)}`,
+        monto: r.monto,
+        moneda_destino: r.moneda_destino ?? 'BRL',
+      })));
+    } catch {
+      setRecentQueries([]);
+    }
+  }, [apiToken]);
+
+  useFocusEffect(useCallback(() => { loadRecent(); }, [loadRecent]));
 
   const animateButton = (callback) => {
     Animated.sequence([
@@ -139,12 +164,26 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.divider} />
 
         <Text style={styles.sectionTitle}>Últimas consultas</Text>
-        {RECENT_QUERIES.map((item) => (
-          <View key={item.id} style={styles.recentItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.recentText}>{item.text}</Text>
-          </View>
-        ))}
+        {recentQueries.length === 0 ? (
+          <Text style={styles.recentEmpty}>Todavía no hiciste consultas</Text>
+        ) : (
+          recentQueries.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.recentItem}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('Results', {
+                amount: item.monto,
+                currency: item.moneda_destino,
+                country: 'Brasil',
+                skipSave: true,
+              })}
+            >
+              <View style={styles.bullet} />
+              <Text style={styles.recentText}>{item.text}</Text>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       <BottomNav active="Home" navigation={navigation} />
@@ -229,4 +268,5 @@ const styles = StyleSheet.create({
   recentItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
   bullet: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
   recentText: { fontSize: 14, color: colors.textSecondary },
+  recentEmpty: { fontSize: 14, color: colors.textMuted, fontStyle: 'italic' },
 });

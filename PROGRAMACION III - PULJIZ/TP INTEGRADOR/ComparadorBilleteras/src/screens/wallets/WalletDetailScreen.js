@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -5,10 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getWalletByName } from '../../data/wallets';
+import { useAuth } from '../../context/AuthContext';
+import { getFavoritos, addFavorito, removeFavorito } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -52,6 +56,30 @@ function DetailRow({ icon, label, value }) {
 export default function WalletDetailScreen({ route, navigation }) {
   const { walletName } = route.params;
   const wallet = getWalletByName(walletName);
+  const { apiToken } = useAuth();
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (!apiToken || !wallet) return;
+    getFavoritos(apiToken)
+      .then(favs => setIsFavorite(favs.some(f => String(f.billetera_id) === String(wallet.id))))
+      .catch(() => {});
+  }, [apiToken, wallet]);
+
+  const toggleFavorite = async () => {
+    if (!apiToken) return;
+    try {
+      if (isFavorite) {
+        await removeFavorito(apiToken, wallet.id);
+        setIsFavorite(false);
+      } else {
+        await addFavorito(apiToken, wallet.id);
+        setIsFavorite(true);
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message ?? 'No se pudo actualizar favoritos.');
+    }
+  };
 
   if (!wallet) {
     return (
@@ -79,7 +107,13 @@ export default function WalletDetailScreen({ route, navigation }) {
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{wallet.name}</Text>
-        <View style={styles.headerRight} />
+        <TouchableOpacity onPress={toggleFavorite} style={styles.starBtn}>
+          <Ionicons
+            name={isFavorite ? 'star' : 'star-outline'}
+            size={22}
+            color={isFavorite ? '#f59e0b' : colors.textMuted}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -200,8 +234,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  headerRight: {
+  starBtn: {
     width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scroll: {
     flex: 1,

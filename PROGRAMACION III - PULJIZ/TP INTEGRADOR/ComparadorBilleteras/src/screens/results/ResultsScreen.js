@@ -83,14 +83,16 @@ function ProviderCard({ item, onSeeMore }) {
 }
 
 export default function ResultsScreen({ route, navigation }) {
-  const { amount, currency, country } = route.params;
+  const { amount, currency, country, skipSave } = route.params;
   const { apiToken } = useAuth();
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [bestResult, setBestResult] = useState(null);
 
   const cardAnims = useRef([]);
+  const savedRef = useRef(!!skipSave);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,7 +104,7 @@ export default function ResultsScreen({ route, navigation }) {
         const rows = data.resultados ?? [];
         const peorTotal = rows.length > 0 ? rows[rows.length - 1].total_ars : 1;
 
-        const mapped = rows.map((r, i) => ({
+        const mapped = rows.map((r) => ({
           id: String(r.billetera_id),
           name: r.nombre,
           colorHex: r.color_hex,
@@ -119,16 +121,7 @@ export default function ResultsScreen({ route, navigation }) {
           translateY: new Animated.Value(24),
         }));
 
-        if (apiToken && mapped.length > 0) {
-          const best = mapped[0];
-          saveHistorial(apiToken, {
-            monto: amount,
-            moneda_destino: currency,
-            mejor_billetera_id: parseInt(best.id),
-            mejor_tasa: best.rate,
-            total_ars: best.price,
-          }).catch(() => {});
-        }
+        if (mapped.length > 0) setBestResult(mapped[0]);
       } catch (err) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -138,6 +131,18 @@ export default function ResultsScreen({ route, navigation }) {
     fetchData();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!apiToken || !bestResult || savedRef.current) return;
+    savedRef.current = true;
+    saveHistorial(apiToken, {
+      monto: amount,
+      moneda_destino: currency,
+      mejor_billetera_id: parseInt(bestResult.id),
+      mejor_tasa: bestResult.rate,
+      total_ars: bestResult.price,
+    }).catch(() => {});
+  }, [apiToken, bestResult]);
 
   useEffect(() => {
     if (results.length === 0 || cardAnims.current.length === 0) return;

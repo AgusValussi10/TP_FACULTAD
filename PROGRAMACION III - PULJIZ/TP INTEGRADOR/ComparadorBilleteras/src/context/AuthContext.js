@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { Alert } from 'react-native';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -12,7 +13,7 @@ import {
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../config/firebase';
-import { loginBackend, registerBackend } from '../services/api';
+import { loginBackend, registerBackend, firebaseLoginBackend, getAlertas, getCotizaciones, toggleAlerta } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -33,16 +34,32 @@ export function getAuthErrorMessage(error) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
   const [apiToken, setApiToken] = useState(null);
+  const triggeredAlertsRef = useRef(new Set());
 
   useEffect(() => {
-    AsyncStorage.getItem('apiToken').then(t => { if (t) setApiToken(t); });
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser && !firebaseUser.emailVerified) {
         await firebaseSignOut(auth);
         setUser(null);
-      } else {
-        setUser(firebaseUser ?? null);
+        return;
+      }
+
+      setUser(firebaseUser ?? null);
+
+      if (firebaseUser) {
+        const saved = await AsyncStorage.getItem('apiToken');
+        if (saved) {
+          setApiToken(saved);
+        } else {
+          try {
+            const idToken = await firebaseUser.getIdToken();
+            const { token } = await firebaseLoginBackend(idToken);
+            setApiToken(token);
+            await AsyncStorage.setItem('apiToken', token);
+          } catch {
+            // backend no disponible o Firebase Admin no configurado
+          }
+        }
       }
     });
     return unsubscribe;
@@ -78,10 +95,56 @@ export function AuthProvider({ children }) {
     return sendEmailVerification(auth.currentUser);
   };
 
-  const signInWithGoogleCredential = (idToken) => {
+  const signInWithGoogleCredential = async (idToken) => {
     const credential = GoogleAuthProvider.credential(idToken);
-    return signInWithCredential(auth, credential);
+    const cred = await signInWithCredential(auth, credential);
+    try {
+      const { token } = await firebaseLoginBackend(idToken);
+      setApiToken(token);
+      await AsyncStorage.setItem('apiToken', token);
+    } catch {
+      // backend no disponible
+    }
+    return cred;
   };
+
+  // Polling de alertas: chequea cada 60s mientras haya sesión activa
+  useEffect(() => {
+    if (!apiToken) return;
+
+    async function checkAlertas() {
+      try {
+        const [alertas, data] = await Promise.all([
+          getAlertas(apiToken),
+          getCotizaciones(1),
+        ]);
+        const tasas = {};
+        for (const r of data.resultados ?? []) {
+          tasas[r.billetera_id] = r.tasa;
+        }
+        for (const alerta of alertas) {
+          if (!alerta.activa || triggeredAlertsRef.current.has(alerta.id)) continue;
+          const tasa = tasas[alerta.billetera_id];
+          if (!tasa) continue;
+          const disparada = alerta.condicion === 'supera'
+            ? tasa >= alerta.valor_objetivo
+            : tasa <= alerta.valor_objetivo;
+          if (disparada) {
+            triggeredAlertsRef.current.add(alerta.id);
+            toggleAlerta(apiToken, alerta.id, false).catch(() => {});
+            Alert.alert(
+              '🔔 Alerta activada',
+              `${alerta.billetera_nombre}: la tasa actual es $${Number(tasa).toLocaleString('es-AR')} ARS/BRL`,
+            );
+          }
+        }
+      } catch {}
+    }
+
+    checkAlertas();
+    const interval = setInterval(checkAlertas, 60000);
+    return () => clearInterval(interval);
+  }, [apiToken]);
 
   const resetPassword = (email) => sendPasswordResetEmail(auth, email);
 

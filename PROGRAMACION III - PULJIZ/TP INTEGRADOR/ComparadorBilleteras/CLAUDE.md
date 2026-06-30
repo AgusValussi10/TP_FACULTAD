@@ -140,6 +140,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | GET | `/api/billeteras/:id` | Detalle completo de una billetera |
 | POST | `/api/auth/register` | Crear cuenta `{ nombre, email, password }` |
 | POST | `/api/auth/login` | Login → devuelve JWT `{ token, usuario }` |
+| POST | `/api/auth/firebase-login` | Intercambia Firebase ID token por JWT propio `{ idToken }` — crea usuario MySQL si no existe. Usa Firebase Admin SDK si hay serviceAccountKey.json, sino verifica vía API pública de Google |
 
 ### Endpoints protegidos (requieren `Authorization: Bearer <token>`)
 
@@ -151,7 +152,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | PATCH | `/api/alertas/:id` | Activar/pausar alerta `{ activa: true/false }` |
 | DELETE | `/api/alertas/:id` | Eliminar alerta |
 | GET | `/api/historial` | Historial de consultas del usuario |
-| POST | `/api/historial` | Guardar consulta `{ monto, mejor_billetera_id, mejor_tasa, total_ars }` |
+| POST | `/api/historial` | Guardar consulta `{ monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars }` |
 
 ### Endpoints admin (requieren header `X-Admin-Key`)
 
@@ -201,9 +202,25 @@ Login (email/contraseña):
   → Si OK → llama a POST /api/auth/login → obtiene JWT → guarda en AsyncStorage
   → JWT disponible en AuthContext como apiToken para todas las pantallas
 
-App reabierta:
-  → AsyncStorage carga apiToken guardado
-  → onAuthStateChanged chequea emailVerified
+Login con Google:
+  → Firebase Sign-In con ID token de Google
+  → Llama a POST /api/auth/firebase-login con el ID token → obtiene JWT → guarda en AsyncStorage
+
+App reabierta / token faltante:
+  → onAuthStateChanged detecta sesión Firebase activa
+  → Si hay token en AsyncStorage → lo restaura
+  → Si NO hay token → llama a POST /api/auth/firebase-login con getIdToken() de Firebase
+  → Esto cubre: servidor caído durante login, reinstalación de app, login con Google
+```
+
+### Bug conocido y fix aplicado — Content-Type en requests con token
+
+El helper `request()` en `api.js` tenía un bug: al hacer `...options` después de definir `headers`, el spread pisaba el `Content-Type: application/json` con solo `{ Authorization: ... }`. Todos los POST protegidos (historial, alertas, firebase-login) fallaban con "Body requerido". Fix: destructurar `headers` de options antes del spread.
+
+```js
+// CORRECTO (aplicado)
+const { headers: extraHeaders, ...rest } = options;
+fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, ...rest });
 ```
 
 ---
@@ -222,9 +239,9 @@ App reabierta:
 - **ForgotPasswordScreen** — envía link de reset por email
 
 ### Flujo principal
-- **HomeScreen** — destino Brasil PIX fijo, input de monto via teclado custom
+- **HomeScreen** — destino Brasil PIX fijo, input de monto via teclado custom. Muestra últimas 3 consultas reales del usuario (desde API, con `useFocusEffect`). Tocar una consulta reciente navega a Results con `skipSave: true`.
 - **NumericKeyboard** (componente) — bottom sheet con teclado numérico custom
-- **ResultsScreen** — ranking animado de billeteras (desde API), con ahorro vs peor opción. Guarda en historial automáticamente.
+- **ResultsScreen** — ranking animado de billeteras (desde API), con ahorro vs peor opción. Guarda en historial automáticamente cuando ambos `apiToken` y `bestResult` están disponibles (dos efectos separados para evitar race condition). Acepta `skipSave: true` en params para no guardar (usado desde Historial y consultas recientes del Home).
 - **EmptyResultsScreen** — estado vacío cuando no hay cotizaciones
 - **LoadingResultsScreen** — skeleton loaders mientras carga
 
@@ -235,14 +252,15 @@ App reabierta:
 - **WalletCompareScreen** — tabla comparativa lado a lado de 2 billeteras
 
 ### Alertas
-- **AlertsScreen** — lista de alertas con toggle activa/pausada
+- **AlertsScreen** — lista de alertas con toggle activa/pausada. Recarga con `useFocusEffect`.
 - **CreateAlertScreen** — formulario para nueva alerta con preview
 - **PushNotificationScreen** — mockup estático de notificación en pantalla bloqueada
+- **Polling en tiempo real** — `AuthContext` corre `setInterval` cada 60s mientras haya sesión. Compara cotizaciones actuales contra alertas activas del usuario. Cuando se cumple la condición: pausa la alerta automáticamente (`PATCH activa=false`) y muestra `Alert.alert`. Una notificación por alerta por sesión (ref de IDs ya disparados).
 
 ### Perfil
-- **ProfileScreen** — datos de usuario, historial de búsquedas, cerrar sesión
+- **ProfileScreen** — muestra nombre/email/inicial del usuario Firebase real. Carga últimas 3 consultas desde API con `useFocusEffect`. Link a historial completo.
 - **EditProfileScreen** — edición de nombre e info
-- **HistoryScreen** — historial de consultas
+- **HistoryScreen** — historial de consultas desde API con `useFocusEffect`
 - **SettingsScreen** — toggles de notificaciones, idioma, tema
 - **FavoritesScreen** — billeteras y pares favoritos
 
@@ -283,7 +301,7 @@ const colors = {
 - Google OAuth usa cliente **Desktop app** (`276300901779-kdko463f6u3hq58fv0r0duattluo7l1m`)
 - Redirect URI hardcodeado: `com.googleusercontent.apps.276300901779-kdko463f6u3hq58fv0r0duattluo7l1m:/`
 - Google Sign-In **no funciona en Expo Go** (scheme no registrado) — funciona en APK custom
-- **Firebase Admin SDK:** requiere `server/serviceAccountKey.json` (bajar de Firebase Console → Configuración → Cuentas de servicio → Generar clave privada). Sin este archivo el panel muestra solo usuarios MySQL.
+- **Firebase Admin SDK:** requiere `server/serviceAccountKey.json` (bajar de Firebase Console → Configuración → Cuentas de servicio → Generar clave privada). Sin este archivo el panel muestra solo usuarios MySQL. El endpoint `/api/auth/firebase-login` tiene fallback automático a la API pública de Google si no hay serviceAccountKey.json.
 
 ### Android build
 - Gradle: **8.3** — NO subir a 8.8+ (rompe expo-modules-core)

@@ -17,6 +17,7 @@ app.use('/api/cotizaciones',require('./routes/cotizaciones'));
 app.use('/api/billeteras',  require('./routes/billeteras'));
 app.use('/api/alertas',     require('./routes/alertas'));
 app.use('/api/historial',   require('./routes/historial'));
+app.use('/api/favoritos',   require('./routes/favoritos'));
 app.use('/api/admin',       require('./routes/admin'));
 
 // Health check
