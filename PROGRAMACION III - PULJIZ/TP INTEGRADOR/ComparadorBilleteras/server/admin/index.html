@@ -6,21 +6,82 @@
   <title>BrasilPagos — Panel Admin</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #1e293b; }
+    body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+    /* Header */
     header {
       background: #3b82f6; color: white;
       padding: 16px 32px;
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 16px;
     }
-    header h1 { font-size: 20px; font-weight: 700; }
-    header span { font-size: 13px; opacity: 0.8; }
-    .container { max-width: 800px; margin: 32px auto; padding: 0 16px; }
+    header h1 { font-size: 20px; font-weight: 700; flex: 1; }
+    header span { font-size: 13px; opacity: 0.75; }
+
+    /* Tabs */
+    .tabs {
+      background: white;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex; gap: 0;
+      padding: 0 32px;
+    }
+    .tab-btn {
+      padding: 14px 22px; border: none; background: none;
+      font-size: 14px; font-weight: 600; color: #64748b;
+      cursor: pointer; border-bottom: 3px solid transparent;
+      margin-bottom: -2px; transition: color 0.15s;
+    }
+    .tab-btn:hover { color: #3b82f6; }
+    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+
+    /* Content */
+    .container { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Cards */
     .card {
       background: white; border-radius: 16px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       padding: 28px; margin-bottom: 24px;
     }
     .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #1e293b; }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .card-header h2 { margin-bottom: 0; }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 24px 20px; text-align: center;
+    }
+    .stat-icon { font-size: 28px; margin-bottom: 8px; }
+    .stat-value { font-size: 36px; font-weight: 800; color: #1e293b; line-height: 1; }
+    .stat-label { font-size: 13px; color: #64748b; margin-top: 6px; }
+    .stat-card.blue .stat-value   { color: #3b82f6; }
+    .stat-card.green .stat-value  { color: #10b981; }
+    .stat-card.purple .stat-value { color: #8b5cf6; }
+    .stat-card.orange .stat-value { color: #f59e0b; }
+    .stat-card.rose .stat-value   { color: #f43f5e; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 14px; text-align: left; font-size: 14px; }
+    th { background: #f8fafc; font-weight: 600; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+    td { border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbfc; }
+    td input[type="text"], td input[type="email"], td input[type="number"] {
+      width: 100%; padding: 6px 10px; border-radius: 8px;
+      border: 1.5px solid #e2e8f0; font-size: 14px;
+      background: #f8fafc; transition: border-color 0.2s;
+    }
+    td input:focus { outline: none; border-color: #3b82f6; background: white; }
+
+    /* Wallet rows (cotizaciones) */
     .wallet-row {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 0; border-bottom: 1px solid #f1f5f9;
@@ -35,33 +96,138 @@
     .wallet-row input {
       width: 140px; padding: 8px 12px; border-radius: 8px;
       border: 1.5px solid #e2e8f0; font-size: 15px; text-align: right;
-      transition: border-color 0.2s;
     }
     .wallet-row input:focus { outline: none; border-color: #3b82f6; }
     .label-ars { font-size: 12px; color: #64748b; margin-left: 4px; }
-    .btn-save {
-      width: 100%; padding: 14px;
+
+    /* Buttons */
+    .btn-primary {
+      padding: 12px 20px; background: #3b82f6; color: white;
+      border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-full { width: 100%; padding: 14px; font-size: 15px; letter-spacing: 0.5px; }
+    .btn-sm {
+      padding: 6px 14px; background: #3b82f6; color: white;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-sm:hover { background: #2563eb; }
+    .btn-sm:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-danger {
+      padding: 6px 12px; background: #fef2f2; color: #dc2626;
+      border: 1.5px solid #fecaca; border-radius: 8px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-refresh {
+      padding: 8px 16px; background: #f1f5f9; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600; color: #475569;
+    }
+    .btn-refresh:hover { background: #e2e8f0; }
+
+    /* Misc */
+    .actions { display: flex; gap: 8px; white-space: nowrap; }
+    .badge-count {
       background: #3b82f6; color: white;
-      border: none; border-radius: 12px;
-      font-size: 15px; font-weight: 700; cursor: pointer;
-      letter-spacing: 0.5px; transition: background 0.2s;
+      padding: 2px 10px; border-radius: 20px; font-size: 13px; font-weight: 700;
     }
-    .btn-save:hover { background: #2563eb; }
-    .btn-save:disabled { background: #93c5fd; cursor: not-allowed; }
-    .msg {
-      margin-top: 14px; padding: 12px 16px; border-radius: 10px;
-      font-size: 14px; display: none;
-    }
+    .user-id { font-weight: 700; color: #94a3b8; font-size: 13px; }
+    .small-date { font-size: 12px; color: #94a3b8; }
+    .best { color: #16a34a; font-weight: 700; }
+    .msg { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-size: 14px; display: none; }
     .msg.ok  { background: #dcfce7; color: #166534; display: block; }
     .msg.err { background: #fef2f2; color: #991b1b; display: block; }
-    .current-rates { margin-top: 24px; }
-    .current-rates h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px 14px; text-align: left; font-size: 14px; }
-    th { background: #f8fafc; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; }
-    td { border-bottom: 1px solid #f1f5f9; }
-    .best { color: #16a34a; font-weight: 700; }
-    .updated { font-size: 12px; color: #94a3b8; }
+    .empty { text-align: center; padding: 40px; color: #94a3b8; font-size: 15px; }
+    .pill {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+    }
+    .pill.active    { background: #dcfce7; color: #166534; }
+    .pill.inactive  { background: #f1f5f9; color: #94a3b8; }
+    .pill.verified  { background: #dbeafe; color: #1d4ed8; }
+    .pill.unverified{ background: #fef3c7; color: #92400e; }
+    .pill.nosql     { background: #fef2f2; color: #dc2626; }
+    .pill.hassql    { background: #dcfce7; color: #166534; }
+
+    /* Form nuevo usuario */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 13px; font-weight: 600; color: #475569; }
+    .form-group input {
+      padding: 10px 14px; border-radius: 10px;
+      border: 1.5px solid #e2e8f0; font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { outline: none; border-color: #3b82f6; }
+    .form-group input.error { border-color: #dc2626; }
+    .collapsible { display: none; margin-top: 16px; padding-top: 20px; border-top: 1px solid #f1f5f9; }
+    .collapsible.open { display: block; }
+    .btn-new {
+      padding: 8px 16px; background: #10b981; color: white;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-new:hover { background: #059669; }
+
+    /* Toggle switch */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+    .toggle {
+      position: relative; width: 44px; height: 24px;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #cbd5e1; border-radius: 24px;
+      transition: background 0.2s;
+    }
+    .toggle-slider:before {
+      content: ''; position: absolute;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: white; left: 3px; top: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-slider { background: #22c55e; }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+    .toggle-label { font-size: 13px; font-weight: 600; color: #64748b; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 12px 20px; border-radius: 12px;
+      font-size: 14px; font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      display: none; z-index: 999;
+    }
+    .toast.ok  { background: #dcfce7; color: #166534; display: block; }
+    .toast.err { background: #fef2f2; color: #991b1b; display: block; }
+
+    /* Confirm modal */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      display: none; align-items: center; justify-content: center; z-index: 998;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      background: white; border-radius: 16px; padding: 32px;
+      max-width: 380px; width: 90%; text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .modal h3 { font-size: 18px; margin-bottom: 10px; }
+    .modal p  { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+    .modal-btns { display: flex; gap: 12px; justify-content: center; }
+    .btn-cancel {
+      padding: 10px 24px; background: #f1f5f9; border: none;
+      border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 600;
+    }
+    .btn-confirm-del {
+      padding: 10px 24px; background: #dc2626; color: white;
+      border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 700;
+    }
   </style>
 </head>
 <body>
@@ -69,139 +235,623 @@
 <header>
   <div>
     <h1>BrasilPagos — Panel Admin</h1>
-    <span>Actualización de cotizaciones ARS / BRL</span>
+    <span id="lastRefresh"></span>
   </div>
 </header>
 
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+  <button class="tab-btn" onclick="switchTab('cotizaciones')">💱 Cotizaciones</button>
+  <button class="tab-btn" onclick="switchTab('billeteras')">🏦 Billeteras</button>
+  <button class="tab-btn" onclick="switchTab('usuarios')">👥 Usuarios</button>
+</div>
+
 <div class="container">
 
-  <div class="card">
-    <h2>Cargar cotizaciones del día</h2>
-    <div id="walletList">Cargando billeteras...</div>
-    <br/>
-    <button class="btn-save" id="btnSave" onclick="guardar()">GUARDAR COTIZACIONES</button>
-    <div class="msg" id="msg"></div>
+  <!-- ═══════════════ DASHBOARD ═══════════════ -->
+  <div class="tab-content active" id="tab-dashboard">
+
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="stat-usuarios">—</div>
+        <div class="stat-label">Usuarios registrados</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">🏦</div>
+        <div class="stat-value" id="stat-billeteras">—</div>
+        <div class="stat-label">Billeteras activas</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-icon">🔍</div>
+        <div class="stat-value" id="stat-consultas">—</div>
+        <div class="stat-label">Consultas totales</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">🔔</div>
+        <div class="stat-value" id="stat-alertas">—</div>
+        <div class="stat-label">Alertas activas</div>
+      </div>
+      <div class="stat-card rose">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value" id="stat-hoy">—</div>
+        <div class="stat-label">Consultas hoy</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cotizaciones actuales</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Billetera</th>
+            <th>Tasa (ARS/BRL)</th>
+            <th>Comisión</th>
+            <th>Actualizado</th>
+          </tr>
+        </thead>
+        <tbody id="dash-rates">
+          <tr><td colspan="4" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
-  <div class="card current-rates">
-    <h2>Cotizaciones actuales</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Billetera</th>
-          <th>Tasa (ARS/BRL)</th>
-          <th>Comisión</th>
-          <th>Actualizado</th>
-        </tr>
-      </thead>
-      <tbody id="ratesTable">
-        <tr><td colspan="4" style="color:#94a3b8">Cargando...</td></tr>
-      </tbody>
-    </table>
+  <!-- ═══════════════ COTIZACIONES ═══════════════ -->
+  <div class="tab-content" id="tab-cotizaciones">
+
+    <div class="card">
+      <h2>Cargar cotizaciones del día</h2>
+      <div id="walletList">Cargando billeteras...</div>
+      <br/>
+      <button class="btn-primary btn-full" id="btnSaveCot" onclick="guardarCotizaciones()">GUARDAR COTIZACIONES</button>
+      <div class="msg" id="msgCot"></div>
+    </div>
+
+    <div class="card">
+      <h2>Cotizaciones actuales</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Billetera</th>
+            <th>Tasa (ARS/BRL)</th>
+            <th>Comisión</th>
+            <th>Actualizado</th>
+          </tr>
+        </thead>
+        <tbody id="ratesTable">
+          <tr><td colspan="4" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
+  <!-- ═══════════════ BILLETERAS ═══════════════ -->
+  <div class="tab-content" id="tab-billeteras">
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Billeteras <span class="badge-count" id="billeterasCount">0</span></h2>
+        <button class="btn-refresh" onclick="cargarBilleterasTab()">↻ Actualizar</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px">#</th>
+            <th>Nombre</th>
+            <th>País</th>
+            <th>Tasa actual</th>
+            <th>Comisión</th>
+            <th>Rating</th>
+            <th style="width:130px">Visible en app</th>
+          </tr>
+        </thead>
+        <tbody id="billeterasTable">
+          <tr><td colspan="7" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ USUARIOS ═══════════════ -->
+  <div class="tab-content" id="tab-usuarios">
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 style="margin-bottom:4px">Todos los usuarios <span class="badge-count" id="userCount">0</span></h2>
+          <span style="font-size:13px;color:#64748b">Firebase Auth + MySQL — <span id="userSyncInfo"></span></span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-new" onclick="toggleFormNuevo()">+ Nuevo usuario</button>
+          <button class="btn-refresh" onclick="cargarUsuarios()">↻ Actualizar</button>
+        </div>
+      </div>
+
+      <!-- Formulario nuevo usuario -->
+      <div class="collapsible" id="formNuevo">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre completo *</label>
+            <input type="text" id="new-nombre" placeholder="Ej: Juan Pérez"/>
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="new-email" placeholder="juan@example.com"/>
+          </div>
+          <div class="form-group">
+            <label>Contraseña * (mín. 6 caracteres)</label>
+            <input type="password" id="new-password" placeholder="••••••••"/>
+          </div>
+          <div class="form-group">
+            <label>País (código ISO)</label>
+            <input type="text" id="new-pais" placeholder="AR" maxlength="2" style="max-width:80px"/>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-primary" id="btnCrearUsuario" onclick="crearUsuario()">Crear usuario</button>
+          <button class="btn-cancel" onclick="toggleFormNuevo()">Cancelar</button>
+          <span id="new-msg" style="font-size:13px"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Lista de usuarios</h2>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Nombre</th>
+            <th style="width:90px">Proveedor</th>
+            <th style="width:80px">Email ver.</th>
+            <th style="width:100px">Registrado</th>
+            <th style="width:80px">MySQL</th>
+            <th style="width:140px">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="usersTable">
+          <tr><td colspan="7" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab-usuarios -->
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <h3>¿Eliminar usuario?</h3>
+    <p id="confirmMsg">Esta acción no se puede deshacer.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarConfirm()">Cancelar</button>
+      <button class="btn-confirm-del" id="btnConfirmDel">Eliminar</button>
+    </div>
+  </div>
 </div>
 
 <script>
-  const API = 'http://localhost:3000/api';
+  const API       = 'http://localhost:3000/api';
   const ADMIN_KEY = 'brasilpagos_secret_2026';
 
   const COLORS = {
-    'Mercado Pago': '#00b1ea', 'Ualá': '#7c3aed', 'Bimo': '#f59e0b',
-    'Prex': '#06b6d4', 'Naranja X': '#f97316', 'Brubank': '#3b82f6',
-    'Personal Pay': '#8b5cf6', 'Lemon Cash': '#84cc16',
-    'Modo': '#ec4899', 'Cuenta DNI': '#0ea5e9',
+    'Mercado Pago':'#00b1ea','Ualá':'#7c3aed','Bimo':'#f59e0b',
+    'Prex':'#06b6d4','Naranja X':'#f97316','Brubank':'#3b82f6',
+    'Personal Pay':'#8b5cf6','Lemon Cash':'#84cc16','Modo':'#ec4899',
+    'Cuenta DNI':'#0ea5e9','AstroPay':'#e11d48','belo':'#0f172a','Cocos Capital':'#16a34a',
   };
 
   let billeteras = [];
+  let usuarios   = [];
 
-  async function cargarBilleteras() {
-    const res = await fetch(`${API}/billeteras`);
-    billeteras = await res.json();
+  // ── Tabs ────────────────────────────────────────────────────────────────────
 
-    const ratesRes = await fetch(`${API}/cotizaciones?monto=1`);
-    const ratesData = await ratesRes.json();
-    const rateMap = {};
-    ratesData.resultados.forEach(r => { rateMap[r.billetera_id] = r.tasa; });
+  function switchTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
 
-    const html = billeteras.map(b => `
-      <div class="wallet-row">
-        <div class="badge" style="background:${COLORS[b.nombre] || '#6b7280'}">${b.iniciales}</div>
-        <span class="wallet-name">${b.nombre}</span>
-        <input
-          type="number" step="0.01" min="0"
-          id="tasa_${b.id}"
-          value="${rateMap[b.id] || ''}"
-          placeholder="0.00"
-        />
-        <span class="label-ars">ARS</span>
-      </div>
-    `).join('');
-    document.getElementById('walletList').innerHTML = html;
-
-    actualizarTabla(ratesData.resultados);
+    if (name === 'dashboard')    cargarDashboard();
+    if (name === 'cotizaciones') cargarCotizaciones();
+    if (name === 'billeteras')   cargarBilleterasTab();
+    if (name === 'usuarios')     cargarUsuarios();
   }
 
-  function actualizarTabla(resultados) {
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+
+  async function cargarDashboard() {
+    try {
+      const [statsRes, ratesRes] = await Promise.all([
+        fetch(`${API}/admin/stats`,        { headers: { 'X-Admin-Key': ADMIN_KEY } }),
+        fetch(`${API}/cotizaciones?monto=1`),
+      ]);
+      const stats = await statsRes.json();
+      const rates = await ratesRes.json();
+
+      document.getElementById('stat-usuarios').textContent   = stats.usuarios   ?? '—';
+      document.getElementById('stat-billeteras').textContent = stats.billeteras ?? '—';
+      document.getElementById('stat-consultas').textContent  = stats.consultas  ?? '—';
+      document.getElementById('stat-alertas').textContent    = stats.alertas    ?? '—';
+      document.getElementById('stat-hoy').textContent        = stats.hoy        ?? '—';
+
+      renderRatesTable('dash-rates', rates.resultados);
+
+      document.getElementById('lastRefresh').textContent =
+        'Actualizado: ' + new Date().toLocaleTimeString('es-AR');
+    } catch {
+      toast('No se pudo conectar con el servidor', false);
+    }
+  }
+
+  function renderRatesTable(tbodyId, resultados) {
     if (!resultados || resultados.length === 0) {
-      document.getElementById('ratesTable').innerHTML = '<tr><td colspan="4" style="color:#94a3b8">Sin datos</td></tr>';
+      document.getElementById(tbodyId).innerHTML =
+        '<tr><td colspan="4" class="empty">Sin datos</td></tr>';
       return;
     }
-    const html = resultados.map((r, i) => `
+    document.getElementById(tbodyId).innerHTML = resultados.map((r, i) => `
       <tr>
         <td><strong>${r.nombre}</strong></td>
         <td class="${i === 0 ? 'best' : ''}">${Number(r.tasa).toFixed(2)}</td>
         <td>${r.comision_pct}%</td>
-        <td class="updated">${new Date(r.registrado_en).toLocaleString('es-AR')}</td>
+        <td class="small-date">${new Date(r.registrado_en).toLocaleString('es-AR')}</td>
       </tr>
     `).join('');
-    document.getElementById('ratesTable').innerHTML = html;
   }
 
-  async function guardar() {
+  // ── Cotizaciones ─────────────────────────────────────────────────────────────
+
+  async function cargarCotizaciones() {
+    const res      = await fetch(`${API}/billeteras`);
+    billeteras     = await res.json();
+    const ratesRes = await fetch(`${API}/cotizaciones?monto=1`);
+    const ratesData= await ratesRes.json();
+    const rateMap  = {};
+    ratesData.resultados.forEach(r => { rateMap[r.billetera_id] = r.tasa; });
+
+    document.getElementById('walletList').innerHTML = billeteras.map(b => `
+      <div class="wallet-row">
+        <div class="badge" style="background:${COLORS[b.nombre]||'#6b7280'}">${b.iniciales}</div>
+        <span class="wallet-name">${b.nombre}</span>
+        <input type="number" step="0.01" min="0" id="tasa_${b.id}"
+               value="${rateMap[b.id]||''}" placeholder="0.00"/>
+        <span class="label-ars">ARS</span>
+      </div>
+    `).join('');
+
+    renderRatesTable('ratesTable', ratesData.resultados);
+  }
+
+  async function guardarCotizaciones() {
     const tasas = billeteras.map(b => ({
       billetera_id: b.id,
       tasa: parseFloat(document.getElementById(`tasa_${b.id}`).value),
     })).filter(t => !isNaN(t.tasa) && t.tasa > 0);
 
-    if (tasas.length === 0) {
-      mostrarMsg('Ingresá al menos una cotización', false);
-      return;
-    }
+    if (tasas.length === 0) { mostrarMsg('msgCot', 'Ingresá al menos una cotización', false); return; }
 
-    const btn = document.getElementById('btnSave');
-    btn.disabled = true;
-    btn.textContent = 'GUARDANDO...';
+    const btn = document.getElementById('btnSaveCot');
+    btn.disabled = true; btn.textContent = 'GUARDANDO...';
 
     try {
-      const res = await fetch(`${API}/cotizaciones`, {
+      const res  = await fetch(`${API}/cotizaciones`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
         body: JSON.stringify({ tasas }),
       });
       const data = await res.json();
       if (res.ok) {
-        mostrarMsg(`✓ ${data.message}`, true);
-        await cargarBilleteras();
+        mostrarMsg('msgCot', '✓ ' + data.message, true);
+        await cargarCotizaciones();
       } else {
-        mostrarMsg(data.error || 'Error al guardar', false);
+        mostrarMsg('msgCot', data.error || 'Error al guardar', false);
       }
     } catch {
-      mostrarMsg('No se pudo conectar con el servidor', false);
+      mostrarMsg('msgCot', 'No se pudo conectar con el servidor', false);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'GUARDAR COTIZACIONES';
+      btn.disabled = false; btn.textContent = 'GUARDAR COTIZACIONES';
     }
   }
 
-  function mostrarMsg(texto, ok) {
-    const el = document.getElementById('msg');
-    el.textContent = texto;
-    el.className = 'msg ' + (ok ? 'ok' : 'err');
-    setTimeout(() => { el.className = 'msg'; }, 4000);
+  // ── Billeteras ───────────────────────────────────────────────────────────────
+
+  async function cargarBilleterasTab() {
+    document.getElementById('billeterasTable').innerHTML =
+      '<tr><td colspan="7" class="empty">Cargando...</td></tr>';
+    try {
+      const [billRes, ratesRes] = await Promise.all([
+        fetch(`${API}/admin/billeteras`, { headers: { 'X-Admin-Key': ADMIN_KEY } }),
+        fetch(`${API}/cotizaciones?monto=1`),
+      ]);
+      const bills  = await billRes.json();
+      const rates  = await ratesRes.json();
+      const rateMap = {};
+      rates.resultados.forEach(r => { rateMap[r.billetera_id] = r; });
+
+      document.getElementById('billeterasCount').textContent = bills.length;
+      document.getElementById('billeterasTable').innerHTML = bills.map(b => {
+        const r      = rateMap[b.id];
+        const activa = b.activa != 0;
+        return `
+          <tr id="brow_${b.id}">
+            <td><span class="user-id">#${b.id}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="badge" style="background:${COLORS[b.nombre]||'#6b7280'};width:32px;height:32px;font-size:10px">${b.iniciales||'?'}</div>
+                <strong>${b.nombre}</strong>
+              </div>
+            </td>
+            <td>AR</td>
+            <td>${r ? '<strong>' + Number(r.tasa).toFixed(2) + '</strong>' : '<span style="color:#94a3b8">Sin dato</span>'}</td>
+            <td>${b.comision_pct != null ? b.comision_pct + '%' : '—'}</td>
+            <td>${b.rating_promedio ? '★ ' + Number(b.rating_promedio).toFixed(1) : '—'}</td>
+            <td>
+              <div class="toggle-wrap">
+                <label class="toggle">
+                  <input type="checkbox" ${activa ? 'checked' : ''} onchange="toggleBilletera(${b.id}, this)"/>
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label" id="tlabel_${b.id}">${activa ? 'Visible' : 'Oculta'}</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch {
+      toast('No se pudo cargar las billeteras', false);
+    }
   }
 
-  cargarBilleteras();
+  async function toggleBilletera(id, checkbox) {
+    try {
+      const res  = await fetch(`${API}/admin/billeteras/${id}/toggle`, {
+        method: 'PATCH', headers: { 'X-Admin-Key': ADMIN_KEY },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const label = document.getElementById(`tlabel_${id}`);
+        label.textContent = data.activa ? 'Visible' : 'Oculta';
+        toast(data.activa ? '✓ Billetera visible en la app' : '✓ Billetera oculta de la app', true);
+      } else {
+        checkbox.checked = !checkbox.checked;
+        toast(data.error || 'Error al actualizar', false);
+      }
+    } catch {
+      checkbox.checked = !checkbox.checked;
+      toast('No se pudo conectar', false);
+    }
+  }
+
+  // ── Nuevo usuario ────────────────────────────────────────────────────────────
+
+  function toggleFormNuevo() {
+    const form = document.getElementById('formNuevo');
+    form.classList.toggle('open');
+    if (form.classList.contains('open')) {
+      document.getElementById('new-nombre').focus();
+    } else {
+      ['new-nombre','new-email','new-password','new-pais'].forEach(id => {
+        document.getElementById(id).value = '';
+        document.getElementById(id).classList.remove('error');
+      });
+      document.getElementById('new-msg').textContent = '';
+    }
+  }
+
+  async function crearUsuario() {
+    const nombre   = document.getElementById('new-nombre').value.trim();
+    const email    = document.getElementById('new-email').value.trim();
+    const password = document.getElementById('new-password').value;
+    const pais     = document.getElementById('new-pais').value.trim().toUpperCase() || 'AR';
+
+    let valido = true;
+    ['new-nombre','new-email','new-password'].forEach(id => {
+      document.getElementById(id).classList.remove('error');
+    });
+
+    if (!nombre) { document.getElementById('new-nombre').classList.add('error'); valido = false; }
+    if (!email)  { document.getElementById('new-email').classList.add('error');  valido = false; }
+    if (!password || password.length < 6) {
+      document.getElementById('new-password').classList.add('error'); valido = false;
+    }
+    if (!valido) {
+      document.getElementById('new-msg').innerHTML = '<span style="color:#dc2626">Completá los campos obligatorios (mín. 6 caracteres en contraseña)</span>';
+      return;
+    }
+
+    const btn = document.getElementById('btnCrearUsuario');
+    btn.disabled = true; btn.textContent = 'Creando...';
+
+    try {
+      const res  = await fetch(`${API}/admin/usuarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        body: JSON.stringify({ nombre, email, password, pais_residencia: pais }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast(`✓ Usuario "${nombre}" creado (ID #${data.id})`, true);
+        toggleFormNuevo();
+        await cargarUsuarios();
+      } else {
+        document.getElementById('new-msg').innerHTML =
+          `<span style="color:#dc2626">${data.error}</span>`;
+      }
+    } catch {
+      document.getElementById('new-msg').innerHTML =
+        '<span style="color:#dc2626">No se pudo conectar con el servidor</span>';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Crear usuario';
+    }
+  }
+
+  // ── Usuarios (Firebase + MySQL) ───────────────────────────────────────────────
+
+  let fbUsers = [];
+
+  async function cargarUsuarios() {
+    document.getElementById('usersTable').innerHTML =
+      '<tr><td colspan="7" class="empty">Cargando...</td></tr>';
+    try {
+      const res = await fetch(`${API}/admin/firebase-usuarios`, { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      if (!res.ok) {
+        const err = await res.json();
+        document.getElementById('usersTable').innerHTML =
+          `<tr><td colspan="7" class="empty" style="color:#dc2626">${err.error}</td></tr>`;
+        return;
+      }
+      fbUsers = await res.json();
+      const sinMySQL = fbUsers.filter(u => u.mysql_id === null).length;
+      document.getElementById('userCount').textContent = fbUsers.length;
+      document.getElementById('userSyncInfo').textContent =
+        sinMySQL > 0 ? `${sinMySQL} sin cuenta MySQL` : 'todos sincronizados ✓';
+      renderFbUsuarios();
+    } catch {
+      toast('No se pudo conectar con el servidor', false);
+    }
+  }
+
+  function renderFbUsuarios() {
+    if (fbUsers.length === 0) {
+      document.getElementById('usersTable').innerHTML =
+        '<tr><td colspan="7" class="empty">No hay usuarios en Firebase</td></tr>';
+      return;
+    }
+    document.getElementById('usersTable').innerHTML = fbUsers.map(u => {
+      const hasMysql  = u.mysql_id !== null;
+      const proveedor = u.proveedor.includes('google') ? '🔵 Google' : '📧 Email';
+      if (hasMysql) {
+        return `
+          <tr id="urow_fb_${esc(u.uid)}">
+            <td>${esc(u.email || '—')}</td>
+            <td><input type="text" id="unombre_${u.mysql_id}" value="${esc(u.nombre||'')}" style="min-width:120px"/></td>
+            <td><span style="font-size:12px">${proveedor}</span></td>
+            <td><span class="pill ${u.emailVerified ? 'verified' : 'unverified'}">${u.emailVerified ? 'Sí' : 'No'}</span></td>
+            <td><span class="small-date">${formatFecha(u.creado_en)}</span></td>
+            <td><span class="pill hassql">#${u.mysql_id}</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn-sm" id="ubtn_${u.mysql_id}" onclick="guardarUsuario(${u.mysql_id})">Guardar</button>
+                <button class="btn-danger" onclick="confirmarEliminar(${u.mysql_id},'${esc(u.email||u.nombre||'')}')">✕</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        return `
+          <tr style="background:#fffbeb">
+            <td>${esc(u.email || '—')}</td>
+            <td><span style="color:#94a3b8;font-size:13px">${esc(u.nombre || '—')}</span></td>
+            <td><span style="font-size:12px">${proveedor}</span></td>
+            <td><span class="pill ${u.emailVerified ? 'verified' : 'unverified'}">${u.emailVerified ? 'Sí' : 'No'}</span></td>
+            <td><span class="small-date">${formatFecha(u.creado_en)}</span></td>
+            <td><span class="pill nosql">Sin MySQL</span></td>
+            <td>
+              <button class="btn-sm" style="background:#f59e0b" onclick="sincronizarUsuario('${esc(u.uid)}','${esc(u.email||'')}','${esc(u.nombre||'')}')">
+                Sincronizar
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+    }).join('');
+  }
+
+  async function guardarUsuario(id) {
+    const nombre = document.getElementById(`unombre_${id}`).value.trim();
+    if (!nombre) { toast('El nombre no puede estar vacío', false); return; }
+    const btn = document.getElementById(`ubtn_${id}`);
+    btn.disabled = true; btn.textContent = '...';
+    try {
+      const u   = fbUsers.find(x => x.mysql_id === id);
+      const res = await fetch(`${API}/admin/usuarios/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        body: JSON.stringify({ nombre, email: u.email, pais_residencia: null }),
+      });
+      const data = await res.json();
+      if (res.ok) { toast('✓ ' + data.message, true); await cargarUsuarios(); }
+      else { toast(data.error || 'Error al guardar', false); }
+    } catch { toast('No se pudo conectar', false); }
+    finally { btn.disabled = false; btn.textContent = 'Guardar'; }
+  }
+
+  async function sincronizarUsuario(uid, email, nombre) {
+    try {
+      const res  = await fetch(`${API}/admin/sincronizar-usuario`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        body: JSON.stringify({ email, nombre }),
+      });
+      const data = await res.json();
+      if (res.ok) { toast('✓ Usuario sincronizado a MySQL', true); await cargarUsuarios(); }
+      else { toast(data.error || 'Error al sincronizar', false); }
+    } catch { toast('No se pudo conectar', false); }
+  }
+
+  function confirmarEliminar(id, nombre) {
+    document.getElementById('confirmMsg').textContent =
+      `Se eliminará a "${nombre}" de MySQL y sus datos asociados. Esta acción no se puede deshacer.`;
+    document.getElementById('confirmOverlay').classList.add('show');
+    document.getElementById('btnConfirmDel').onclick = () => eliminarUsuario(id);
+  }
+
+  function cerrarConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('show');
+  }
+
+  async function eliminarUsuario(id) {
+    cerrarConfirm();
+    try {
+      const res  = await fetch(`${API}/admin/usuarios/${id}`, {
+        method: 'DELETE', headers: { 'X-Admin-Key': ADMIN_KEY },
+      });
+      const data = await res.json();
+      if (res.ok) { toast('✓ ' + data.message, true); await cargarUsuarios(); }
+      else { toast(data.error || 'Error al eliminar', false); }
+    } catch { toast('No se pudo conectar', false); }
+  }
+
+  // ── Utils ─────────────────────────────────────────────────────────────────────
+
+  function mostrarMsg(id, texto, ok) {
+    const el = document.getElementById(id);
+    el.textContent = texto;
+    el.className   = 'msg ' + (ok ? 'ok' : 'err');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.className = 'msg'; }, 4000);
+  }
+
+  function toast(msg, ok) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className   = 'toast ' + (ok ? 'ok' : 'err');
+    clearTimeout(window._toast);
+    window._toast  = setTimeout(() => { el.className = 'toast'; }, 3500);
+  }
+
+  function formatFecha(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+  }
+
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+      .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Carga inicial
+  cargarDashboard();
 </script>
 </body>
 </html>
