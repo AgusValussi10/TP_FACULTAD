@@ -42,3 +42,4 @@ leer.txt
 
 # Visual Studio
 .vs/
+server/serviceAccountKey.json
