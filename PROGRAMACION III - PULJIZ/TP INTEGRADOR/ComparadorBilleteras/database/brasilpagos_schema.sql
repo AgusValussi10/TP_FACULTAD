@@ -205,3 +205,33 @@ CREATE TABLE favoritos (
     REFERENCES billeteras (id) ON DELETE CASCADE ON UPDATE CASCADE,
   UNIQUE KEY uq_usuario_billetera (usuario_id, billetera_id)
 );
+
+-- =============================================================
+--  VIEW: cotizaciones_actuales
+--  Última cotización registrada por billetera, ordenada de
+--  mejor a peor tasa efectiva (tasa * (1 + comision)).
+--  La API de cotizaciones la usa directamente.
+-- =============================================================
+CREATE OR REPLACE VIEW cotizaciones_actuales AS
+SELECT
+  b.id              AS billetera_id,
+  b.nombre,
+  b.iniciales,
+  b.color_hex,
+  bc.comision_pct,
+  bc.limite_diario_brl,
+  bc.tiempo_estimado,
+  c.tasa,
+  c.registrado_en
+FROM billeteras b
+JOIN billetera_condiciones bc ON bc.billetera_id = b.id
+JOIN cotizaciones c ON c.id = (
+  SELECT id FROM cotizaciones
+  WHERE billetera_id = b.id
+    AND moneda_origen  = 'ARS'
+    AND moneda_destino = 'BRL'
+  ORDER BY registrado_en DESC
+  LIMIT 1
+)
+WHERE b.activa = 1
+ORDER BY (c.tasa * (1 + bc.comision_pct / 100)) ASC;

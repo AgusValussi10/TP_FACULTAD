@@ -304,33 +304,46 @@ adb install -r C:\dev\CB\android\app\build\outputs\apk\debug\app-debug.apk
 
 ---
 
-## Importante para expo / device físico
+## Flujo para correr la app en celular físico (método definitivo: USB + adb reverse)
 
-En `src/services/api.js` cambiar la URL según el entorno:
-```js
-// Emulador Android (default):
-const API_BASE_URL = 'http://10.0.2.2:3000';
+Este método funciona en cualquier red sin depender del WiFi.
 
-// Celular físico en la misma red WiFi (reemplazar con IP real de la PC):
-const API_BASE_URL = 'http://192.168.X.X:3000';
-```
-
-### Iniciar todo en la expo
 ```cmd
-# Terminal 1 — servidor
+# 1. Levantar el servidor
 cd server
 node index.js
 
-# Terminal 2 — app
+# 2. Conectar el celular por USB con Depuración USB activada
+#    (Ajustes → Acerca del teléfono → tocar "Número de compilación" 7 veces
+#     → Opciones de desarrollador → Depuración USB: ON)
+
+# 3. Verificar que el celu aparece
+adb devices
+# debe mostrar algo como: 4eddc151   device
+
+# 4. Hacer el reverse del puerto (repetir si se desconecta el cable)
+adb -s 4eddc151 reverse tcp:3000 tcp:3000
+# imprime: 3000
+
+# 5. Levantar Metro
 npx expo start -c
-# Presionar 'a' para emulador Android, o escanear QR desde Expo Go
+
+# 6. Escanear el QR con Expo Go en el celular
 ```
+
+La URL en `src/services/api.js` debe ser `http://localhost:3000` (ya configurada).
 
 ### Importar BD en notebook nueva
 ```sql
 -- En MySQL Workbench, ejecutar en orden:
--- 1. brasilpagos_schema.sql
+-- 1. brasilpagos_schema.sql  (incluye el VIEW cotizaciones_actuales)
 -- 2. brasilpagos_datos.sql   (incluye las 13 billeteras)
+```
+
+### Si cambia el ID del dispositivo (otra notebook, otro cable)
+```cmd
+adb devices   # ver el nuevo ID
+adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 ```
 
 ---

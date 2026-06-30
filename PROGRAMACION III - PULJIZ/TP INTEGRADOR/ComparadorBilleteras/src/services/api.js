@@ -1,5 +1,7 @@
-// Cambiar a la IP de LAN cuando se prueba en dispositivo físico (ej: 'http://192.168.1.X:3000')
-const API_BASE_URL = 'http://10.0.2.2:3000';
+// Emulador Android: 'http://10.0.2.2:3000'
+// Celular físico por USB (adb reverse tcp:3000 tcp:3000): 'http://localhost:3000'
+// Celular físico por WiFi: IP de la PC en la red
+const API_BASE_URL = 'http://localhost:3000';
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
