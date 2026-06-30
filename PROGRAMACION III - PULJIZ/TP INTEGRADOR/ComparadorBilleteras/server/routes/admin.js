@@ -45,6 +45,9 @@ router.post('/usuarios', checkAdminKey, async (req, res) => {
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'nombre, email y password son requeridos' });
   }
+  if (nombre.trim().length < 2) {
+    return res.status(400).json({ error: 'El nombre debe tener al menos 2 caracteres' });
+  }
   if (password.length < 6) {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
   }
@@ -109,11 +112,22 @@ router.put('/usuarios/:id', checkAdminKey, async (req, res) => {
     }
     const [result] = await pool.query(
       'UPDATE usuarios SET nombre = ?, email = ?, pais_residencia = ? WHERE id = ?',
-      [nombre, email, pais_residencia || null, id]
+      [nombre, email, pais_residencia || 'AR', id]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+
+    // Sincronizar displayName en Firebase
+    if (firebaseAdmin) {
+      try {
+        const userRecord = await firebaseAdmin.auth.getUserByEmail(email);
+        await firebaseAdmin.auth.updateUser(userRecord.uid, { displayName: nombre });
+      } catch (fbErr) {
+        console.warn('[firebase] No se pudo actualizar displayName:', fbErr.message);
+      }
+    }
+
     res.json({ message: 'Usuario actualizado' });
   } catch (err) {
     console.error(err);
@@ -150,6 +164,27 @@ router.get('/billeteras', checkAdminKey, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener billeteras' });
+  }
+});
+
+// PUT /api/admin/billeteras/:id/rating
+router.put('/billeteras/:id/rating', checkAdminKey, async (req, res) => {
+  const { rating_promedio, cantidad_resenas } = req.body;
+  if (rating_promedio == null) return res.status(400).json({ error: 'rating_promedio es requerido' });
+  const rating = parseFloat(rating_promedio);
+  if (isNaN(rating) || rating < 0 || rating > 5) {
+    return res.status(400).json({ error: 'El rating debe ser un número entre 0 y 5' });
+  }
+  try {
+    const [result] = await pool.query(
+      'UPDATE billeteras SET rating_promedio = ?, cantidad_resenas = ? WHERE id = ?',
+      [rating.toFixed(1), cantidad_resenas || 0, req.params.id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Billetera no encontrada' });
+    res.json({ message: 'Rating actualizado' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -191,16 +226,38 @@ router.get('/firebase-usuarios', checkAdminKey, async (req, res) => {
     } while (pageToken);
 
     // Cruzar con MySQL por email
-    const [mysqlRows] = await pool.query('SELECT id, email FROM usuarios');
-    const mysqlEmails = new Map(mysqlRows.map(r => [r.email.toLowerCase(), r.id]));
+    const [mysqlRows] = await pool.query(
+      'SELECT id, nombre, email, creado_en FROM usuarios'
+    );
+    const mysqlByEmail = new Map(mysqlRows.map(r => [r.email.toLowerCase(), r]));
+    const firebaseEmails = new Set(firebaseUsers.map(u => (u.email || '').toLowerCase()));
 
+    // Firebase users con su mysql_id si existe
     const merged = firebaseUsers.map(u => ({
       ...u,
-      mysql_id: u.email ? (mysqlEmails.get(u.email.toLowerCase()) ?? null) : null,
+      mysql_id: u.email ? (mysqlByEmail.get(u.email.toLowerCase())?.id ?? null) : null,
     }));
 
-    // Ordenar: primero sin MySQL (los que faltan), después los que ya tienen
+    // Agregar usuarios MySQL que NO tienen cuenta Firebase
+    mysqlRows.forEach(r => {
+      if (!firebaseEmails.has(r.email.toLowerCase())) {
+        merged.push({
+          uid:           null,
+          email:         r.email,
+          nombre:        r.nombre,
+          emailVerified: false,
+          proveedor:     'solo MySQL',
+          creado_en:     r.creado_en,
+          mysql_id:      r.id,
+          mysqlOnly:     true,
+        });
+      }
+    });
+
+    // Ordenar: primero sin Firebase (MySQL-only), luego sin MySQL, luego el resto
     merged.sort((a, b) => {
+      if (a.mysqlOnly && !b.mysqlOnly) return -1;
+      if (!a.mysqlOnly && b.mysqlOnly) return 1;
       if (a.mysql_id === null && b.mysql_id !== null) return -1;
       if (a.mysql_id !== null && b.mysql_id === null) return 1;
       return new Date(b.creado_en) - new Date(a.creado_en);

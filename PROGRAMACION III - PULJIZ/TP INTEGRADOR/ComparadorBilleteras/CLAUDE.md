@@ -72,9 +72,11 @@ ComparadorBilleteras/
 │   │   ├── cotizaciones.js GET /?monto=, GET /historial, POST / (admin)
 │   │   ├── billeteras.js  GET /, GET /:id
 │   │   ├── alertas.js     GET /, POST /, PATCH /:id, DELETE /:id
-│   │   └── historial.js   GET /, POST /
+│   │   ├── historial.js   GET /, POST /
+│   │   └── admin.js       rutas admin (ver abajo)
+│   ├── firebaseAdmin.js   inicializa Firebase Admin SDK (requiere serviceAccountKey.json)
 │   └── admin/
-│       └── index.html     panel web para actualizar cotizaciones manualmente
+│       └── index.html     panel web — tabs: Dashboard, Cotizaciones, Billeteras, Usuarios
 ├── database/
 │   ├── brasilpagos_schema.sql   CREATE DATABASE + 11 tablas + FK + índices
 │   └── brasilpagos_datos.sql    seed: 13 billeteras (incl. AstroPay, belo, Cocos Capital)
@@ -126,7 +128,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 ## API REST
 
 **Base URL:** `http://localhost:3000`
-**Panel admin:** `http://localhost:3000/admin`
+**Panel admin:** `http://localhost:3000/admin` — tabs: Dashboard · Cotizaciones · Billeteras (toggle visible/oculta) · Usuarios (CRUD + Firebase sync)
 
 ### Endpoints públicos (sin token)
 
@@ -151,11 +153,21 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | GET | `/api/historial` | Historial de consultas del usuario |
 | POST | `/api/historial` | Guardar consulta `{ monto, mejor_billetera_id, mejor_tasa, total_ars }` |
 
-### Endpoint admin (requiere header `X-Admin-Key`)
+### Endpoints admin (requieren header `X-Admin-Key`)
 
 | Método | Ruta | Descripción |
 |---|---|---|
 | POST | `/api/cotizaciones` | Cargar nuevas tasas `{ tasas: [{ billetera_id, tasa }] }` |
+| GET | `/api/admin/stats` | Stats del dashboard (usuarios, billeteras, consultas, alertas, hoy) |
+| GET | `/api/admin/billeteras` | Todas las billeteras sin filtrar `activa` |
+| PATCH | `/api/admin/billeteras/:id/toggle` | Mostrar/ocultar billetera en la app |
+| PUT | `/api/admin/billeteras/:id/rating` | Actualizar rating y cantidad de reseñas `{ rating_promedio, cantidad_resenas }` |
+| GET | `/api/admin/usuarios` | Listado de usuarios MySQL |
+| POST | `/api/admin/usuarios` | Crear usuario en MySQL + Firebase `{ nombre, email, password, pais_residencia }` |
+| PUT | `/api/admin/usuarios/:id` | Editar nombre/email en MySQL y Firebase (sincroniza displayName) |
+| DELETE | `/api/admin/usuarios/:id` | Eliminar usuario MySQL |
+| GET | `/api/admin/firebase-usuarios` | Unión Firebase + MySQL: usuarios Firebase con estado MySQL + usuarios solo-MySQL |
+| POST | `/api/admin/sincronizar-usuario` | Crear registro MySQL para usuario que solo existe en Firebase |
 
 ### Levantar el servidor
 
@@ -271,6 +283,7 @@ const colors = {
 - Google OAuth usa cliente **Desktop app** (`276300901779-kdko463f6u3hq58fv0r0duattluo7l1m`)
 - Redirect URI hardcodeado: `com.googleusercontent.apps.276300901779-kdko463f6u3hq58fv0r0duattluo7l1m:/`
 - Google Sign-In **no funciona en Expo Go** (scheme no registrado) — funciona en APK custom
+- **Firebase Admin SDK:** requiere `server/serviceAccountKey.json` (bajar de Firebase Console → Configuración → Cuentas de servicio → Generar clave privada). Sin este archivo el panel muestra solo usuarios MySQL.
 
 ### Android build
 - Gradle: **8.3** — NO subir a 8.8+ (rompe expo-modules-core)
@@ -356,5 +369,6 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 ### Exposición en notebook
 - [ ] Instalar Node.js 22, MySQL 8, MySQL Workbench, Android Studio
 - [ ] Copiar proyecto, importar BD con los scripts SQL, configurar `.env`
+- [ ] Copiar `serviceAccountKey.json` en `server/` para habilitar Firebase Admin
 - [ ] Cambiar `API_BASE_URL` en `api.js` si se usa celular físico
 - [ ] Verificar que Metro + servidor corren bien antes de la expo

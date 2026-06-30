@@ -345,6 +345,7 @@
             <th>Tasa actual</th>
             <th>Comisión</th>
             <th>Rating</th>
+            <th style="width:150px">Rating Play Store</th>
             <th style="width:130px">Visible en app</th>
           </tr>
         </thead>
@@ -575,8 +576,9 @@
       const bills  = await billRes.json();
       const rates  = await ratesRes.json();
       const rateMap = {};
-      rates.resultados.forEach(r => { rateMap[r.billetera_id] = r; });
+      (rates.resultados || []).forEach(r => { rateMap[r.billetera_id] = r; });
 
+      bills.sort((a, b) => (b.activa != 0) - (a.activa != 0));
       document.getElementById('billeterasCount').textContent = bills.length;
       document.getElementById('billeterasTable').innerHTML = bills.map(b => {
         const r      = rateMap[b.id];
@@ -593,7 +595,18 @@
             <td>AR</td>
             <td>${r ? '<strong>' + Number(r.tasa).toFixed(2) + '</strong>' : '<span style="color:#94a3b8">Sin dato</span>'}</td>
             <td>${b.comision_pct != null ? b.comision_pct + '%' : '—'}</td>
-            <td>${b.rating_promedio ? '★ ' + Number(b.rating_promedio).toFixed(1) : '—'}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" step="0.1" min="0" max="5"
+                  id="rating_${b.id}"
+                  value="${b.rating_promedio ? Number(b.rating_promedio).toFixed(1) : ''}"
+                  placeholder="0.0"
+                  style="width:60px;padding:5px 8px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:14px;text-align:center"
+                  onkeydown="if(event.key==='Enter') guardarRating(${b.id})"
+                />
+                <button class="btn-sm" style="padding:5px 10px" onclick="guardarRating(${b.id})">✓</button>
+              </div>
+            </td>
             <td>
               <div class="toggle-wrap">
                 <label class="toggle">
@@ -609,6 +622,21 @@
     } catch {
       toast('No se pudo cargar las billeteras', false);
     }
+  }
+
+  async function guardarRating(id) {
+    const val = parseFloat(document.getElementById(`rating_${id}`).value);
+    if (isNaN(val) || val < 0 || val > 5) { toast('El rating debe ser entre 0 y 5', false); return; }
+    try {
+      const res  = await fetch(`${API}/admin/billeteras/${id}/rating`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        body: JSON.stringify({ rating_promedio: val }),
+      });
+      const data = await res.json();
+      if (res.ok) toast('✓ Rating actualizado', true);
+      else toast(data.error || 'Error al guardar', false);
+    } catch { toast('No se pudo conectar', false); }
   }
 
   async function toggleBilletera(id, checkbox) {
@@ -728,7 +756,25 @@
     }
     document.getElementById('usersTable').innerHTML = fbUsers.map(u => {
       const hasMysql  = u.mysql_id !== null;
-      const proveedor = u.proveedor.includes('google') ? '🔵 Google' : '📧 Email';
+      const proveedor = u.mysqlOnly ? '🗄️ Solo MySQL' : (u.proveedor.includes('google') ? '🔵 Google' : '📧 Email');
+      if (u.mysqlOnly) {
+        return `
+          <tr style="background:#f8fafc">
+            <td>${esc(u.email || '—')}</td>
+            <td><input type="text" id="unombre_${u.mysql_id}" value="${esc(u.nombre||'')}" style="min-width:120px"/></td>
+            <td><span style="font-size:12px">${proveedor}</span></td>
+            <td><span class="pill inactive">Sin Firebase</span></td>
+            <td><span class="small-date">${formatFecha(u.creado_en)}</span></td>
+            <td><span class="pill hassql">#${u.mysql_id}</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn-sm" id="ubtn_${u.mysql_id}" onclick="guardarUsuario(${u.mysql_id}, '${esc(u.email||'')}')">Guardar</button>
+                <button class="btn-danger" onclick="confirmarEliminar(${u.mysql_id},'${esc(u.email||u.nombre||'')}')">✕</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
       if (hasMysql) {
         return `
           <tr id="urow_fb_${esc(u.uid)}">
@@ -740,7 +786,7 @@
             <td><span class="pill hassql">#${u.mysql_id}</span></td>
             <td>
               <div class="actions">
-                <button class="btn-sm" id="ubtn_${u.mysql_id}" onclick="guardarUsuario(${u.mysql_id})">Guardar</button>
+                <button class="btn-sm" id="ubtn_${u.mysql_id}" onclick="guardarUsuario(${u.mysql_id}, '${esc(u.email||'')}')">Guardar</button>
                 <button class="btn-danger" onclick="confirmarEliminar(${u.mysql_id},'${esc(u.email||u.nombre||'')}')">✕</button>
               </div>
             </td>
@@ -766,22 +812,22 @@
     }).join('');
   }
 
-  async function guardarUsuario(id) {
+  async function guardarUsuario(id, email) {
     const nombre = document.getElementById(`unombre_${id}`).value.trim();
-    if (!nombre) { toast('El nombre no puede estar vacío', false); return; }
+    if (!nombre) { toast('El nombre completo es obligatorio', false); return; }
+    if (!email)  { toast('Este usuario no tiene email registrado', false); return; }
     const btn = document.getElementById(`ubtn_${id}`);
     btn.disabled = true; btn.textContent = '...';
     try {
-      const u   = fbUsers.find(x => x.mysql_id === id);
       const res = await fetch(`${API}/admin/usuarios/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
-        body: JSON.stringify({ nombre, email: u.email, pais_residencia: null }),
+        body: JSON.stringify({ nombre, email, pais_residencia: null }),
       });
       const data = await res.json();
       if (res.ok) { toast('✓ ' + data.message, true); await cargarUsuarios(); }
       else { toast(data.error || 'Error al guardar', false); }
-    } catch { toast('No se pudo conectar', false); }
+    } catch (e) { toast('Error: ' + e.message, false); }
     finally { btn.disabled = false; btn.textContent = 'Guardar'; }
   }
 

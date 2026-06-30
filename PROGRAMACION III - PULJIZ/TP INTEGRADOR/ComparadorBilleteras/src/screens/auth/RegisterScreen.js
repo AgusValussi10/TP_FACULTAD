@@ -83,7 +83,7 @@ export default function RegisterScreen({ navigation }) {
   const [focused, setFocused] = useState('');
 
   const validate = () => {
-    if (!name.trim()) return 'El nombre no puede estar vacío';
+    if (name.trim().length < 2) return 'Ingresá tu nombre completo (mínimo 2 caracteres)';
     if (!EMAIL_REGEX.test(email.trim())) return 'Ingresá un email con formato válido';
     if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
     if (password !== confirmPassword) return 'Las contraseñas no coinciden';

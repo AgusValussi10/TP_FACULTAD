@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/historial
 router.post('/', async (req, res) => {
+  if (!req.body) return res.status(400).json({ error: 'Body requerido' });
   const { monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars } = req.body;
   if (!monto) return res.status(400).json({ error: 'monto es requerido' });
   try {
