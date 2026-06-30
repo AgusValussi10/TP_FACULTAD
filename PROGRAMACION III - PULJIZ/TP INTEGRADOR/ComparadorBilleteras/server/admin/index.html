@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BrasilPagos — Panel Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #1e293b; }
+    header {
+      background: #3b82f6; color: white;
+      padding: 16px 32px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header span { font-size: 13px; opacity: 0.8; }
+    .container { max-width: 800px; margin: 32px auto; padding: 0 16px; }
+    .card {
+      background: white; border-radius: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 28px; margin-bottom: 24px;
+    }
+    .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #1e293b; }
+    .wallet-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .wallet-row:last-child { border-bottom: none; }
+    .badge {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px; color: white; flex-shrink: 0;
+    }
+    .wallet-name { flex: 1; font-size: 14px; font-weight: 600; }
+    .wallet-row input {
+      width: 140px; padding: 8px 12px; border-radius: 8px;
+      border: 1.5px solid #e2e8f0; font-size: 15px; text-align: right;
+      transition: border-color 0.2s;
+    }
+    .wallet-row input:focus { outline: none; border-color: #3b82f6; }
+    .label-ars { font-size: 12px; color: #64748b; margin-left: 4px; }
+    .btn-save {
+      width: 100%; padding: 14px;
+      background: #3b82f6; color: white;
+      border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      letter-spacing: 0.5px; transition: background 0.2s;
+    }
+    .btn-save:hover { background: #2563eb; }
+    .btn-save:disabled { background: #93c5fd; cursor: not-allowed; }
+    .msg {
+      margin-top: 14px; padding: 12px 16px; border-radius: 10px;
+      font-size: 14px; display: none;
+    }
+    .msg.ok  { background: #dcfce7; color: #166534; display: block; }
+    .msg.err { background: #fef2f2; color: #991b1b; display: block; }
+    .current-rates { margin-top: 24px; }
+    .current-rates h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 14px; text-align: left; font-size: 14px; }
+    th { background: #f8fafc; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+    td { border-bottom: 1px solid #f1f5f9; }
+    .best { color: #16a34a; font-weight: 700; }
+    .updated { font-size: 12px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>BrasilPagos — Panel Admin</h1>
+    <span>Actualización de cotizaciones ARS / BRL</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Cargar cotizaciones del día</h2>
+    <div id="walletList">Cargando billeteras...</div>
+    <br/>
+    <button class="btn-save" id="btnSave" onclick="guardar()">GUARDAR COTIZACIONES</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="card current-rates">
+    <h2>Cotizaciones actuales</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Billetera</th>
+          <th>Tasa (ARS/BRL)</th>
+          <th>Comisión</th>
+          <th>Actualizado</th>
+        </tr>
+      </thead>
+      <tbody id="ratesTable">
+        <tr><td colspan="4" style="color:#94a3b8">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  const API = 'http://localhost:3000/api';
+  const ADMIN_KEY = 'brasilpagos_secret_2026';
+
+  const COLORS = {
+    'Mercado Pago': '#00b1ea', 'Ualá': '#7c3aed', 'Bimo': '#f59e0b',
+    'Prex': '#06b6d4', 'Naranja X': '#f97316', 'Brubank': '#3b82f6',
+    'Personal Pay': '#8b5cf6', 'Lemon Cash': '#84cc16',
+    'Modo': '#ec4899', 'Cuenta DNI': '#0ea5e9',
+  };
+
+  let billeteras = [];
+
+  async function cargarBilleteras() {
+    const res = await fetch(`${API}/billeteras`);
+    billeteras = await res.json();
+
+    const ratesRes = await fetch(`${API}/cotizaciones?monto=1`);
+    const ratesData = await ratesRes.json();
+    const rateMap = {};
+    ratesData.resultados.forEach(r => { rateMap[r.billetera_id] = r.tasa; });
+
+    const html = billeteras.map(b => `
+      <div class="wallet-row">
+        <div class="badge" style="background:${COLORS[b.nombre] || '#6b7280'}">${b.iniciales}</div>
+        <span class="wallet-name">${b.nombre}</span>
+        <input
+          type="number" step="0.01" min="0"
+          id="tasa_${b.id}"
+          value="${rateMap[b.id] || ''}"
+          placeholder="0.00"
+        />
+        <span class="label-ars">ARS</span>
+      </div>
+    `).join('');
+    document.getElementById('walletList').innerHTML = html;
+
+    actualizarTabla(ratesData.resultados);
+  }
+
+  function actualizarTabla(resultados) {
+    if (!resultados || resultados.length === 0) {
+      document.getElementById('ratesTable').innerHTML = '<tr><td colspan="4" style="color:#94a3b8">Sin datos</td></tr>';
+      return;
+    }
+    const html = resultados.map((r, i) => `
+      <tr>
+        <td><strong>${r.nombre}</strong></td>
+        <td class="${i === 0 ? 'best' : ''}">${Number(r.tasa).toFixed(2)}</td>
+        <td>${r.comision_pct}%</td>
+        <td class="updated">${new Date(r.registrado_en).toLocaleString('es-AR')}</td>
+      </tr>
+    `).join('');
+    document.getElementById('ratesTable').innerHTML = html;
+  }
+
+  async function guardar() {
+    const tasas = billeteras.map(b => ({
+      billetera_id: b.id,
+      tasa: parseFloat(document.getElementById(`tasa_${b.id}`).value),
+    })).filter(t => !isNaN(t.tasa) && t.tasa > 0);
+
+    if (tasas.length === 0) {
+      mostrarMsg('Ingresá al menos una cotización', false);
+      return;
+    }
+
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true;
+    btn.textContent = 'GUARDANDO...';
+
+    try {
+      const res = await fetch(`${API}/cotizaciones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        body: JSON.stringify({ tasas }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        mostrarMsg(`✓ ${data.message}`, true);
+        await cargarBilleteras();
+      } else {
+        mostrarMsg(data.error || 'Error al guardar', false);
+      }
+    } catch {
+      mostrarMsg('No se pudo conectar con el servidor', false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'GUARDAR COTIZACIONES';
+    }
+  }
+
+  function mostrarMsg(texto, ok) {
+    const el = document.getElementById('msg');
+    el.textContent = texto;
+    el.className = 'msg ' + (ok ? 'ok' : 'err');
+    setTimeout(() => { el.className = 'msg'; }, 4000);
+  }
+
+  cargarBilleteras();
+</script>
+</body>
+</html>

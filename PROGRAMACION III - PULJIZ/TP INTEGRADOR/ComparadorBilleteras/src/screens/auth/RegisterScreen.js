@@ -100,7 +100,7 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       await register(email.trim(), password, name.trim());
-      navigation.replace('EmailVerification');
+      navigation.replace('EmailVerification', { email: email.trim() });
     } catch (e) {
       setError(getFirebaseError(e.code));
     } finally {

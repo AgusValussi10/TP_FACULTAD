@@ -1,0 +1,73 @@
+const router = require('express').Router();
+const pool = require('../db');
+
+// GET /api/billeteras
+router.get('/', async (req, res) => {
+  try {
+    const [billeteras] = await pool.query(`
+      SELECT b.id, b.nombre, b.iniciales, b.color_hex, b.descripcion,
+             b.url_oficial, b.rating_promedio, b.cantidad_resenas,
+             bc.comision_pct, bc.limite_diario_brl, bc.limite_mensual_brl, bc.tiempo_estimado
+      FROM billeteras b
+      JOIN billetera_condiciones bc ON bc.billetera_id = b.id
+      WHERE b.activa = 1
+      ORDER BY b.rating_promedio DESC
+    `);
+    res.json(billeteras);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener billeteras' });
+  }
+});
+
+// GET /api/billeteras/:id
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [[billetera]] = await pool.query(`
+      SELECT b.id, b.nombre, b.iniciales, b.color_hex, b.descripcion,
+             b.url_oficial, b.rating_promedio, b.cantidad_resenas,
+             bc.comision_pct, bc.limite_diario_brl, bc.limite_mensual_brl,
+             bc.tiempo_estimado, bc.detalle_comision
+      FROM billeteras b
+      JOIN billetera_condiciones bc ON bc.billetera_id = b.id
+      WHERE b.id = ? AND b.activa = 1
+    `, [id]);
+
+    if (!billetera) return res.status(404).json({ error: 'Billetera no encontrada' });
+
+    const [paises] = await pool.query(
+      'SELECT codigo_pais, metodo_pago FROM billetera_paises WHERE billetera_id = ?', [id]
+    );
+    const [monedas] = await pool.query(
+      'SELECT moneda FROM billetera_monedas WHERE billetera_id = ?', [id]
+    );
+    const [pros] = await pool.query(
+      'SELECT descripcion FROM billetera_pros_contras WHERE billetera_id = ? AND tipo = "pro" ORDER BY orden', [id]
+    );
+    const [contras] = await pool.query(
+      'SELECT descripcion FROM billetera_pros_contras WHERE billetera_id = ? AND tipo = "contra" ORDER BY orden', [id]
+    );
+    const [requisitos] = await pool.query(
+      'SELECT descripcion FROM billetera_requisitos WHERE billetera_id = ? ORDER BY orden', [id]
+    );
+    const [resenas] = await pool.query(
+      'SELECT autor_nombre, calificacion, comentario, fecha_resena FROM resenas WHERE billetera_id = ? ORDER BY fecha_resena DESC LIMIT 5', [id]
+    );
+
+    res.json({
+      ...billetera,
+      paises,
+      monedas: monedas.map(m => m.moneda),
+      pros: pros.map(p => p.descripcion),
+      contras: contras.map(c => c.descripcion),
+      requisitos: requisitos.map(r => r.descripcion),
+      resenas,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener billetera' });
+  }
+});
+
+module.exports = router;

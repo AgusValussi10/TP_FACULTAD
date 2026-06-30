@@ -32,8 +32,13 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser ?? null);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser && !firebaseUser.emailVerified) {
+        await firebaseSignOut(auth);
+        setUser(null);
+      } else {
+        setUser(firebaseUser ?? null);
+      }
     });
     return unsubscribe;
   }, []);
@@ -45,6 +50,7 @@ export function AuthProvider({ children }) {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     if (name) await updateProfile(cred.user, { displayName: name });
     await sendEmailVerification(cred.user);
+    await firebaseSignOut(auth);
     return cred;
   };
 
