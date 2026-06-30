@@ -73,6 +73,7 @@ ComparadorBilleteras/
 │   │   ├── billeteras.js  GET /, GET /:id
 │   │   ├── alertas.js     GET /, POST /, PATCH /:id, DELETE /:id
 │   │   ├── historial.js   GET /, POST /
+│   │   ├── favoritos.js   GET /, POST /, DELETE /:billetera_id
 │   │   └── admin.js       rutas admin (ver abajo)
 │   ├── firebaseAdmin.js   inicializa Firebase Admin SDK (requiere serviceAccountKey.json)
 │   └── admin/
@@ -153,6 +154,9 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | DELETE | `/api/alertas/:id` | Eliminar alerta |
 | GET | `/api/historial` | Historial de consultas del usuario |
 | POST | `/api/historial` | Guardar consulta `{ monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars }` |
+| GET | `/api/favoritos` | Billeteras favoritas del usuario (solo activas) |
+| POST | `/api/favoritos` | Agregar favorito `{ billetera_id }` — INSERT IGNORE (no duplica) |
+| DELETE | `/api/favoritos/:billetera_id` | Quitar favorito |
 
 ### Endpoints admin (requieren header `X-Admin-Key`)
 
@@ -234,7 +238,7 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 
 ### Auth
 - **LoginScreen** — email/contraseña + Google Sign-In, chequea emailVerified
-- **RegisterScreen** — formulario con validación, envía email de verificación
+- **RegisterScreen** — formulario con validación, envía email de verificación. Fix: `includeFontPadding: false` + `textAlignVertical: center` en inputs de contraseña para evitar placeholder desalineado en Android.
 - **EmailVerificationScreen** — avisa que se envió el mail, redirige al Login
 - **ForgotPasswordScreen** — envía link de reset por email
 
@@ -246,14 +250,14 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 - **LoadingResultsScreen** — skeleton loaders mientras carga
 
 ### Billeteras
-- **WalletsScreen** — directorio con buscador, rating y países
-- **WalletDetailScreen** — tipo de cambio, comisión, límites, botón IR A LA APP
+- **WalletsScreen** — directorio con buscador, rating y países. Lista solo billeteras activas (desde API).
+- **WalletDetailScreen** — tipo de cambio, comisión, límites, botón IR A LA APP. Botón estrella en el header para agregar/quitar de favoritos (persiste en BD, estado cargado al abrir).
 - **WalletProfileScreen** — pros/contras, requisitos, reseñas
-- **WalletCompareScreen** — tabla comparativa lado a lado de 2 billeteras
+- **WalletCompareScreen** — tabla comparativa lado a lado de 2 billeteras. Picker carga solo billeteras activas desde API.
 
 ### Alertas
 - **AlertsScreen** — lista de alertas con toggle activa/pausada. Recarga con `useFocusEffect`.
-- **CreateAlertScreen** — formulario para nueva alerta con preview
+- **CreateAlertScreen** — formulario para nueva alerta con preview. Picker carga solo billeteras activas desde API.
 - **PushNotificationScreen** — mockup estático de notificación en pantalla bloqueada
 - **Polling en tiempo real** — `AuthContext` corre `setInterval` cada 60s mientras haya sesión. Compara cotizaciones actuales contra alertas activas del usuario. Cuando se cumple la condición: pausa la alerta automáticamente (`PATCH activa=false`) y muestra `Alert.alert`. Una notificación por alerta por sesión (ref de IDs ya disparados).
 
@@ -262,7 +266,7 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 - **EditProfileScreen** — edición de nombre e info
 - **HistoryScreen** — historial de consultas desde API con `useFocusEffect`
 - **SettingsScreen** — toggles de notificaciones, idioma, tema
-- **FavoritesScreen** — billeteras y pares favoritos
+- **FavoritesScreen** — favoritos reales del usuario desde API con `useFocusEffect`. Quitar favorito persiste en BD con confirmación. Estado vacío cuando no hay favoritos.
 
 ### Globales
 - **ErrorScreen** — sin conexión con botón reintentar
