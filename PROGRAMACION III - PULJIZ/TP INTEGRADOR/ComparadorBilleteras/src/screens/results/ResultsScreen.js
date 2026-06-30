@@ -10,12 +10,14 @@ import {
   Alert,
   Animated,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { formatARS, getWalletMeta } from '../../data/wallets';
+import { formatARS, getWalletMeta, getCanonicalName } from '../../data/wallets';
 import { getCotizaciones, saveHistorial } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import ExternalRedirectModal from '../../components/modals/ExternalRedirectModal';
 
 const colors = {
   primary: '#3b82f6',
@@ -39,7 +41,7 @@ function ProviderLogo({ name, colorHex }) {
   );
 }
 
-function ProviderCard({ item, onSeeMore }) {
+function ProviderCard({ item, onSeeMore, onOpenApp }) {
   if (item.isBest) {
     return (
       <View style={[styles.card, styles.bestCard]}>
@@ -56,9 +58,15 @@ function ProviderCard({ item, onSeeMore }) {
             ✓ Ahorrás {formatARS(item.savings)} ({item.savingsPct.toFixed(1)}%)
           </Text>
         )}
-        <TouchableOpacity onPress={onSeeMore}>
-          <Text style={styles.seeMoreLink}>Ver más →</Text>
-        </TouchableOpacity>
+        <View style={styles.bestActions}>
+          <TouchableOpacity style={styles.detailsBtn} onPress={onSeeMore} activeOpacity={0.7}>
+            <Text style={styles.detailsBtnText}>Ver detalles</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.openAppBtn} onPress={onOpenApp} activeOpacity={0.8}>
+            <Ionicons name="open-outline" size={15} color="#ffffff" />
+            <Text style={styles.openAppBtnText}>Ir a {item.name}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -90,6 +98,7 @@ export default function ResultsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bestResult, setBestResult] = useState(null);
+  const [modalWallet, setModalWallet] = useState(null);
 
   const cardAnims = useRef([]);
   const savedRef = useRef(!!skipSave);
@@ -106,7 +115,7 @@ export default function ResultsScreen({ route, navigation }) {
 
         const mapped = rows.map((r) => ({
           id: String(r.billetera_id),
-          name: r.nombre,
+          name: getCanonicalName(r.nombre),
           colorHex: r.color_hex,
           rate: r.tasa,
           price: r.total_ars,
@@ -174,6 +183,17 @@ export default function ResultsScreen({ route, navigation }) {
 
   const handleSeeMore = (wallet) => {
     navigation.navigate('WalletDetail', { walletName: wallet.name, amount, currency });
+  };
+
+  const handleOpenApp = (wallet) => setModalWallet(wallet);
+
+  const handleConfirmApp = async () => {
+    const meta = modalWallet ? getWalletMeta(modalWallet.name) : null;
+    setModalWallet(null);
+    if (!meta) return;
+    if (meta.appUrl) {
+      try { await Linking.openURL(meta.appUrl); } catch { /* silent */ }
+    }
   };
 
   const handleCompare = () => {
@@ -265,7 +285,11 @@ export default function ResultsScreen({ route, navigation }) {
                 : {}
             }
           >
-            <ProviderCard item={item} onSeeMore={() => handleSeeMore(item)} />
+            <ProviderCard
+              item={item}
+              onSeeMore={() => handleSeeMore(item)}
+              onOpenApp={() => handleOpenApp(item)}
+            />
           </Animated.View>
         ))}
 
@@ -279,6 +303,13 @@ export default function ResultsScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ExternalRedirectModal
+        visible={!!modalWallet}
+        walletName={modalWallet?.name ?? ''}
+        onCancel={() => setModalWallet(null)}
+        onConfirm={handleConfirmApp}
+      />
     </SafeAreaView>
   );
 }
@@ -352,6 +383,28 @@ const styles = StyleSheet.create({
   savingsText: { fontSize: 14, color: colors.success, fontWeight: '600', marginBottom: 12 },
   savingsTextNormal: { fontSize: 13, color: colors.textSecondary, marginBottom: 10 },
   seeMoreLink: { fontSize: 14, color: colors.primary, fontWeight: '600' },
+  bestActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  detailsBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.success,
+    paddingVertical: 11,
+  },
+  detailsBtnText: { fontSize: 13, fontWeight: '600', color: colors.success },
+  openAppBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 10,
+    backgroundColor: colors.success,
+    paddingVertical: 11,
+  },
+  openAppBtnText: { fontSize: 13, fontWeight: '700', color: '#ffffff' },
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   buttonSecondary: {
     flex: 1,

@@ -7,6 +7,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 5.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://mercadopago.com.ar',
+    androidPackage: 'com.mercadopago.wallet',
   },
   'Ualá': {
     color: '#7c3aed',
@@ -16,6 +17,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://uala.com.ar',
+    androidPackage: 'ar.com.uala.app',
   },
   'Bimo': {
     color: '#f59e0b',
@@ -25,6 +27,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 2.500',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://bimo.com.ar',
+    androidPackage: 'com.macro.bimo',
   },
   'Prex': {
     color: '#06b6d4',
@@ -34,6 +37,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://prexcard.com.ar',
+    androidPackage: 'ar.com.prexcard',
   },
   'Naranja X': {
     color: '#f97316',
@@ -43,6 +47,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 4.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://naranjax.com',
+    androidPackage: 'com.tarjetanaranja.ncuenta',
   },
   'Brubank': {
     color: '#3b82f6',
@@ -52,6 +57,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.500',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://brubank.com',
+    androidPackage: 'com.brubank',
   },
   'Personal Pay': {
     color: '#8b5cf6',
@@ -61,6 +67,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 2.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://personalpay.com.ar',
+    androidPackage: 'ar.com.personal.personalpay',
   },
   'Lemon Cash': {
     color: '#84cc16',
@@ -70,6 +77,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 5.000',
     estimatedTime: 'Hasta 5 min',
     appUrl: 'https://lemon.me',
+    androidPackage: 'com.lemon.lemon',
   },
   'Modo': {
     color: '#ec4899',
@@ -79,6 +87,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://modo.com.ar',
+    androidPackage: 'ar.com.modo',
   },
   'Cuenta DNI': {
     color: '#0ea5e9',
@@ -88,6 +97,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 2.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://cuentadni.bancoprovincia.com.ar',
+    androidPackage: 'ar.gov.bancoprovincia.cuentadni',
   },
   'AstroPay': {
     color: '#1a1a2e',
@@ -97,6 +107,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://astropay.com',
+    androidPackage: 'com.astropaycard.android',
   },
   'belo': {
     color: '#6c63ff',
@@ -106,6 +117,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 4.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://belo.app',
+    androidPackage: 'com.belo.android',
   },
   'Cocos Capital': {
     color: '#0d9488',
@@ -115,6 +127,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 2.500',
     estimatedTime: 'Hasta 10 min',
     appUrl: 'https://cocos.capital',
+    androidPackage: 'capital.cocos.app.twa',
   },
 };
 
@@ -474,9 +487,23 @@ export const WALLETS = [
   },
 ];
 
+export function getCanonicalName(name) {
+  if (WALLET_META[name]) return name;
+  const lower = name.toLowerCase();
+  const key = Object.keys(WALLET_META).find(
+    k => k.toLowerCase().startsWith(lower) || lower.startsWith(k.toLowerCase())
+  );
+  return key ?? name;
+}
+
 export function getWalletMeta(name) {
+  if (WALLET_META[name]) return WALLET_META[name];
+  const lower = name.toLowerCase();
+  const key = Object.keys(WALLET_META).find(
+    k => k.toLowerCase().startsWith(lower) || lower.startsWith(k.toLowerCase())
+  );
   return (
-    WALLET_META[name] ?? {
+    (key && WALLET_META[key]) ?? {
       color: '#6c757d',
       initials: name.slice(0, 2).toUpperCase(),
       description: '',

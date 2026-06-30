@@ -217,6 +217,13 @@ App reabierta / token faltante:
   → Esto cubre: servidor caído durante login, reinstalación de app, login con Google
 ```
 
+### Fix aplicado — Nombres de billeteras BD vs. WALLET_META
+
+La BD almacena algunos nombres distintos a las keys de `WALLET_META` (ej. `"Cocos"` en vez de `"Cocos Capital"`). Fix en `wallets.js`:
+- `getCanonicalName(name)` — si no hay match exacto, busca una key donde uno empiece con el otro (case-insensitive). Usado en `ResultsScreen` al mapear resultados de la API para normalizar el nombre mostrado.
+- `getWalletMeta(name)` — idem, usa el mismo match parcial como fallback antes de devolver el objeto vacío.
+- `WALLET_META` tiene `androidPackage` para las 13 billeteras (obtenidos vía `adb shell pm list packages`).
+
 ### Bug conocido y fix aplicado — Content-Type en requests con token
 
 El helper `request()` en `api.js` tenía un bug: al hacer `...options` después de definir `headers`, el spread pisaba el `Content-Type: application/json` con solo `{ Authorization: ... }`. Todos los POST protegidos (historial, alertas, firebase-login) fallaban con "Body requerido". Fix: destructurar `headers` de options antes del spread.
@@ -245,7 +252,7 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 ### Flujo principal
 - **HomeScreen** — destino Brasil PIX fijo, input de monto via teclado custom. Muestra últimas 3 consultas reales del usuario (desde API, con `useFocusEffect`). Tocar una consulta reciente navega a Results con `skipSave: true`.
 - **NumericKeyboard** (componente) — bottom sheet con teclado numérico custom
-- **ResultsScreen** — ranking animado de billeteras (desde API), con ahorro vs peor opción. Guarda en historial automáticamente cuando ambos `apiToken` y `bestResult` están disponibles (dos efectos separados para evitar race condition). Acepta `skipSave: true` en params para no guardar (usado desde Historial y consultas recientes del Home).
+- **ResultsScreen** — ranking animado de billeteras (desde API), con ahorro vs peor opción. Guarda en historial automáticamente cuando ambos `apiToken` y `bestResult` están disponibles (dos efectos separados para evitar race condition). Acepta `skipSave: true` en params para no guardar (usado desde Historial y consultas recientes del Home). La card ganadora tiene dos botones diferenciados: "Ver detalles" (navega a WalletDetail) y "Ir a [nombre]" (abre `ExternalRedirectModal` → `Linking.openURL(appUrl)`). Brubank abre directo por App Links; otras billeteras abren su sitio web.
 - **EmptyResultsScreen** — estado vacío cuando no hay cotizaciones
 - **LoadingResultsScreen** — skeleton loaders mientras carga
 
