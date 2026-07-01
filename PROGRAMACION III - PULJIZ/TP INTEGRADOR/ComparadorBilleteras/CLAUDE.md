@@ -13,7 +13,7 @@ App mobile (React Native + Expo SDK 54) para usuarios argentinos que viajan a Br
 | 3. UI e integración con la API | 20 | ✅ Completo — app conectada a la API |
 | 4. Operaciones maestro-detalle | 10 | ✅ BD + UI conectada a API |
 | 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | ✅ Completo |
-| 6. Documentación técnica | 5 | ⏳ Pendiente redactar |
+| 6. Documentación técnica | 5 | ✅ Completo — README.md |
 
 ---
 
@@ -396,7 +396,7 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 ## Pendiente
 
 ### Documentación técnica (criterio 6 — 5 pts)
-- [ ] README con arquitectura, instrucciones de instalación y descripción de endpoints
+- [x] README con arquitectura, instrucciones de instalación y descripción de endpoints
 
 ### Funcionalidad en BD sin UI
 - [x] **Reseñas** — `POST /api/resenas` implementado. `WalletProfileScreen` muestra reseñas reales y permite crear nuevas con form inline (estrellas + comentario). Rating se recalcula automáticamente en BD.
@@ -410,7 +410,26 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 - [x] `WalletCompareScreen` ya tenía dos entry points (ícono en header de `WalletsScreen` + ícono/chip "Comparar 2" en `ResultsScreen`). Fix: ahora recibe `route` y pre-selecciona `initialWallet1` / `initialWallet2` cuando viene desde `ResultsScreen`.
 
 ### Diseño / Figma
-- [ ] Actualizar Figma con las vistas nuevas y los cambios acumulados (gráfico de tasas, form de reseñas, secciones nuevas en WalletProfile, rediseño de onboarding, animación BottomNav).
+
+El archivo Figma tiene 3 páginas: **Pantallas**, **Componentes**, **Bases**.
+Link: `https://www.figma.com/design/Hmg85ALG6apYw9dMgdTDZX/TP-Integrador---Módulo-4---Piel-Visual`
+
+Cambios pendientes de reflejar en Figma:
+
+#### Página "Pantallas"
+- [x] **WalletProfileScreen** — actualizado: frame extendido a 1220px. Agregado: ☆ favorito en header, rating "★ 4.8 · 124 reseñas" en hero, sección "Evolución de la tasa" con gráfico de barras (8 puntos, última barra azul sólida, rango y fechas), sección "Opiniones" con 2 review cards reales (avatar, nombre, estrellas doradas, fecha, comentario) + link "+ Escribir reseña", form inline "Tu reseña" con selector 5 estrellas + input + botón Enviar.
+- [x] **OnboardingScreen** — actualizado: 3 frames (Slide 1 azul, Slide 2 verde, Slide 3 naranja). Layout: mitad superior con fondo suave + tarjeta cuadrada (borderRadius 40); mitad inferior con badge, título Extra Bold 30px, subtítulo gris 15px. Dots coloreados según slide activo, botón "COMENZAR" full-width en slide 3.
+- [x] **BottomNav** — actualizado en HomeScreen + frame "BottomNav-Component" con 2 estados (Home activo / Wallets activo). Pill: 48×36 borderRadius 18 fill #eff6ff, ícono activo azul #3b82f6, inactivo gris #adb5bd, sin labels.
+- [x] **ResultsScreen** — card ganadora actualizada: botón outline "Ver detalles" (→ WalletProfile) + botón azul "Ir a Mercado Pago →" (→ ExternalRedirectModal). Cards restantes mantienen "Ver mas >".
+- [x] **WalletCompareScreen** — verificado: diseño ya es correcto (pickers, tabla, banner ganador, botón). Los cambios (API activas + route params pre-selección) son lógica interna, sin impacto visual.
+
+#### Página "Componentes"
+- [x] `BottomNav` agregado como componente con 2 estados (Home-Active, Wallets-Active). Pill 48×36 r=18 fill #eff6ff.
+- [x] `ExternalRedirectModal` agregado: overlay oscuro + card con avatar, título, body, botones Cancelar / Continuar →.
+- [ ] `NumericKeyboard` — existe como frame en Pantallas/Extras (11-NumericKeyboardScreen), no como componente reutilizable en Componentes.
+
+#### Página "Bases"
+- [x] Design system completo agregado: 13 colores con swatches 56×56px (Primary → Divider), 6 niveles tipográficos (Display 30px Bold → Tiny 10px Regular) con nota descriptiva al lado, escala de espaciado 4px–48px alineados al fondo, 6 border radius con cajas de ejemplo (4 / 8 / 12 / 16 / 18 / 50%). Layout en 4 secciones verticales separadas por dividers, sin superposición.
 
 ### Exposición en notebook
 - [ ] Instalar Node.js 22, MySQL 8, MySQL Workbench, Android Studio
