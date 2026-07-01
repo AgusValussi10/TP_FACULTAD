@@ -1,0 +1,6 @@
+@Mundial.Api_HostAddress = http://localhost:5197
+
+GET {{Mundial.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
