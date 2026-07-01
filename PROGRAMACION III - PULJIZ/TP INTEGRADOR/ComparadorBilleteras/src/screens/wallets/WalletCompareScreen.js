@@ -109,9 +109,12 @@ function PickerModal({ visible, onClose, onSelect, excludeName, wallets }) {
   );
 }
 
-export default function WalletCompareScreen({ navigation }) {
-  const [walletA, setWalletA] = useState(null);
-  const [walletB, setWalletB] = useState(null);
+export default function WalletCompareScreen({ route, navigation }) {
+  const initialWallet1 = route?.params?.initialWallet1 ?? null;
+  const initialWallet2 = route?.params?.initialWallet2 ?? null;
+
+  const [walletA, setWalletA] = useState(initialWallet1?.name ?? null);
+  const [walletB, setWalletB] = useState(initialWallet2?.name ?? null);
   const [pickerTarget, setPickerTarget] = useState(null);
   const [activeWallets, setActiveWallets] = useState(WALLETS);
 

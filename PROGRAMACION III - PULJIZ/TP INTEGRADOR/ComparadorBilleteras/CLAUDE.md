@@ -157,6 +157,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | GET | `/api/favoritos` | Billeteras favoritas del usuario (solo activas) |
 | POST | `/api/favoritos` | Agregar favorito `{ billetera_id }` — INSERT IGNORE (no duplica) |
 | DELETE | `/api/favoritos/:billetera_id` | Quitar favorito |
+| POST | `/api/resenas` | Crear reseña `{ billetera_id, calificacion (1-5), comentario }` — inserta en `resenas` y recalcula `rating_promedio` + `cantidad_resenas` en `billeteras` |
 
 ### Endpoints admin (requieren header `X-Admin-Key`)
 
@@ -259,7 +260,9 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 ### Billeteras
 - **WalletsScreen** — directorio con buscador, rating y países. Lista solo billeteras activas (desde API). Tap en cualquier item navega directo a WalletProfile.
 - **WalletDetailScreen** — pantalla de detalle (comisión, límites, monedas, países). Ya no es el destino primario desde Results ni Wallets; sigue registrada en el navegador.
-- **WalletProfileScreen** — perfil completo: descripción, comisiones, pros/contras, requisitos, países, reseñas. Estrella en header para agregar/quitar favoritos (persiste en BD, estado cargado al abrir). Botón "IR A LA APP DE …" usa `Linking.openURL(wallet.appUrl)` real vía `ExternalRedirectModal`. Es el destino primario desde Results y Wallets.
+- **WalletProfileScreen** — perfil completo: descripción, comisiones, pros/contras, requisitos, países. Estrella en header para agregar/quitar favoritos. Botón "IR A LA APP DE …" vía `ExternalRedirectModal`. Es el destino primario desde Results y Wallets. Incluye dos funciones conectadas a la BD:
+  - **Gráfico de evolución de la tasa** — barras puras (sin librería), muestra hasta 20 registros desde `GET /api/cotizaciones/historial`, con rango min/max y fechas.
+  - **Reseñas reales** — carga `resenas` desde `GET /api/billeteras/:id`. Botón "Escribir reseña" (solo usuarios logueados) abre form inline con selector de estrellas + campo de texto. Al enviar llama a `POST /api/resenas`; el rating del hero se actualiza con el nuevo promedio.
 - **WalletCompareScreen** — tabla comparativa lado a lado de 2 billeteras. Picker carga solo billeteras activas desde API.
 
 ### Alertas
@@ -394,6 +397,20 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 
 ### Documentación técnica (criterio 6 — 5 pts)
 - [ ] README con arquitectura, instrucciones de instalación y descripción de endpoints
+
+### Funcionalidad en BD sin UI
+- [x] **Reseñas** — `POST /api/resenas` implementado. `WalletProfileScreen` muestra reseñas reales y permite crear nuevas con form inline (estrellas + comentario). Rating se recalcula automáticamente en BD.
+- [x] **Gráfico de historial de cotizaciones** — sección "Evolución de la tasa" en `WalletProfileScreen` con gráfico de barras puro (sin librerías). Consume `GET /api/cotizaciones/historial`.
+
+### Notificaciones
+- [ ] `PushNotificationScreen` es un mockup estático — las alertas no disparan notificaciones reales cuando la app está cerrada. El polling actual solo funciona con la app abierta.
+
+### UX / navegación
+- [x] `WalletDetailScreen` eliminada del stack — removida de `AppNavigator.js` (import + `Stack.Screen`). El archivo queda en disco por si se necesita.
+- [x] `WalletCompareScreen` ya tenía dos entry points (ícono en header de `WalletsScreen` + ícono/chip "Comparar 2" en `ResultsScreen`). Fix: ahora recibe `route` y pre-selecciona `initialWallet1` / `initialWallet2` cuando viene desde `ResultsScreen`.
+
+### Diseño / Figma
+- [ ] Actualizar Figma con las vistas nuevas y los cambios acumulados (gráfico de tasas, form de reseñas, secciones nuevas en WalletProfile, rediseño de onboarding, animación BottomNav).
 
 ### Exposición en notebook
 - [ ] Instalar Node.js 22, MySQL 8, MySQL Workbench, Android Studio

@@ -23,6 +23,10 @@ export function getCotizaciones(monto) {
   return request(`/api/cotizaciones?monto=${monto}`);
 }
 
+export function getHistorialCotizaciones(billetera_id) {
+  return request(`/api/cotizaciones/historial?billetera_id=${billetera_id}`);
+}
+
 // ── Billeteras ────────────────────────────────────────────────
 export function getBilleteras() {
   return request('/api/billeteras');
@@ -105,5 +109,14 @@ export function removeFavorito(token, billetera_id) {
   return request(`/api/favoritos/${billetera_id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
+  });
+}
+
+// ── Reseñas ───────────────────────────────────────────────────
+export function createResena(token, { billetera_id, calificacion, comentario }) {
+  return request('/api/resenas', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ billetera_id, calificacion, comentario }),
   });
 }

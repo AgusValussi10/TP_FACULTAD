@@ -17,15 +17,15 @@ builder.Services.AddOpenApi();
 
 builder.Services
     .AddOptions<MundialConfig>()
-    .Bind(builder.Configuration.GetSection("XXX"))
+    .Bind(builder.Configuration.GetSection("Mundial"))
     .ValidateOnStart();
 
 builder.Services
     .AddOptions<JwtConfig>()
-    .Bind(builder.Configuration.GetSection("YYY"))
+    .Bind(builder.Configuration.GetSection("Jwt"))
     .ValidateOnStart();
 
-var jwtConfig = builder.Configuration.GetSection("YYY").Get<JwtConfig>() ?? new JwtConfig();
+var jwtConfig = builder.Configuration.GetSection("Jwt").Get<JwtConfig>() ?? new JwtConfig();
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.SecretKey));
 
 builder.Services
@@ -117,7 +117,7 @@ app.MapGet("/api/partido", async (
 
 
 
-app.MapPost("/api/partido/{pais}", async (
+app.MapGet("/api/partido/{pais}", async (
     string pais,
     IPartidoService partidoService,
     CancellationToken cancellationToken) =>

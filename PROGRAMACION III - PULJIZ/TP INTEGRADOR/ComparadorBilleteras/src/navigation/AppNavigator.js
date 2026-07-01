@@ -16,7 +16,6 @@ import ResultsScreen from '../screens/results/ResultsScreen';
 import EmptyResultsScreen from '../screens/results/EmptyResultsScreen';
 import LoadingResultsScreen from '../screens/results/LoadingResultsScreen';
 
-import WalletDetailScreen from '../screens/wallets/WalletDetailScreen';
 import WalletProfileScreen from '../screens/wallets/WalletProfileScreen';
 import WalletCompareScreen from '../screens/wallets/WalletCompareScreen';
 import WalletsScreen from '../screens/wallets/WalletsScreen';
@@ -49,7 +48,6 @@ export default function AppNavigator() {
         <Stack.Screen name="Results" component={ResultsScreen} />
         <Stack.Screen name="EmptyResults" component={EmptyResultsScreen} />
         <Stack.Screen name="LoadingResults" component={LoadingResultsScreen} />
-        <Stack.Screen name="WalletDetail" component={WalletDetailScreen} />
         <Stack.Screen name="WalletProfile" component={WalletProfileScreen} />
         <Stack.Screen name="WalletCompare" component={WalletCompareScreen} />
         <Stack.Screen name="Wallets" component={WalletsScreen} />

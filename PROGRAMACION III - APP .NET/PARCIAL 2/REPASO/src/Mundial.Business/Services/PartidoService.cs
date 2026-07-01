@@ -19,8 +19,15 @@ public sealed class PartidoService(
             throw new ArgumentOutOfRangeException(nameof(page), "La pagina debe ser mayor o igual a 1.");
         }
 
-        //Leer todos los partidos desde el repositorio y paginar
-
+        var allPartidos = await repository.GetAllAsync(cancellationToken);
+        var pageSize = _config.PartidosAVisualizar;
+        var totalItems = allPartidos.Count;
+        var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        var items = allPartidos
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToDto)
+            .ToList();
         return new PagedResult<PartidoDto>(page, pageSize, totalItems, totalPages, items);
     }
 
@@ -34,9 +41,11 @@ public sealed class PartidoService(
 
         var partidos = await repository.GetAllAsync(cancellationToken);
 
-        //Filtrar todos los partidos donde el pais sea el equipo local o visitante
-        //Utilizar LINQ
-        //var items = partidos...
+        var items = partidos
+            .Where(p => string.Equals(p.EquipoLocalCodigo, pais, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p.EquipoVisitanteCodigo, pais, StringComparison.OrdinalIgnoreCase))
+            .Select(ToDto)
+            .ToList();
 
         return new PaisPartidosResult(pais, items.Count, items);
     }
