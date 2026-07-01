@@ -54,7 +54,7 @@ ComparadorBilleteras/
 │   │   ├── alerts/        AlertsScreen, CreateAlertScreen, PushNotificationScreen
 │   │   ├── profile/       ProfileScreen, EditProfileScreen, SettingsScreen, FavoritesScreen, HistoryScreen
 │   │   └── error/         ErrorScreen
-│   ├── components/        BottomNav.js, NumericKeyboard.js, modals/ExternalRedirectModal.js
+│   ├── components/        BottomNav.js (pill activo + anim. suave), NumericKeyboard.js, modals/ExternalRedirectModal.js
 │   ├── navigation/        AppNavigator.js
 │   ├── config/            firebase.js
 │   ├── context/           AuthContext.js  ← guarda apiToken + puente Firebase↔backend
@@ -170,7 +170,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | GET | `/api/admin/usuarios` | Listado de usuarios MySQL |
 | POST | `/api/admin/usuarios` | Crear usuario en MySQL + Firebase `{ nombre, email, password, pais_residencia }` |
 | PUT | `/api/admin/usuarios/:id` | Editar nombre/email en MySQL y Firebase (sincroniza displayName) |
-| DELETE | `/api/admin/usuarios/:id` | Eliminar usuario MySQL |
+| DELETE | `/api/admin/usuarios/:id` | Eliminar usuario de MySQL y Firebase (si existe). Si no está en Firebase, elimina solo MySQL sin error |
 | GET | `/api/admin/firebase-usuarios` | Unión Firebase + MySQL: usuarios Firebase con estado MySQL + usuarios solo-MySQL |
 | POST | `/api/admin/sincronizar-usuario` | Crear registro MySQL para usuario que solo existe en Firebase |
 
@@ -239,8 +239,8 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 ## Pantallas (23 implementadas)
 
 ### Onboarding
-- **SplashScreen** — logo animado, 2.5s, navega a Onboarding
-- **OnboardingScreen** — carrusel 3 slides con dots animados
+- **SplashScreen** — logo real (`assets/icon.jpg`) animado con scale+opacity, fondo azul, 2.5s, navega a Onboarding. Sin emojis.
+- **OnboardingScreen** — carrusel 3 slides. Layout: mitad superior con fondo de color suave + tarjeta cuadrada con Ionicons (azul/verde/naranja); mitad inferior con badge de categoría, título y subtítulo. Dots y botón "Siguiente" cambian de color según slide activo. Usa `SafeAreaView` de `react-native-safe-area-context`.
 - **LoadingSplashScreen** — splash azul con barra de progreso
 
 ### Auth

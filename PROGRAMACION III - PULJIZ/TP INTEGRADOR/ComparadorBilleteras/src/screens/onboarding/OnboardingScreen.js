@@ -5,41 +5,44 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-const colors = {
-  primary: '#3b82f6',
-  background: '#ffffff',
-  surface: '#eff6ff',
-  textPrimary: '#1a1a1a',
-  textSecondary: '#6c757d',
-  dotInactive: '#dee2e6',
-};
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const SLIDES = [
   {
     id: '1',
-    icon: '🇧🇷',
-    title: 'Pagá en Brasil con la mejor cotización',
-    subtitle: 'Compará billeteras argentinas y elegí la que más rinde para tu PIX',
+    icon: 'swap-horizontal-outline',
+    color: '#3b82f6',
+    bgColor: '#eff6ff',
+    label: '13 billeteras',
+    title: 'Compará billeteras\nen segundos',
+    subtitle:
+      'Mercado Pago, Ualá, Naranja X y más. Encontrá cuál te da más BRL por tus pesos argentinos.',
   },
   {
     id: '2',
-    icon: '🔔',
-    title: 'Alertas de precio',
-    subtitle: 'Recibí una notificación cuando la cotización llegue a tu objetivo',
+    icon: 'trending-up-outline',
+    color: '#10b981',
+    bgColor: '#ecfdf5',
+    label: 'Tiempo real',
+    title: 'Cotizaciones\nsiempre al día',
+    subtitle:
+      'Tasas ARS → BRL actualizadas para que no pierdas ni un centavo en tu viaje a Brasil.',
   },
   {
     id: '3',
-    icon: '📊',
-    title: 'Siempre actualizado',
-    subtitle: 'Cotizaciones en tiempo real de las billeteras más usadas de Argentina',
+    icon: 'notifications-outline',
+    color: '#f59e0b',
+    bgColor: '#fffbeb',
+    label: 'Alertas de precio',
+    title: 'Tu precio objetivo,\ntu momento ideal',
+    subtitle:
+      'Configurá una alerta y te avisamos cuando la cotización llegue al valor que querés.',
   },
 ];
 
@@ -66,26 +69,32 @@ export default function OnboardingScreen({ navigation }) {
 
   const onMomentumScrollEnd = (event) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    if (index !== currentIndex) {
-      setCurrentIndex(index);
-    }
+    if (index !== currentIndex) setCurrentIndex(index);
   };
 
   const renderSlide = ({ item }) => (
     <View style={styles.slide}>
-      <View style={styles.iconCircle}>
-        <Text style={styles.icon}>{item.icon}</Text>
+      <View style={[styles.illustrationArea, { backgroundColor: item.bgColor }]}>
+        <View style={[styles.iconCard, { backgroundColor: item.color }]}>
+          <Ionicons name={item.icon} size={68} color="#ffffff" />
+        </View>
       </View>
-      <Text style={styles.slideTitle}>{item.title}</Text>
-      <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
+      <View style={styles.textArea}>
+        <View style={[styles.badge, { backgroundColor: item.color + '18' }]}>
+          <Text style={[styles.badgeText, { color: item.color }]}>{item.label}</Text>
+        </View>
+        <Text style={styles.slideTitle}>{item.title}</Text>
+        <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
+      </View>
     </View>
   );
 
   const isLast = currentIndex === SLIDES.length - 1;
+  const currentColor = SLIDES[currentIndex].color;
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <FlatList
         ref={flatListRef}
@@ -103,34 +112,41 @@ export default function OnboardingScreen({ navigation }) {
         })}
       />
 
-      <View style={styles.dots}>
-        {SLIDES.map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, i === currentIndex && styles.dotActive]}
-          />
-        ))}
-      </View>
-
       <View style={styles.footer}>
-        {isLast ? (
-          <View style={{ flex: 1 }} />
-        ) : (
-          <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-            <Text style={styles.skipText}>Omitir</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.dots}>
+          {SLIDES.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                i === currentIndex && [styles.dotActive, { backgroundColor: currentColor }],
+              ]}
+            />
+          ))}
+        </View>
 
-        <TouchableOpacity
-          style={[styles.nextButton, isLast && styles.startButton]}
-          onPress={handleNext}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.nextButtonText}>
-            {isLast ? 'COMENZAR' : 'Siguiente'}
-          </Text>
-          {!isLast && <Ionicons name="arrow-forward" size={18} color="#ffffff" />}
-        </TouchableOpacity>
+        <View style={styles.footerActions}>
+          {!isLast ? (
+            <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+              <Text style={styles.skipText}>Omitir</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              { backgroundColor: currentColor },
+              isLast && styles.startButton,
+            ]}
+            onPress={handleNext}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.nextButtonText}>{isLast ? 'COMENZAR' : 'Siguiente'}</Text>
+            {!isLast && <Ionicons name="arrow-forward" size={18} color="#ffffff" />}
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -139,77 +155,95 @@ export default function OnboardingScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#ffffff',
   },
   slide: {
     width: SCREEN_WIDTH,
     flex: 1,
+  },
+  illustrationArea: {
+    height: SCREEN_HEIGHT * 0.42,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
   },
-  iconCircle: {
+  iconCard: {
     width: 160,
     height: 160,
-    borderRadius: 80,
-    backgroundColor: colors.surface,
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 12,
   },
-  icon: {
-    fontSize: 80,
+  textArea: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 32,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   slideTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#1a1a1a',
     marginBottom: 12,
+    lineHeight: 36,
   },
   slideSubtitle: {
     fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 12,
+    color: '#6c757d',
+    lineHeight: 23,
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    paddingTop: 12,
+    backgroundColor: '#ffffff',
   },
   dots: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 28,
+    gap: 6,
+    marginBottom: 20,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.dotInactive,
+    backgroundColor: '#dee2e6',
   },
   dotActive: {
-    backgroundColor: colors.primary,
     width: 24,
   },
-  footer: {
+  footerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    paddingTop: 8,
   },
   skipButton: {
     padding: 12,
   },
   skipText: {
     fontSize: 15,
-    color: colors.textSecondary,
+    color: '#6c757d',
     fontWeight: '500',
   },
   nextButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingVertical: 15,
     paddingHorizontal: 28,
     flexDirection: 'row',
     alignItems: 'center',
@@ -218,12 +252,11 @@ const styles = StyleSheet.create({
   startButton: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 16,
   },
   nextButtonText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
 });

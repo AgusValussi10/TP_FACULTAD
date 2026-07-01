@@ -138,11 +138,29 @@ router.put('/usuarios/:id', checkAdminKey, async (req, res) => {
 // DELETE /api/admin/usuarios/:id
 router.delete('/usuarios/:id', checkAdminKey, async (req, res) => {
   try {
-    const [result] = await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]);
-    if (result.affectedRows === 0) {
+    const [[usuario]] = await pool.query('SELECT email FROM usuarios WHERE id = ?', [req.params.id]);
+    if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-    res.json({ message: 'Usuario eliminado' });
+
+    let firebaseEliminado = false;
+    if (firebaseAdmin) {
+      try {
+        const userRecord = await firebaseAdmin.auth.getUserByEmail(usuario.email);
+        await firebaseAdmin.auth.deleteUser(userRecord.uid);
+        firebaseEliminado = true;
+      } catch (fbErr) {
+        if (fbErr.code !== 'auth/user-not-found') {
+          console.warn('[firebase] No se pudo eliminar usuario:', fbErr.message);
+        }
+      }
+    }
+
+    await pool.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]);
+    res.json({
+      message: 'Usuario eliminado' + (firebaseEliminado ? ' de MySQL y Firebase' : ' solo de MySQL'),
+      firebase: firebaseEliminado,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error interno del servidor' });
