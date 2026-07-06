@@ -1,5 +1,6 @@
 # Claude Code memory
 .claude/
+.CLAUDE.md
 
 # Visual Studio
 .vs/
