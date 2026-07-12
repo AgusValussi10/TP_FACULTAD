@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { WALLETS, getWalletByName } from '../../data/wallets';
+import { WALLETS } from '../../data/wallets';
+import { getBilleteras } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -41,9 +42,7 @@ function formatCellValue(key, wallet) {
   return wallet[key];
 }
 
-function WalletSelector({ label, walletName, onPress }) {
-  const wallet = walletName ? getWalletByName(walletName) : null;
-
+function WalletSelector({ label, wallet, onPress }) {
   return (
     <TouchableOpacity style={styles.selector} onPress={onPress} activeOpacity={0.75}>
       {wallet ? (
@@ -67,8 +66,8 @@ function WalletSelector({ label, walletName, onPress }) {
   );
 }
 
-function PickerModal({ visible, onClose, onSelect, excludeName }) {
-  const available = WALLETS.filter(w => w.name !== excludeName);
+function PickerModal({ visible, onClose, onSelect, excludeName, wallets }) {
+  const available = wallets.filter(w => w.name !== excludeName);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -110,13 +109,44 @@ function PickerModal({ visible, onClose, onSelect, excludeName }) {
   );
 }
 
-export default function WalletCompareScreen({ navigation }) {
-  const [walletA, setWalletA] = useState(null);
-  const [walletB, setWalletB] = useState(null);
-  const [pickerTarget, setPickerTarget] = useState(null);
+export default function WalletCompareScreen({ route, navigation }) {
+  const initialWallet1 = route?.params?.initialWallet1 ?? null;
+  const initialWallet2 = route?.params?.initialWallet2 ?? null;
 
-  const wA = walletA ? getWalletByName(walletA) : null;
-  const wB = walletB ? getWalletByName(walletB) : null;
+  const [walletA, setWalletA] = useState(initialWallet1?.name ?? null);
+  const [walletB, setWalletB] = useState(initialWallet2?.name ?? null);
+  const [pickerTarget, setPickerTarget] = useState(null);
+  const [activeWallets, setActiveWallets] = useState(WALLETS);
+
+  useEffect(() => {
+    getBilleteras()
+      .then(apiData => {
+        const mapped = apiData.map(w => {
+          const local = WALLETS.find(l => l.id === String(w.id)) ?? {};
+          return {
+            id: String(w.id),
+            name: w.nombre,
+            color: w.color_hex ?? local.color,
+            initials: w.iniciales ?? local.initials,
+            rating: Number(w.rating_promedio),
+            commission: `${w.comision_pct ?? 0}%`,
+            dailyLimit: w.limite_diario_brl != null
+              ? `R$ ${Number(w.limite_diario_brl).toLocaleString('es-AR')}`
+              : (local.dailyLimit ?? '-'),
+            monthlyLimit: w.limite_mensual_brl != null
+              ? `R$ ${Number(w.limite_mensual_brl).toLocaleString('es-AR')}`
+              : (local.monthlyLimit ?? '-'),
+            estimatedTime: w.tiempo_estimado ?? local.estimatedTime ?? '-',
+            currencies: local.currencies ?? ['BRL', 'ARS'],
+          };
+        });
+        setActiveWallets(mapped);
+      })
+      .catch(() => {});
+  }, []);
+
+  const wA = walletA ? activeWallets.find(w => w.name === walletA) ?? null : null;
+  const wB = walletB ? activeWallets.find(w => w.name === walletB) ?? null : null;
   const canCompare = wA && wB;
 
   const openPicker = (target) => setPickerTarget(target);
@@ -155,7 +185,7 @@ export default function WalletCompareScreen({ navigation }) {
               <Text style={styles.selectorTag}>A</Text>
               <WalletSelector
                 label="Billetera A"
-                walletName={walletA}
+                wallet={wA}
                 onPress={() => openPicker('A')}
               />
             </View>
@@ -168,7 +198,7 @@ export default function WalletCompareScreen({ navigation }) {
               <Text style={styles.selectorTag}>B</Text>
               <WalletSelector
                 label="Billetera B"
-                walletName={walletB}
+                wallet={wB}
                 onPress={() => openPicker('B')}
               />
             </View>
@@ -249,6 +279,7 @@ export default function WalletCompareScreen({ navigation }) {
         onClose={closePicker}
         onSelect={handleSelect}
         excludeName={pickerTarget === 'A' ? walletB : walletA}
+        wallets={activeWallets}
       />
     </SafeAreaView>
   );

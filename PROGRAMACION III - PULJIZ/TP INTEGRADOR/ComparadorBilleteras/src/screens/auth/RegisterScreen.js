@@ -83,7 +83,7 @@ export default function RegisterScreen({ navigation }) {
   const [focused, setFocused] = useState('');
 
   const validate = () => {
-    if (!name.trim()) return 'El nombre no puede estar vacío';
+    if (name.trim().length < 2) return 'Ingresá tu nombre completo (mínimo 2 caracteres)';
     if (!EMAIL_REGEX.test(email.trim())) return 'Ingresá un email con formato válido';
     if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
     if (password !== confirmPassword) return 'Las contraseñas no coinciden';
@@ -100,7 +100,7 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       await register(email.trim(), password, name.trim());
-      navigation.replace('EmailVerification');
+      navigation.replace('EmailVerification', { email: email.trim() });
     } catch (e) {
       setError(getFirebaseError(e.code));
     } finally {
@@ -158,7 +158,7 @@ export default function RegisterScreen({ navigation }) {
 
           <InputField
             icon="lock-closed-outline"
-            placeholder="Contraseña (mínimo 6 caracteres)"
+            placeholder="Contraseña"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   },
   inputGroupFocused: { borderColor: colors.borderFocus, backgroundColor: colors.background },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 16, color: colors.textPrimary },
+  input: { flex: 1, fontSize: 16, color: colors.textPrimary, textAlignVertical: 'center', includeFontPadding: false },
   eyeBtn: { padding: 4, marginLeft: 4 },
   primaryBtn: {
     backgroundColor: colors.primary,

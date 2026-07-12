@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, StatusBar, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { WALLET_META, getWalletMeta } from '../../data/wallets';
+import { useAuth } from '../../context/AuthContext';
+import { createAlerta, getBilleteras } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -17,13 +18,29 @@ const colors = {
   divider: '#e0e0e0',
 };
 
-const WALLET_NAMES = Object.keys(WALLET_META);
-
 export default function CreateAlertScreen({ navigation }) {
-  const [selectedWallet, setSelectedWallet] = useState(WALLET_NAMES[0]);
+  const { apiToken } = useAuth();
+  const [activeWallets, setActiveWallets] = useState([]);
+  const [selectedWallet, setSelectedWallet] = useState('');
   const [conditionType, setConditionType] = useState('supere');
   const [targetValue, setTargetValue] = useState('');
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getBilleteras()
+      .then(apiData => {
+        const mapped = apiData.map(w => ({
+          id: String(w.id),
+          name: w.nombre,
+          color: w.color_hex,
+          initials: w.iniciales,
+        }));
+        setActiveWallets(mapped);
+        if (mapped.length > 0) setSelectedWallet(mapped[0].name);
+      })
+      .catch(() => {});
+  }, []);
 
   const conditionLabel = conditionType === 'supere' ? 'supere' : 'baje de';
   const previewText =
@@ -31,14 +48,33 @@ export default function CreateAlertScreen({ navigation }) {
       ? `Te avisaremos cuando ${selectedWallet} ${conditionLabel} $ ${targetValue} ARS por BRL`
       : 'Completá el formulario para ver una vista previa';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!targetValue) {
       Alert.alert('Valor requerido', 'Ingresá el valor objetivo de la alerta.');
       return;
     }
-    Alert.alert('Alerta guardada', `Tu alerta para ${selectedWallet} fue creada.`, [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    if (!apiToken) {
+      Alert.alert('Sin sesión', 'Iniciá sesión para guardar alertas.');
+      return;
+    }
+    const wallet = activeWallets.find(w => w.name === selectedWallet);
+    const billetera_id = wallet ? parseInt(wallet.id) : 1;
+    const condicion = conditionType === 'supere' ? 'supera' : 'baja_de';
+    setSaving(true);
+    try {
+      await createAlerta(apiToken, {
+        billetera_id,
+        condicion,
+        valor_objetivo: parseFloat(targetValue),
+      });
+      Alert.alert('Alerta guardada', `Tu alerta para ${selectedWallet} fue creada.`, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (err) {
+      Alert.alert('Error', err.message ?? 'No se pudo guardar la alerta.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -61,8 +97,8 @@ export default function CreateAlertScreen({ navigation }) {
           activeOpacity={0.7}
         >
           <View style={styles.selectorLeft}>
-            <View style={[styles.selectorLogo, { backgroundColor: getWalletMeta(selectedWallet).color }]}>
-              <Text style={styles.selectorLogoText}>{getWalletMeta(selectedWallet).initials}</Text>
+            <View style={[styles.selectorLogo, { backgroundColor: activeWallets.find(w => w.name === selectedWallet)?.color ?? '#3b82f6' }]}>
+              <Text style={styles.selectorLogoText}>{activeWallets.find(w => w.name === selectedWallet)?.initials ?? ''}</Text>
             </View>
             <Text style={styles.selectorText}>{selectedWallet}</Text>
           </View>
@@ -104,7 +140,7 @@ export default function CreateAlertScreen({ navigation }) {
           <Text style={styles.inputPrefix}>$</Text>
           <TextInput
             style={styles.valueInput}
-            placeholder="975,00"
+            placeholder=""
             placeholderTextColor={colors.textMuted}
             keyboardType="numeric"
             value={targetValue}
@@ -121,8 +157,8 @@ export default function CreateAlertScreen({ navigation }) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.7}>
-          <Text style={styles.saveButtonText}>GUARDAR ALERTA</Text>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.7} disabled={saving}>
+          <Text style={styles.saveButtonText}>{saving ? 'GUARDANDO...' : 'GUARDAR ALERTA'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -142,27 +178,24 @@ export default function CreateAlertScreen({ navigation }) {
           <View style={styles.pickerHandle} />
           <Text style={styles.pickerTitle}>Elegí una billetera</Text>
           <ScrollView>
-            {WALLET_NAMES.map((name) => {
-              const m = getWalletMeta(name);
-              return (
-                <TouchableOpacity
-                  key={name}
-                  style={[styles.pickerItem, name === selectedWallet && styles.pickerItemActive]}
-                  onPress={() => { setSelectedWallet(name); setPickerVisible(false); }}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.pickerLogo, { backgroundColor: m.color }]}>
-                    <Text style={styles.pickerLogoText}>{m.initials}</Text>
-                  </View>
-                  <Text style={[styles.pickerItemText, name === selectedWallet && styles.pickerItemTextActive]}>
-                    {name}
-                  </Text>
-                  {name === selectedWallet && (
-                    <Ionicons name="checkmark" size={18} color={colors.primary} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+            {activeWallets.map((w) => (
+              <TouchableOpacity
+                key={w.name}
+                style={[styles.pickerItem, w.name === selectedWallet && styles.pickerItemActive]}
+                onPress={() => { setSelectedWallet(w.name); setPickerVisible(false); }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.pickerLogo, { backgroundColor: w.color }]}>
+                  <Text style={styles.pickerLogoText}>{w.initials}</Text>
+                </View>
+                <Text style={[styles.pickerItemText, w.name === selectedWallet && styles.pickerItemTextActive]}>
+                  {w.name}
+                </Text>
+                {w.name === selectedWallet && (
+                  <Ionicons name="checkmark" size={18} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         </View>
       </Modal>

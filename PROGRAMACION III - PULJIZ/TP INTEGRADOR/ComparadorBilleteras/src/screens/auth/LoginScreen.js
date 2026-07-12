@@ -61,7 +61,7 @@ function getFirebaseError(code) {
 }
 
 export default function LoginScreen({ navigation }) {
-  const { signInWithEmail, signInWithGoogleCredential } = useAuth();
+  const { signInWithEmail, signInWithGoogleCredential, signOut } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -91,7 +91,12 @@ export default function LoginScreen({ navigation }) {
     setError('');
     setLoading(true);
     try {
-      await signInWithEmail(email.trim(), password);
+      const cred = await signInWithEmail(email.trim(), password);
+      if (!cred.user.emailVerified) {
+        await signOut();
+        setError('Verificá tu email antes de continuar. Revisá tu bandeja de entrada.');
+        return;
+      }
       navigation.replace('Home');
     } catch (e) {
       setError(getFirebaseError(e.code));

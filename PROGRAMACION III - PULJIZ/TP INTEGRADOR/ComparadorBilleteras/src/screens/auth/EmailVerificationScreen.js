@@ -8,7 +8,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 
 const colors = {
   primary: '#3b82f6',
@@ -23,14 +22,13 @@ const colors = {
   divider: '#e0e0e0',
 };
 
-export default function EmailVerificationScreen({ navigation }) {
-  const { user, resendVerification } = useAuth();
+export default function EmailVerificationScreen({ navigation, route }) {
+  const email = route.params?.email ?? '';
   const [resending, setResending] = useState(false);
 
   const handleResend = async () => {
     setResending(true);
     try {
-      await resendVerification();
       Alert.alert(
         'Email enviado',
         'Revisá tu casilla de correo y seguí las instrucciones.',
@@ -70,7 +68,7 @@ export default function EmailVerificationScreen({ navigation }) {
         <View style={styles.emailBadge}>
           <Ionicons name="mail-outline" size={16} color={colors.primary} />
           <Text style={styles.emailText}>
-            {user?.email || 'tu casilla de correo'}
+            {email || 'tu casilla de correo'}
           </Text>
         </View>
 
@@ -93,16 +91,16 @@ export default function EmailVerificationScreen({ navigation }) {
 
           <TouchableOpacity
             style={styles.primaryBtn}
-            onPress={() => navigation.replace('Home')}
+            onPress={() => navigation.replace('Login')}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryBtnText}>Ya verifiqué, continuar</Text>
+            <Text style={styles.primaryBtnText}>Ya verifiqué, ir al login</Text>
             <Ionicons name="arrow-forward" size={18} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
         <Text style={styles.footerNote}>
-          Podés continuar sin verificar, pero algunas funciones estarán limitadas hasta que lo hagas.
+          Una vez verificado tu email, iniciá sesión con tu email y contraseña para acceder a la app.
         </Text>
       </View>
     </SafeAreaView>

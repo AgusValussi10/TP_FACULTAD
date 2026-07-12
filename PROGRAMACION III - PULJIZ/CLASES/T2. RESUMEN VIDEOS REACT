@@ -1,0 +1,318 @@
+[00:00:00]
+**Imperativo vs. declarativo**
+La clase arranca comparando dos formas de programar interfaces.
+- **Imperativo:** se indica paso por paso qué hacer sobre la interfaz (buscar el elemento, modificarlo, actualizarlo manualmente).
+- **Declarativo:** se describe cómo debería verse la pantalla según el estado, y es el framework quien decide cómo actualizar la vista.
+- React Native trabaja principalmente de forma **declarativa**: se cambia el estado y React se encarga de actualizar la UI.
+
+Ejemplo imperativo:
+```js
+button.addEventListener("click", () => {
+  contador.textContent = Number(contador.textContent) + 1;
+});
+```
+
+Ejemplo declarativo:
+```jsx
+function Contador() {
+  const [n, setN] = useState(0);
+  return (
+    <Text onPress={() => setN(n + 1)}>
+      Toques: {n}
+    </Text>
+  );
+}
+```
+
+---
+
+[00:15:10]
+**Render describe, no dibuja**
+- Renderizar no significa pintar píxeles en pantalla directamente.
+- Renderizar significa **producir una descripción** de la interfaz.
+- Los componentes funcionan como recetas: dicen qué se debe mostrar, no dibujan manualmente.
+- El **estado** es la fuente principal que dispara actualizaciones.
+
+Ejemplo de árbol de componentes:
+```jsx
+function App() {
+  return (
+    <View>
+      <Text>Hola</Text>
+    </View>
+  );
+}
+```
+Representación conceptual:
+```
+View
+└── Text
+    └── "Hola"
+```
+
+---
+
+[00:28:40]
+**Virtual DOM y reconciliación**
+- El árbol virtual es una representación liviana de la UI en memoria.
+- React compara el árbol anterior contra el árbol nuevo; ese proceso se llama **reconciliación**.
+- La meta es actualizar solo lo que cambió, porque tocar la UI real es más costoso que comparar árboles en memoria.
+
+Comparación conceptual:
+| Antes | Después | Qué detecta React |
+|-------|---------|--------------------|
+| `<Text>Toques: 1</Text>` | `<Text>Toques: 2</Text>` | La estructura sigue igual, solo cambió el texto |
+
+---
+
+[00:39:20]
+**Diffing, keys y Fiber**
+- **Diffing:** algoritmo de comparación entre árboles. React usa reglas prácticas para comparar rápido, no una comparación perfecta de todo.
+- **Keys:** sirven para identificar elementos en listas.
+- **Fiber:** arquitectura interna que organiza el trabajo de renderizado en fases.
+
+Keys correctas:
+```jsx
+{usuarios.map(usuario => (
+  <Text key={usuario.id}>{usuario.nombre}</Text>
+))}
+```
+Evitar índice si la lista cambia:
+```jsx
+// No ideal si se agregan, eliminan o reordenan elementos
+<Text key={index}>{usuario.nombre}</Text>
+```
+
+---
+
+[00:43:55]
+**Qué dispara un re-render**
+- Un componente puede volver a renderizarse si cambia su **estado**.
+- También puede re-renderizar si cambian sus **props**.
+- Si el padre se re-renderiza, puede provocar que los hijos también se recalculen.
+- Si cambia un **Context** usado por el componente, también se vuelve a renderizar.
+- **Re-render no es lo mismo que re-mount:** re-renderizar es recalcular la descripción de la UI; re-montar es destruir y crear el componente de nuevo (pierde su estado interno).
+
+---
+
+[00:50:05]
+**Hooks por dentro**
+- React guarda los hooks en una **lista ordenada**.
+- Por eso el orden de los hooks no puede cambiar entre renders.
+- Los hooks deben ir siempre en el **nivel superior** del componente.
+- No se deben usar dentro de `if`, `for`, `while`, funciones internas o condicionales.
+
+Uso correcto:
+```jsx
+function Componente() {
+  const [nombre, setNombre] = useState("");
+  const [edad, setEdad] = useState(0);
+  return <Text>{nombre}</Text>;
+}
+```
+Uso incorrecto:
+```jsx
+function Componente({ activo }) {
+  if (activo) {
+    const [x, setX] = useState(0); // ❌ hook dentro de condicional
+  }
+  return <Text>Hola</Text>;
+}
+```
+
+---
+
+[00:53:55]
+**Effects y costo de renders**
+- `useEffect` corre **después del commit**, es decir, luego de que React aplicó los cambios.
+- Sirve para efectos secundarios: pedir datos, usar timers, suscribirse a eventos o sincronizar con sistemas externos.
+- La lista de dependencias controla cuándo se ejecuta el efecto.
+- `memo`, `useMemo` y `useCallback` sirven para optimizar, pero conviene **medir antes de usarlos** (optimización prematura puede complicar el código sin beneficio real).
+
+Ejemplo con limpieza:
+```jsx
+useEffect(() => {
+  const id = setInterval(() => {
+    console.log("tick");
+  }, 1000);
+  return () => clearInterval(id);
+}, []);
+```
+
+---
+
+[01:03:05]
+**Frontera entre JavaScript y nativo**
+- React Native tiene dos mundos: **JavaScript** (lógica) y **nativo** (vistas reales).
+- JavaScript no dibuja directamente la UI nativa.
+- En la arquitectura vieja existía el **Bridge**.
+- El Bridge podía ser cuello de botella porque era asincrónico, usaba JSON y concentraba toda la comunicación en un solo canal.
+- Cuando la app se traba o pierde fluidez aparece el **jank**.
+
+Esquema:
+```
+JavaScript -> lógica, estado, eventos
+Nativo     -> vistas reales de Android/iOS
+```
+
+---
+
+[01:17:20]
+**JSI, TurboModules y Codegen**
+- **JSI** reemplaza al viejo Bridge con una comunicación más directa entre JavaScript y nativo, evitando depender del paso de mensajes serializados en JSON.
+- **TurboModules** permite módulos nativos más eficientes, cargados solo cuando hacen falta.
+- **Codegen** genera código para mejorar la comunicación tipada entre JS y nativo.
+- Desde **React Native 0.76** esta arquitectura aparece como opción por defecto.
+
+---
+
+[01:22:00]
+**Árbol de sombra y Fabric**
+- El **árbol de sombra** (shadow tree) es una representación intermedia de la UI antes de crear vistas nativas reales; se puede pensar como un "gemelo" de la interfaz. Todavía no son vistas reales.
+- **Fabric** es el nuevo renderizador de React Native y organiza el camino desde los componentes React hasta las vistas nativas.
+
+Pipeline:
+```
+Render -> Commit -> Mount
+```
+- **Render:** React calcula qué debería cambiar.
+- **Commit:** se confirma el cambio.
+- **Mount:** se aplican los cambios en vistas nativas.
+
+---
+
+[01:29:50]
+**Yoga y View Flattening**
+- **Yoga** es el motor que calcula tamaños y posiciones usando Flexbox.
+- **View Flattening** elimina vistas innecesarias para evitar trabajo nativo extra.
+- Menos vistas nativas suelen significar mejor rendimiento.
+
+Ejemplo de layout:
+```jsx
+<View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+  <Text>Hola</Text>
+</View>
+```
+
+---
+
+[01:31:25]
+**Hermes y modelo de hilos**
+- **Hermes** es el motor de JavaScript optimizado para React Native. Mejora el arranque y puede usar menos memoria.
+- La app puede usar **bytecode precompilado** en lugar de compilar JS al abrir.
+- React Native trabaja con varios hilos: **JS**, **UI** y tareas de **fondo/diseño**.
+- Para sostener **60 FPS**, cada frame tiene cerca de **16 ms**. Si se bloquea el hilo UI, la app se siente trabada.
+
+---
+
+**Cuadro comparativo: arquitectura vieja vs. nueva**
+| Aspecto | Arquitectura clásica (Bridge) | Nueva arquitectura (JSI/Fabric) |
+|---------|-------------------------------|----------------------------------|
+| Comunicación JS-nativo | Asíncrona, mensajes serializados en JSON | Directa (síncrona cuando se necesita), sin serialización intermedia |
+| Cuello de botella | Sí, canal único y JSON pesado | Reducido, acceso más directo a objetos nativos |
+| Renderizado | Sin árbol de sombra explícito optimizado | Fabric + árbol de sombra |
+| Módulos nativos | Cargados todos de entrada | TurboModules: carga bajo demanda |
+| Tipado de la comunicación | Manual | Codegen genera el tipado |
+| Disponible por defecto desde | — | React Native 0.76 |
+
+---
+
+**Conceptos importantes para estudiar sí o sí**
+- Imperativo vs. declarativo
+- Estado como fuente de actualización
+- Render no dibuja: render describe
+- Árbol de componentes
+- Virtual DOM / árbol virtual
+- Reconciliación
+- Diffing
+- Keys en listas
+- Fiber
+- Re-render vs. re-mount
+- Reglas de Hooks
+- useState
+- useEffect
+- Dependencias de useEffect
+- memo, useMemo, useCallback
+- Bridge viejo
+- JSI
+- TurboModules
+- Codegen
+- Fabric
+- Árbol de sombra
+- Yoga
+- View Flattening
+- Hermes
+- Modelo de hilos
+- Jank / pérdida de fluidez
+
+---
+
+**Conceptos difíciles explicados simple**
+- **Render:** no es dibujar. Es calcular cómo debería verse la pantalla con el estado actual.
+- **Reconciliación:** es comparar la pantalla anterior con la nueva para aplicar solo los cambios necesarios.
+- **Key:** es como el DNI de un elemento en una lista. Ayuda a React a no confundir elementos.
+- **Hook:** es una herramienta que le da memoria o comportamiento a un componente funcional, como estado o efectos.
+- **useEffect:** sirve para ejecutar acciones después de que React actualizó la UI, por ejemplo pedir datos o limpiar timers.
+- **Bridge:** era el puente viejo entre JavaScript y nativo. Podía volverse lento si pasaban muchos mensajes.
+- **JSI:** es una forma más directa y moderna de conectar JavaScript con código nativo.
+- **Fabric:** es el renderizador nuevo que lleva la descripción de React hacia vistas nativas.
+- **Yoga:** calcula tamaños y posiciones de los componentes usando Flexbox.
+- **Hermes:** ejecuta JavaScript optimizado para móvil y ayuda al arranque de la app.
+
+---
+
+**Mapa mental de la clase**
+```
+setState
+   ↓
+Re-render
+   ↓
+Nuevo árbol virtual
+   ↓
+Reconciliación / diffing
+   ↓
+Commit
+   ↓
+Árbol de sombra
+   ↓
+Fabric
+   ↓
+Yoga calcula layout
+   ↓
+Mount en vistas nativas
+   ↓
+Pantalla actualizada
+```
+
+---
+
+**Partes que se podrían cortar del video**
+No se detectaron silencios largos o saludos extensos que claramente sobren. Sí aparecen micro pausas y transiciones que podrían recortarse si se quiere una versión más rápida para estudiar.
+
+| Timestamp aprox. | Motivo |
+|-------------------|--------|
+| 05:25-05:35 | Pausa/transición durante explicación en pizarra |
+| 10:18-10:25 | Pequeña pausa en zona de código |
+| 14:45-14:52 | Transición antes de cambiar de bloque |
+| 37:28-37:35 | Pausa breve durante explicación de Virtual DOM |
+| 58:02-58:08 | Pausa breve en efectos/renders |
+| 61:14-61:20 | Pausa breve antes de pasar al bloque nativo |
+| 76:06-76:16 | Transición antes de JSI |
+| 80:25-80:30 | Pausa breve en explicación de JSI |
+| 96:55-97:05 | Transición hacia modelo de hilos |
+
+---
+
+**Conclusiones clave:**
+- React Native funciona de forma declarativa: se describe el estado deseado de la UI y React decide cómo actualizar la pantalla.
+- El render no dibuja píxeles; produce una descripción de la interfaz que luego se compara con la anterior (reconciliación) mediante diffing.
+- Las keys son esenciales para que React identifique correctamente los elementos en listas dinámicas.
+- Los hooks dependen de un orden fijo de ejecución; nunca deben usarse dentro de condicionales, loops o funciones anidadas.
+- `useEffect` corre después del commit y sirve para sincronizar con sistemas externos (timers, fetch, suscripciones), siempre con su función de limpieza cuando corresponda.
+- Re-render no equivale a re-mount: el primero recalcula la UI, el segundo destruye y crea el componente de nuevo.
+- La comunicación entre JavaScript y nativo evolucionó del Bridge (asíncrono, basado en JSON, cuello de botella) hacia JSI (comunicación directa), acompañado de TurboModules y Codegen.
+- Fabric es el nuevo renderizador que usa el árbol de sombra como representación intermedia antes de crear las vistas nativas reales, siguiendo el pipeline Render → Commit → Mount.
+- Yoga calcula el layout con Flexbox, y View Flattening reduce vistas nativas innecesarias para mejorar el rendimiento.
+- Hermes es el motor de JavaScript optimizado para móvil, que mejora el arranque usando bytecode precompilado.
+- Para mantener 60 FPS, cada frame dispone de aproximadamente 16 ms; bloquear el hilo de UI provoca jank (pérdida de fluidez).
+- Optimizaciones como `memo`, `useMemo` y `useCallback` deben aplicarse solo después de medir un problema real de rendimiento, no de forma preventiva.

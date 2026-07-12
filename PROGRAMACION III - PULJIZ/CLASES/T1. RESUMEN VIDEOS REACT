@@ -1,0 +1,225 @@
+[00:00:01]  
+**Introducción a React Native**  
+Se inicia la sesión planteando los objetivos principales: explicar qué es React Native, por qué existe, cómo funciona y cómo instalarlo 
+junto con un emulador. Se adelantó que se avanzará desde la instalación básica hasta profundizar en conceptos más avanzados, y que el curso 
+incluirá un trabajo práctico teórico-práctico con código. La idea es transformar un concepto abstracto en una aplicación 
+concreta para la entrega final.
+
+---
+
+[00:01:57]  
+**¿Qué es React Native?**  
+- **React Native es un framework de código abierto para construir aplicaciones móviles nativas para Android e iOS.**  
+- Permite escribir código en **JavaScript o TypeScript**, basándose en la librería React para la web.  
+- React Native también soporta desarrollo para web y, de forma menos consolidada, para escritorio (*No especificado* si es oficial o recomendado).  
+- Clave: con una sola base de código, se obtienen aplicaciones **que corren nativamente en varias plataformas** sin usar un navegador 
+interno (WebView), a diferencia de apps híbridas tradicionales.  
+- La interfaz generada está compuesta por **componentes nativos reales** del sistema operativo, proporcionando mejor rendimiento y 
+experiencia de usuario comparado con apps híbridas.
+
+---
+
+[00:04:35]  
+**Tres palabras fundamentales en React Native:**  
+- **Framework:** ofrece estructura, herramientas y convenciones para desarrollar aplicaciones móviles, junto con ecosistemas y librerías.  
+- **Multiplataforma:** el mismo código puede apuntar a Android, iOS y opcionalmente a la web y escritorio (aunque éste no es el foco principal).  
+- **Nativo:** la interfaz visual es compuesta por elementos propios del sistema operativo, no es una simulación en web.  
+
+---
+
+[00:05:53]  
+**Origen y evolución de React Native:**  
+- Creado por **Facebook/Meta** y liberado en 2015.  
+- Surgió para extender la experiencia React (web) a entornos móviles sin renunciar a interfaces nativas.  
+- Antes de la liberación se desarrolló junto a una comunidad y otros proyectos como **Expo**, que actualmente es muy popular 
+y contribuye a la estabilidad y rendimiento del ecosistema.  
+- React Native lleva aproximadamente 10 años en producción y actualmente es ampliamente usado y confiable.
+
+---
+
+[00:07:17]  
+**Problemas que resuelve React Native:**  
+- Antes, empresas debían tener **dos equipos separados** para desarrollo nativo: uno para Android (Java/Kotlin) y otro 
+para iOS (Swift/Objective-C), con código duplicado y mantenimiento complejo.  
+- Alternativa tradicional: apps híbridas con WebView, que tienen peor rendimiento y se sienten lentas.  
+- React Native ofrece un **tercer camino:** base de código única con rendimiento y UI 100% nativa, combinando la eficiencia 
+y la experiencia de usuario.  
+- Esto permite equipos más pequeños con un solo repositorio y códigos compartidos, reduciendo costos y complejidad.
+
+---
+
+[00:09:15]  
+**Ejemplos de uso en la industria:**  
+- Grandes empresas y plataformas utilizan React Native, entre ellas:  
+| Empresa      | Uso React Native         | Comentario                          |  
+|--------------|--------------------------|-------------------------------------|  
+| MercadoLibre | Algunas secciones móviles| Uso parcial en móvil                |  
+| Discord      | App móvil                | Principalmente móvil                |   
+| Shopify      | App móvil                | Uso móvil                           |  
+| Instagram    | App móvil                | Uso intensivo; clave para unificar  |  
+
+- Para web, algunas empresas optan por otros frameworks como Vue.js por preferencia de rendimiento y comunidad, en lugar 
+de React, aunque React Native tiene soporte web.  
+- React Native es, hasta ahora, el **único framework multiplataforma que genera apps nativas completas para ambas plataformas 
+móviles (Android e iOS).**
+
+---
+
+[00:12:09]  
+**Mitos y aclaraciones:**  
+- React Native **no es un lenguaje**, es un **framework** basado en JavaScript/TypeScript.  
+- React (web) y React Native no son lo mismo, aunque comparten conceptos y tecnología.  
+- React Native no reemplaza el desarrollo nativo, ni tampoco genera páginas web tradicionales, sino interfaces nativas móviles.  
+- Desarrollo backend en PHP/Laravel no se recomienda si se usa JavaScript en frontend por la diferencia de paradigmas; 
+se aconseja mantener coherencia tecnológica para facilitar desarrollo y mantenimiento.  
+
+---
+
+[00:15:04]  
+**Limitaciones de React Native:**  
+- No es adecuado para aplicaciones que requieren funcionalidades muy específicas o avanzadas como:  
+  - Gráficos 3D intensivos.  
+  - Juegos con hardware dedicado.  
+  - Integraciones con hardware muy particular (e.g., impresoras térmicas).  
+- En esos casos, es recomendable usar desarrollo nativo puro para obtener el máximo control y rendimiento.
+
+---
+
+[00:15:49]  
+**Funcionamiento interno - React:**  
+- React Native hereda conceptos de React, una librería para construir interfaces declarativas basadas en componentes reutilizables.  
+- Tres ideas clave de React (y React Native):  
+  1. **Componentes:** pequeñas piezas independientes que definen la UI (botones, inputs, tablas, etc.).  
+  2. **Declarativo:** el desarrollador describe cómo debe verse la UI en un estado dado y React actualiza la pantalla 
+  automáticamente cuando cambia ese estado.  
+  3. **Estados y propiedades:** los datos fluyen dentro de los componentes desde padres a hijos y la UI se actualiza 
+  solo donde hay cambios, no toda la pantalla.  
+
+- Esta estructura evita recargar páginas completas como en sitios web tradicionales (que requieren recargar todo 
+el HTML desde el backend).
+
+---
+
+[00:20:06]  
+**Arquitectura de React Native:**  
+- Existen dos "mundos" que coexisten en React Native:  
+  - **Mundo JavaScript:** donde se ejecuta la lógica y componentes. Usa el motor **Hermes**, optimizado para móvil.  
+  - **Mundo Nativo:** el sistema operativo (Android/iOS) donde corren las vistas reales, acceso a hardware (cámara, 
+  GPS, notificaciones, etc.).
+
+- La comunicación entre ambos mundos fue históricamente a través de un **bridge (puente)** que envía mensajes asíncronos 
+serializados en JSON, lo que generaba cuello de botella y limitaciones en rendimiento, especialmente con mucha interacción o datos, 
+provocando latencias.
+
+---
+
+[00:25:09]  
+**Nueva arquitectura de React Native (actualizada 2024):**  
+- Desde la versión 0.76 y con soporte retirado para la arquitectura "clásica" del bridge a partir de la 0.82, React Native 
+adoptó **JSI (JavaScript Interface)**.  
+- **JSI permite llamadas síncronas directas entre JavaScript y código nativo sin serialización intermedia**, mejorando 
+sustancialmente el rendimiento y la velocidad de ejecución.  
+- Además, se introdujeron:  
+  - **Fabric:** nuevo motor de renderizado de la UI para dibujar vistas más rápido y con mejor rendimiento.  
+  - **Turbo Modules:** mecanismo para exponer funciones nativas de forma modular y cargarlas solo cuando se usan, 
+  optimizando el uso de recursos y batería.  
+- Sigue usando Hermes como motor JavaScript por defecto, que mejora tiempos de arranque y consumo de RAM.
+
+---
+
+[00:29:51]  
+**Ecosistema y herramientas en React Native:**  
+- **Cuatro familias en desarrollo móvil:**  
+| Categoría      | Lenguaje principal                | Comentario                                                                  |  
+|----------------|-----------------------------------|-----------------------------------------------------------------------------|  
+| Nativo         | Kotlin (Android), Swift (iOS)     | Máximo control y rendimiento; curva de aprendizaje alta                     |  
+| React Native   | JavaScript/TypeScript             | Código único, interfaz nativa; curva de aprendizaje baja                    |  
+| Flutter        | Dart                              | Multiplataforma; rendimiento similar; comunidad menor (*opinión personal*)  |  
+| Híbridas (PWA) | HTML, CSS, JS (Ionic, Cordova)    | Apps web empaquetadas; UI web falsa, menor rendimiento                      |  
+
+- La curva de aprendizaje es más baja para React Native que para desarrollo nativo y Flutter, siendo este último con paradigmas diferentes.  
+- React Native destaca para equipos pequeños o desarrolladores individuales que deben trabajar para ambas plataformas con un solo 
+lenguaje (JavaScript).
+
+---
+
+[00:36:27]  
+**Requisitos para comenzar con React Native:**  
+- No es recomendable para primer contacto con programación, requiere bases sólidas de:  
+  - **JavaScript moderno (ES6+ / ECMAScript)**.  
+  - Conceptos básicos de React: JSX, hooks, estados, propiedades.  
+- Habilidades con línea de comandos / terminal son fundamentales para la instalación, ejecución y gestión de proyectos React Native.  
+- No es necesario tener Mac para desarrollo básico ni emulación Android, ya que **Expo permite emulación y pruebas multiplataforma, 
+incluso en Windows o Linux**, pero para emular iOS y compilar versiones finales se recomienda Mac (especialmente para subida a App Store).
+
+---
+
+[00:38:54]  
+**Mac en desarrollo iOS:**  
+- Para desarrollo iOS es casi imprescindible tener Mac por herramientas como Xcode (emulador y build).  
+- Mac Mini con chip M4, 24 GB RAM es ideal y accesible (~600,000 pesos) para desarrollo iOS.  
+- Las diferencias en rendimiento y estabilidad entre sistemas operativos se abordaron desde arquitecturas básicas (Mac y Linux 
+basados en Unix, Windows basado en C/C++ con arquitectura x86).  
+- Windows presenta problemas de estabilidad para desarrollo que el docente ha experimentado personalmente.  
+- Apple impone procesos restrictivos para app store (tiempos de revisión y certificación), que benefician la calidad del 
+ecosistema iOS frente a Android más permisivo.
+
+---
+
+[00:50:21]  
+**Herramientas recomendadas y configuración inicial:**  
+- Editor recomendado: **Visual Studio Code (VSCode)**.  
+- Uso de Expo CLI para crear y manejar proyectos, viene con paquete Expo instalado para facilidades en desarrollo y pruebas.  
+- **Expo Go:** app para smartphones que permite emular la app desarrollada escaneando un código QR, facilitando las pruebas 
+sin cables ni instalaciones complejas.  
+- Para desarrollo Android: requieren Android Studio y Java (última versión).  
+- Para iOS: requieren Xcode (solo en Mac).  
+- Explicación y recomendación para instalar Node.js usando **NBM (Node Version Manager)** para fácil gestión de versiones, 
+especialmente en proyectos con dependencias particulares.
+
+---
+
+[00:58:11]  
+**Demostración de proyecto y estructura general del código:**  
+- Se realiza demo de emulación en un simulador iOS (iPhone 16) usando Expo para lanzar una app básica con estructura mínima.  
+- Estructura del proyecto destacada:  
+  - Archivo de configuración **app.json** define nombre, versión, pantalla de carga, íconos, orientaciones y otras configuraciones 
+  básicas de la app.  
+  - Uso de **Expo Router** que controla la navegación interna basada en las carpetas bajo la carpeta **source/app**.  
+  - Carpetas como **iOS**, **assets**, **scripts** contienen código y recursos específicos para cada plataforma y assets gráficos.  
+
+---
+
+[01:03:20]  
+**Interfaz y funcionalidades del proyecto demo:**  
+- Se muestran carpetas y archivos que definen vistas y menús (home/explore).  
+- Sistema de navegación Tab para moverse entre vistas principales.  
+- Opciones como reload automático (fast refresh) que recarga la UI tras guardar cambios, aunque puede presentar problemas de 
+estabilidad y bugs que requieren recargar manualmente o reiniciar proyecto.  
+- Consola de desarrollo integrada para debug (consola de logs).
+
+---
+
+[01:06:29]  
+**Uso práctico y consejos:**  
+- Código QR de Expo Go facilita probar la app en celulares físicos rápidamente, aunque puede presentar problemas con redes (VPN, conectividad).  
+- La instalación y creación básica de proyectos es simple con Expo, recomendando avanzar poco a poco hacia código más avanzado.  
+- Se enfatiza que el curso se centrará en el diseño de experiencia e interfaces de usuario con herramientas React Native y Expo,
+ no en enseñanzas básicas de programación (variables, loops, etc.), suponiendo conocimientos previos.  
+- En la siguiente clase se verá una estructura más profunda de Expo y React Native, y se pretende guiar en temas de arquitectura y
+ desarrollo avanzado.  
+
+---
+
+**Conclusiones clave:**  
+- React Native es un framework multiplataforma que permite desarrollar apps móviles nativas con JavaScript/TypeScript y React, con 
+una sola base de código para Android e iOS.  
+- Su evolución reciente con JSI, Fabric y Turbo Modules mejora significativamente el rendimiento frente a la arquitectura clásica 
+basada en bridge.  
+- Es ideal para equipos pequeños o desarrolladores individuales que quieran cubrir múltiples plataformas sin duplicar esfuerzo.  
+- No es adecuado para funcionalidades extremas o juegos que requieran código nativo avanzado.  
+- El ecosistema React Native está respaldado por una comunidad activa y empresas grandes, y se complementa muy bien con herramientas como Expo.  
+- Para desarrollo iOS se recomienda Mac, aunque para Android se puede usar Windows o Linux con emuladores.  
+- Se requiere conocimiento previo de JavaScript moderno y React para aprovechar plenamente React Native.  
+- El marco del curso será teórico-práctico, enfocándose también en experiencia de usuario y arquitectura, más que en programación básica.
+

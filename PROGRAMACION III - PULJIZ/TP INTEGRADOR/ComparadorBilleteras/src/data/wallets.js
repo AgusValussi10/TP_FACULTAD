@@ -7,6 +7,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 5.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://mercadopago.com.ar',
+    androidPackage: 'com.mercadopago.wallet',
   },
   'Ualá': {
     color: '#7c3aed',
@@ -16,6 +17,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://uala.com.ar',
+    androidPackage: 'ar.com.uala.app',
   },
   'Bimo': {
     color: '#f59e0b',
@@ -25,6 +27,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 2.500',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://bimo.com.ar',
+    androidPackage: 'com.macro.bimo',
   },
   'Prex': {
     color: '#06b6d4',
@@ -34,6 +37,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://prexcard.com.ar',
+    androidPackage: 'ar.com.prexcard',
   },
   'Naranja X': {
     color: '#f97316',
@@ -43,6 +47,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 4.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://naranjax.com',
+    androidPackage: 'com.tarjetanaranja.ncuenta',
   },
   'Brubank': {
     color: '#3b82f6',
@@ -52,6 +57,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.500',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://brubank.com',
+    androidPackage: 'com.brubank',
   },
   'Personal Pay': {
     color: '#8b5cf6',
@@ -61,6 +67,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 2.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://personalpay.com.ar',
+    androidPackage: 'ar.com.personal.personalpay',
   },
   'Lemon Cash': {
     color: '#84cc16',
@@ -70,6 +77,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 5.000',
     estimatedTime: 'Hasta 5 min',
     appUrl: 'https://lemon.me',
+    androidPackage: 'com.lemon.lemon',
   },
   'Modo': {
     color: '#ec4899',
@@ -79,6 +87,7 @@ export const WALLET_META = {
     dailyLimit: 'R$ 3.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://modo.com.ar',
+    androidPackage: 'ar.com.modo',
   },
   'Cuenta DNI': {
     color: '#0ea5e9',
@@ -88,21 +97,55 @@ export const WALLET_META = {
     dailyLimit: 'R$ 2.000',
     estimatedTime: 'Instantáneo',
     appUrl: 'https://cuentadni.bancoprovincia.com.ar',
+    androidPackage: 'ar.gov.bancoprovincia.cuentadni',
+  },
+  'AstroPay': {
+    color: '#1a1a2e',
+    initials: 'AP',
+    description: 'Monedero virtual internacional para pagos en línea y PIX.',
+    commission: '1.5%',
+    dailyLimit: 'R$ 3.000',
+    estimatedTime: 'Instantáneo',
+    appUrl: 'https://astropay.com',
+    androidPackage: 'com.astropaycard.android',
+  },
+  'belo': {
+    color: '#6c63ff',
+    initials: 'BE',
+    description: 'Billetera cripto y fiat con PIX en reales desde ARS.',
+    commission: '0%',
+    dailyLimit: 'R$ 4.000',
+    estimatedTime: 'Instantáneo',
+    appUrl: 'https://belo.app',
+    androidPackage: 'com.belo.android',
+  },
+  'Cocos Capital': {
+    color: '#0d9488',
+    initials: 'CC',
+    description: 'Plataforma de inversiones con billetera para pagos internacionales.',
+    commission: '0.5%',
+    dailyLimit: 'R$ 2.500',
+    estimatedTime: 'Hasta 10 min',
+    appUrl: 'https://cocos.capital',
+    androidPackage: 'capital.cocos.app.twa',
   },
 };
 
 export const PROVIDERS = {
   BRL: [
-    { id: '1', name: 'Mercado Pago', rate: 970.46 },
-    { id: '2', name: 'Ualá', rate: 984.36 },
-    { id: '3', name: 'Bimo', rate: 988.90 },
-    { id: '4', name: 'Prex', rate: 997.40 },
-    { id: '5', name: 'Naranja X', rate: 993.20 },
-    { id: '6', name: 'Brubank', rate: 1000.46 },
-    { id: '7', name: 'Personal Pay', rate: 1005.80 },
-    { id: '8', name: 'Lemon Cash', rate: 1010.50 },
-    { id: '9', name: 'Modo', rate: 1015.30 },
-    { id: '10', name: 'Cuenta DNI', rate: 1020.75 },
+    { id: '1',  name: 'Mercado Pago',  rate: 970.46  },
+    { id: '2',  name: 'Ualá',          rate: 984.36  },
+    { id: '3',  name: 'Bimo',          rate: 988.90  },
+    { id: '4',  name: 'Prex',          rate: 997.40  },
+    { id: '5',  name: 'Naranja X',     rate: 993.20  },
+    { id: '6',  name: 'Brubank',       rate: 1000.46 },
+    { id: '7',  name: 'Personal Pay',  rate: 1005.80 },
+    { id: '8',  name: 'Lemon Cash',    rate: 1010.50 },
+    { id: '9',  name: 'Modo',          rate: 1015.30 },
+    { id: '10', name: 'Cuenta DNI',    rate: 1020.75 },
+    { id: '11', name: 'AstroPay',      rate: 1008.50 },
+    { id: '12', name: 'belo',          rate: 995.20  },
+    { id: '13', name: 'Cocos Capital', rate: 1002.80 },
   ],
 };
 
@@ -370,11 +413,97 @@ export const WALLETS = [
       { user: 'Sebastián W.', rating: 4, date: 'mar 2025', comment: 'El límite bajo es la única contra. Por lo demás, perfecto.' },
     ],
   },
+  {
+    id: '11',
+    name: 'AstroPay',
+    color: '#1a1a2e',
+    initials: 'AP',
+    rating: 4.1,
+    ratingCount: 8900,
+    countryFlags: ['🇦🇷', '🇧🇷', '🇺🇾', '🇨🇱'],
+    currencies: ['BRL', 'ARS', 'USD'],
+    description: 'Monedero virtual internacional para pagos en línea y PIX.',
+    commission: '1.5%',
+    dailyLimit: 'R$ 3.000',
+    monthlyLimit: 'R$ 30.000',
+    estimatedTime: 'Instantáneo',
+    commissionDetail: 'Comisión del 1,5% sobre el monto en BRL.',
+    appUrl: 'https://astropay.com',
+    pros: ['Acepta múltiples monedas', 'Disponible en más de 150 países'],
+    cons: ['Comisión del 1,5%', 'Menos conocida localmente'],
+    requirements: ['Email válido', 'Verificación de identidad'],
+    reviews: [
+      { user: 'Marcos T.', rating: 4, date: 'may 2025', comment: 'Muy útil para pagos internacionales, aunque la comisión molesta un poco.' },
+      { user: 'Carla M.', rating: 4, date: 'abr 2025', comment: 'Fácil de usar y disponible en muchos países.' },
+    ],
+  },
+  {
+    id: '12',
+    name: 'belo',
+    color: '#6c63ff',
+    initials: 'BE',
+    rating: 4.3,
+    ratingCount: 14200,
+    countryFlags: ['🇦🇷', '🇧🇷'],
+    currencies: ['BRL', 'ARS', 'USD'],
+    description: 'Billetera cripto y fiat con PIX en reales desde ARS.',
+    commission: '0%',
+    dailyLimit: 'R$ 4.000',
+    monthlyLimit: 'R$ 40.000',
+    estimatedTime: 'Instantáneo',
+    commissionDetail: 'Sin comisión para transferencias PIX.',
+    appUrl: 'https://belo.app',
+    pros: ['Sin comisión para PIX', 'Integra cripto y fiat', 'App muy intuitiva'],
+    cons: ['Requiere verificación KYC'],
+    requirements: ['DNI argentino', 'Mayor de 18 años', 'KYC completo'],
+    reviews: [
+      { user: 'Luciano P.', rating: 5, date: 'jun 2025', comment: 'La mejor billetera cripto para PIX. Llegó al instante.' },
+      { user: 'Agustina R.', rating: 4, date: 'may 2025', comment: 'Sin comisión y muy rápida. El KYC tardó pero valió la pena.' },
+    ],
+  },
+  {
+    id: '13',
+    name: 'Cocos Capital',
+    color: '#0d9488',
+    initials: 'CC',
+    rating: 4.0,
+    ratingCount: 5300,
+    countryFlags: ['🇦🇷', '🇧🇷'],
+    currencies: ['BRL', 'ARS'],
+    description: 'Plataforma de inversiones con billetera para pagos internacionales.',
+    commission: '0.5%',
+    dailyLimit: 'R$ 2.500',
+    monthlyLimit: 'R$ 25.000',
+    estimatedTime: 'Hasta 10 min',
+    commissionDetail: 'Comisión del 0,5% aplicada al monto convertido.',
+    appUrl: 'https://cocos.capital',
+    pros: ['Excelente para inversores', 'Sin comisión sobre rendimientos'],
+    cons: ['Proceso de alta complejo', 'Tiempo de hasta 10 minutos'],
+    requirements: ['DNI argentino', 'Mayor de 18 años', 'Cuenta verificada'],
+    reviews: [
+      { user: 'Esteban V.', rating: 4, date: 'jun 2025', comment: 'Ideal si ya usás Cocos para inversiones. El proceso de alta es largo.' },
+      { user: 'Natalia C.', rating: 4, date: 'abr 2025', comment: 'Buena tasa, aunque el tiempo puede llegar a 10 minutos.' },
+    ],
+  },
 ];
 
+export function getCanonicalName(name) {
+  if (WALLET_META[name]) return name;
+  const lower = name.toLowerCase();
+  const key = Object.keys(WALLET_META).find(
+    k => k.toLowerCase().startsWith(lower) || lower.startsWith(k.toLowerCase())
+  );
+  return key ?? name;
+}
+
 export function getWalletMeta(name) {
+  if (WALLET_META[name]) return WALLET_META[name];
+  const lower = name.toLowerCase();
+  const key = Object.keys(WALLET_META).find(
+    k => k.toLowerCase().startsWith(lower) || lower.startsWith(k.toLowerCase())
+  );
   return (
-    WALLET_META[name] ?? {
+    (key && WALLET_META[key]) ?? {
       color: '#6c757d',
       initials: name.slice(0, 2).toUpperCase(),
       description: '',

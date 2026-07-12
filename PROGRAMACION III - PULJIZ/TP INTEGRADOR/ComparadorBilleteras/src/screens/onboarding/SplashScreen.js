@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Animated, StatusBar, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
 const colors = {
@@ -57,9 +57,12 @@ export default function SplashScreen({ navigation }) {
       <Animated.View
         style={[styles.logoContainer, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
       >
-        <Text style={styles.logo}>💳</Text>
+        <Image
+          source={require('../../../assets/icon.jpg')}
+          style={styles.logoImage}
+        />
         <Text style={styles.name}>BrasilPagos</Text>
-        <Text style={styles.tagline}>El mejor cambio para Brasil 🇧🇷</Text>
+        <Text style={styles.tagline}>Comparador de billeteras para Brasil</Text>
       </Animated.View>
 
       <View style={styles.dotsContainer}>
@@ -81,19 +84,23 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
   },
-  logo: {
-    fontSize: 80,
-    marginBottom: 16,
+  logoImage: {
+    width: 130,
+    height: 130,
+    borderRadius: 30,
+    marginBottom: 20,
   },
   name: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 30,
+    fontWeight: '800',
     color: colors.white,
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   tagline: {
     fontSize: 14,
     color: colors.whiteSoft,
+    letterSpacing: 0.3,
   },
   dotsContainer: {
     position: 'absolute',

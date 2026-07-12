@@ -1,41 +1,65 @@
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRef, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const TABS = [
-  { icon: 'card-outline',               screen: 'Wallets' },
-  { icon: 'time-outline',               screen: 'History' },
-  { icon: 'stats-chart',                screen: 'Home'    },
-  { icon: 'notifications-outline',      screen: 'Alerts'  },
-  { icon: 'information-circle-outline', screen: 'Profile' },
+  { iconOutline: 'card-outline',               iconFilled: 'card',               screen: 'Wallets' },
+  { iconOutline: 'time-outline',               iconFilled: 'time',               screen: 'History' },
+  { iconOutline: 'stats-chart-outline',        iconFilled: 'stats-chart',        screen: 'Home'    },
+  { iconOutline: 'notifications-outline',      iconFilled: 'notifications',      screen: 'Alerts'  },
+  { iconOutline: 'information-circle-outline', iconFilled: 'information-circle', screen: 'Profile' },
 ];
 
 const colors = {
-  primary: '#3b82f6',
-  textMuted: '#adb5bd',
-  divider: '#e0e0e0',
-  background: '#ffffff',
+  primary:      '#3b82f6',
+  primaryLight: '#eff6ff',
+  textMuted:    '#adb5bd',
+  divider:      '#e0e0e0',
+  background:   '#ffffff',
 };
+
+function TabItem({ tab, isActive, onPress }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isActive) {
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.15, duration: 130, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1,    duration: 180, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]).start();
+    }
+  }, [isActive]);
+
+  return (
+    <TouchableOpacity style={styles.tab} onPress={onPress} activeOpacity={0.7}>
+      <Animated.View
+        style={[
+          styles.iconWrap,
+          isActive && styles.iconWrapActive,
+          { transform: [{ scale }] },
+        ]}
+      >
+        <Ionicons
+          name={isActive ? tab.iconFilled : tab.iconOutline}
+          size={22}
+          color={isActive ? colors.primary : colors.textMuted}
+        />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
 
 export default function BottomNav({ active, navigation }) {
   return (
     <View style={styles.container}>
-      {TABS.map((tab) => {
-        const isActive = tab.screen === active;
-        return (
-          <TouchableOpacity
-            key={tab.icon}
-            style={styles.tab}
-            onPress={() => tab.screen && tab.screen !== active && navigation.navigate(tab.screen)}
-            activeOpacity={tab.screen ? 0.7 : 1}
-          >
-            <Ionicons
-              name={tab.icon}
-              size={22}
-              color={isActive ? colors.primary : colors.textMuted}
-            />
-          </TouchableOpacity>
-        );
-      })}
+      {TABS.map((tab) => (
+        <TabItem
+          key={tab.screen}
+          tab={tab}
+          isActive={tab.screen === active}
+          onPress={() => tab.screen && tab.screen !== active && navigation.navigate(tab.screen)}
+        />
+      ))}
     </View>
   );
 }
@@ -52,5 +76,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconWrap: {
+    width: 48,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapActive: {
+    backgroundColor: colors.primaryLight,
   },
 });

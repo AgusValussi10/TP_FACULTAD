@@ -1,9 +1,12 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Switch } from 'react-native';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getWalletMeta } from '../../data/wallets';
 import BottomNav from '../../components/BottomNav';
+import { useAuth } from '../../context/AuthContext';
+import { getAlertas, toggleAlerta } from '../../services/api';
 
 const colors = {
   primary: '#3b82f6',
@@ -17,19 +20,47 @@ const colors = {
   divider: '#e0e0e0',
 };
 
-const MOCK_ALERTS = [
-  { id: 1, wallet: 'Mercado Pago', condition: 'BRL supere $ 975 ARS', active: true },
-  { id: 2, wallet: 'Ualá', condition: 'BRL baje de $ 960 ARS', active: false },
-  { id: 3, wallet: 'Brubank', condition: 'BRL supere $ 980 ARS', active: true },
-];
+function buildConditionLabel(condicion, valorObjetivo) {
+  const valor = `$ ${Number(valorObjetivo).toLocaleString('es-AR')} ARS`;
+  return condicion === 'supera' ? `BRL supere ${valor}` : `BRL baje de ${valor}`;
+}
 
 export default function AlertsScreen({ navigation }) {
-  const [alerts, setAlerts] = useState(MOCK_ALERTS);
+  const { apiToken } = useAuth();
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleAlert = (id) => {
-    setAlerts((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, active: !a.active } : a))
-    );
+  const load = useCallback(async () => {
+    if (!apiToken) { setLoading(false); return; }
+    try {
+      const rows = await getAlertas(apiToken);
+      const mapped = rows.map(r => ({
+        id: r.id,
+        wallet: r.billetera_nombre,
+        colorHex: r.color_hex,
+        condition: buildConditionLabel(r.condicion, r.valor_objetivo),
+        active: Boolean(r.activa),
+      }));
+      setAlerts(mapped);
+    } catch {
+      setAlerts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiToken]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const handleToggle = async (id) => {
+    const current = alerts.find(a => a.id === id);
+    if (!current) return;
+    const newActive = !current.active;
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: newActive } : a));
+    try {
+      await toggleAlerta(apiToken, id, newActive);
+    } catch {
+      setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: current.active } : a));
+    }
   };
 
   return (
@@ -46,35 +77,48 @@ export default function AlertsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {alerts.map((alert) => {
-          const meta = getWalletMeta(alert.wallet);
-          return (
-            <View key={alert.id} style={styles.card}>
-              <View style={styles.cardLeft}>
-                <View style={[styles.logo, { backgroundColor: meta.color }]}>
-                  <Text style={styles.logoText}>{meta.initials}</Text>
-                </View>
-                <View style={styles.alertInfo}>
-                  <Text style={styles.walletName}>{alert.wallet}</Text>
-                  <Text style={styles.condition}>{alert.condition}</Text>
-                  <View style={[styles.badge, alert.active ? styles.badgeActive : styles.badgePaused]}>
-                    <Text style={[styles.badgeText, alert.active ? styles.badgeTextActive : styles.badgeTextPaused]}>
-                      {alert.active ? 'Activa' : 'Pausada'}
-                    </Text>
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+          {alerts.length === 0 && (
+            <View style={styles.empty}>
+              <Ionicons name="notifications-off-outline" size={56} color={colors.textMuted} />
+              <Text style={styles.emptyTitle}>Sin alertas</Text>
+              <Text style={styles.emptySubtitle}>Creá una alerta para recibir notificaciones cuando cambie la cotización</Text>
+            </View>
+          )}
+          {alerts.map((alert) => {
+            const meta = getWalletMeta(alert.wallet);
+            return (
+              <View key={alert.id} style={styles.card}>
+                <View style={styles.cardLeft}>
+                  <View style={[styles.logo, { backgroundColor: alert.colorHex ?? meta.color }]}>
+                    <Text style={styles.logoText}>{meta.initials}</Text>
+                  </View>
+                  <View style={styles.alertInfo}>
+                    <Text style={styles.walletName}>{alert.wallet}</Text>
+                    <Text style={styles.condition}>{alert.condition}</Text>
+                    <View style={[styles.badge, alert.active ? styles.badgeActive : styles.badgePaused]}>
+                      <Text style={[styles.badgeText, alert.active ? styles.badgeTextActive : styles.badgeTextPaused]}>
+                        {alert.active ? 'Activa' : 'Pausada'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
+                <Switch
+                  value={alert.active}
+                  onValueChange={() => handleToggle(alert.id)}
+                  trackColor={{ false: colors.border, true: colors.success }}
+                  thumbColor="#ffffff"
+                />
               </View>
-              <Switch
-                value={alert.active}
-                onValueChange={() => toggleAlert(alert.id)}
-                trackColor={{ false: colors.border, true: colors.success }}
-                thumbColor="#ffffff"
-              />
-            </View>
-          );
-        })}
-      </ScrollView>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <BottomNav active="Alerts" navigation={navigation} />
     </SafeAreaView>
@@ -82,10 +126,7 @@ export default function AlertsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  safe: { flex: 1, backgroundColor: colors.background },
   header: {
     height: 64,
     flexDirection: 'row',
@@ -95,11 +136,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
   addButton: {
     backgroundColor: colors.primary,
     borderRadius: 10,
@@ -108,13 +145,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    gap: 12,
-  },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 16, gap: 12 },
+  empty: { alignItems: 'center', paddingTop: 60, gap: 12, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -125,59 +161,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 16,
   },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
-  },
-  logo: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  alertInfo: {
-    flex: 1,
-    marginLeft: 12,
-    gap: 4,
-  },
-  walletName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  condition: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 4,
-  },
-  badgeActive: {
-    backgroundColor: '#dcfce7',
-  },
-  badgePaused: {
-    backgroundColor: colors.surface,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  badgeTextActive: {
-    color: colors.success,
-  },
-  badgeTextPaused: {
-    color: colors.textMuted,
-  },
+  cardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 },
+  logo: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  logoText: { color: '#ffffff', fontSize: 12, fontWeight: '700' },
+  alertInfo: { flex: 1, marginLeft: 12, gap: 4 },
+  walletName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  condition: { fontSize: 13, color: colors.textSecondary },
+  badge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
+  badgeActive: { backgroundColor: '#dcfce7' },
+  badgePaused: { backgroundColor: colors.surface },
+  badgeText: { fontSize: 11, fontWeight: '600' },
+  badgeTextActive: { color: colors.success },
+  badgeTextPaused: { color: colors.textMuted },
 });
