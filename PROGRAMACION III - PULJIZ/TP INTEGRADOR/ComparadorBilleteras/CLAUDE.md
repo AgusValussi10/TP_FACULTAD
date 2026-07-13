@@ -1,19 +1,23 @@
 # CLAUDE.md — BrasilPagos
-
 App mobile (React Native + Expo SDK 54) para usuarios argentinos que viajan a Brasil. Compara cotizaciones ARS→BRL de billeteras virtuales argentinas para pagos vía PIX.
 
 ---
 
+# CPF / CNPJ para cotizar PIX
+08.258.164/0001-25
+
 ## Criterios de evaluación del TP
 
-| Criterio | Pts | Estado |
-|---|---|---|
-| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | ✅ Completo — 13 billeteras |
-| 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | ✅ Completo |
-| 3. UI e integración con la API | 20 | ✅ Completo — app conectada a la API |
-| 4. Operaciones maestro-detalle | 10 | ✅ BD + UI conectada a API |
-| 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | ✅ Completo |
-| 6. Documentación técnica | 5 | ✅ Completo — README.md |
+Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 77.25/100.**
+
+| Criterio | Pts | Estimado | Estado |
+|---|---|---|---|
+| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | 21 | 🟡 11 tablas + N-N real (`favoritos`); falta auditoría por usuario (solo hay `creado_en`/`actualizado_en`, no `modificado_por`) |
+| 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | 22.5 | 🟡 Falta separar capa de negocio/datos (todo vive en `routes/*.js`). La rúbrica nombra "API .NET 10 / ADO.NET" — confirmar con el profesor si el stack Node/Express es válido |
+| 3. UI e integración con la API | 20 | 17 | 🟢 Paginado real en Historial (`GET /api/historial?page=&limit=`); falta filtro por 2 parámetros resuelto en la API (el buscador de `WalletsScreen` sigue siendo client-side) |
+| 4. Operaciones maestro-detalle | 10 | 5 | 🔴 Sin transacciones — ninguna ruta usa `beginTransaction`/`COMMIT`/`ROLLBACK` (ej. `POST /api/resenas` hace INSERT + UPDATE sueltos) |
+| 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | 7.5 | 🟡 JWT y rutas protegidas OK; falta rol de usuario real en BD (el admin usa clave compartida `X-Admin-Key`, no un rol) |
+| 6. Documentación técnica | 5 | 4.25 | 🟢 README completo; falta Swagger/OpenAPI o colección Postman |
 
 ---
 
@@ -72,7 +76,7 @@ ComparadorBilleteras/
 │   │   ├── cotizaciones.js GET /?monto=, GET /historial, POST / (admin)
 │   │   ├── billeteras.js  GET /, GET /:id
 │   │   ├── alertas.js     GET /, POST /, PATCH /:id, DELETE /:id
-│   │   ├── historial.js   GET /, POST /
+│   │   ├── historial.js   GET /?page=&limit= (paginado real), POST /
 │   │   ├── favoritos.js   GET /, POST /, DELETE /:billetera_id
 │   │   └── admin.js       rutas admin (ver abajo)
 │   ├── firebaseAdmin.js   inicializa Firebase Admin SDK (requiere serviceAccountKey.json)
@@ -152,7 +156,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | POST | `/api/alertas` | Crear alerta `{ billetera_id, condicion, valor_objetivo }` |
 | PATCH | `/api/alertas/:id` | Activar/pausar alerta `{ activa: true/false }` |
 | DELETE | `/api/alertas/:id` | Eliminar alerta |
-| GET | `/api/historial` | Historial de consultas del usuario |
+| GET | `/api/historial?page=1&limit=10` | Historial de consultas del usuario, paginado real (`LIMIT`/`OFFSET` en la DB). Devuelve `{ resultados, page, limit, total, totalPages }` |
 | POST | `/api/historial` | Guardar consulta `{ monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars }` |
 | GET | `/api/favoritos` | Billeteras favoritas del usuario (solo activas) |
 | POST | `/api/favoritos` | Agregar favorito `{ billetera_id }` — INSERT IGNORE (no duplica) |
@@ -235,6 +239,15 @@ const { headers: extraHeaders, ...rest } = options;
 fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, ...rest });
 ```
 
+### Paginado real — historial de consultas (rúbrica 3.5)
+
+`GET /api/historial` acepta `?page=&limit=` y resuelve el recorte en la DB con `LIMIT ? OFFSET ?` (más un `SELECT COUNT(*)` para el total), en vez de traer todo y cortar en el cliente. Devuelve `{ resultados, page, limit, total, totalPages }`.
+
+- **`HistoryScreen`** — pide de a 10 y agrega un botón "Cargar más" como `ListFooterComponent` del `FlatList`, que pide la siguiente página y la anexa al array existente. El botón desaparece solo cuando `page >= totalPages`.
+- **`HomeScreen`** y **`ProfileScreen`** (que solo necesitan las últimas 3 consultas) piden `getHistorial(apiToken, 1, 3)` directo, sin traer de más y cortar con `.slice()`.
+- El endpoint `/api/cotizaciones/historial` (evolución de tasa por billetera en `WalletProfileScreen`) **no** está paginado — sigue con `LIMIT 30` fijo a propósito, para no duplicar la misma feature en dos pantallas.
+- Seeder de prueba: `server/scripts/seed-historial-usuario.js [email] [cantidad]` — agrega N consultas de prueba al historial de un usuario existente (busca el `usuario_id` por email, distribuye entre las billeteras activas, fechas escalonadas).
+
 ---
 
 ## Pantallas (23 implementadas)
@@ -274,7 +287,7 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 ### Perfil
 - **ProfileScreen** — muestra nombre/email/inicial del usuario Firebase real. Carga últimas 3 consultas desde API con `useFocusEffect`. Link a historial completo.
 - **EditProfileScreen** — edición de nombre e info
-- **HistoryScreen** — historial de consultas desde API con `useFocusEffect`
+- **HistoryScreen** — historial de consultas desde API con `useFocusEffect`, paginado real de a 10 con botón "Cargar más"
 - **SettingsScreen** — toggles de notificaciones, idioma, tema
 - **FavoritesScreen** — favoritos reales del usuario desde API con `useFocusEffect`. Quitar favorito persiste en BD con confirmación. Estado vacío cuando no hay favoritos.
 
@@ -402,38 +415,15 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 - [x] **Reseñas** — `POST /api/resenas` implementado. `WalletProfileScreen` muestra reseñas reales y permite crear nuevas con form inline (estrellas + comentario). Rating se recalcula automáticamente en BD.
 - [x] **Gráfico de historial de cotizaciones** — sección "Evolución de la tasa" en `WalletProfileScreen` con gráfico de barras puro (sin librerías). Consume `GET /api/cotizaciones/historial`.
 
-### Notificaciones
-- [ ] `PushNotificationScreen` es un mockup estático — las alertas no disparan notificaciones reales cuando la app está cerrada. El polling actual solo funciona con la app abierta.
-
 ### UX / navegación
 - [x] `WalletDetailScreen` eliminada del stack — removida de `AppNavigator.js` (import + `Stack.Screen`). El archivo queda en disco por si se necesita.
 - [x] `WalletCompareScreen` ya tenía dos entry points (ícono en header de `WalletsScreen` + ícono/chip "Comparar 2" en `ResultsScreen`). Fix: ahora recibe `route` y pre-selecciona `initialWallet1` / `initialWallet2` cuando viene desde `ResultsScreen`.
 
-### Diseño / Figma
-
-El archivo Figma tiene 3 páginas: **Pantallas**, **Componentes**, **Bases**.
-Link: `https://www.figma.com/design/Hmg85ALG6apYw9dMgdTDZX/TP-Integrador---Módulo-4---Piel-Visual`
-
-Cambios pendientes de reflejar en Figma:
-
-#### Página "Pantallas"
-- [x] **WalletProfileScreen** — actualizado: frame extendido a 1220px. Agregado: ☆ favorito en header, rating "★ 4.8 · 124 reseñas" en hero, sección "Evolución de la tasa" con gráfico de barras (8 puntos, última barra azul sólida, rango y fechas), sección "Opiniones" con 2 review cards reales (avatar, nombre, estrellas doradas, fecha, comentario) + link "+ Escribir reseña", form inline "Tu reseña" con selector 5 estrellas + input + botón Enviar.
-- [x] **OnboardingScreen** — actualizado: 3 frames (Slide 1 azul, Slide 2 verde, Slide 3 naranja). Layout: mitad superior con fondo suave + tarjeta cuadrada (borderRadius 40); mitad inferior con badge, título Extra Bold 30px, subtítulo gris 15px. Dots coloreados según slide activo, botón "COMENZAR" full-width en slide 3.
-- [x] **BottomNav** — actualizado en HomeScreen + frame "BottomNav-Component" con 2 estados (Home activo / Wallets activo). Pill: 48×36 borderRadius 18 fill #eff6ff, ícono activo azul #3b82f6, inactivo gris #adb5bd, sin labels.
-- [x] **ResultsScreen** — card ganadora actualizada: botón outline "Ver detalles" (→ WalletProfile) + botón azul "Ir a Mercado Pago →" (→ ExternalRedirectModal). Cards restantes mantienen "Ver mas >".
-- [x] **WalletCompareScreen** — verificado: diseño ya es correcto (pickers, tabla, banner ganador, botón). Los cambios (API activas + route params pre-selección) son lógica interna, sin impacto visual.
-
-#### Página "Componentes"
-- [x] `BottomNav` agregado como componente con 2 estados (Home-Active, Wallets-Active). Pill 48×36 r=18 fill #eff6ff.
-- [x] `ExternalRedirectModal` agregado: overlay oscuro + card con avatar, título, body, botones Cancelar / Continuar →.
-- [ ] `NumericKeyboard` — existe como frame en Pantallas/Extras (11-NumericKeyboardScreen), no como componente reutilizable en Componentes.
-
-#### Página "Bases"
-- [x] Design system completo agregado: 13 colores con swatches 56×56px (Primary → Divider), 6 niveles tipográficos (Display 30px Bold → Tiny 10px Regular) con nota descriptiva al lado, escala de espaciado 4px–48px alineados al fondo, 6 border radius con cajas de ejemplo (4 / 8 / 12 / 16 / 18 / 50%). Layout en 4 secciones verticales separadas por dividers, sin superposición.
-
-### Exposición en notebook
-- [ ] Instalar Node.js 22, MySQL 8, MySQL Workbench, Android Studio
-- [ ] Copiar proyecto, importar BD con los scripts SQL, configurar `.env`
-- [ ] Copiar `serviceAccountKey.json` en `server/` para habilitar Firebase Admin
-- [ ] Cambiar `API_BASE_URL` en `api.js` si se usa celular físico
-- [ ] Verificar que Metro + servidor corren bien antes de la expo
+### Gaps detectados contra la rúbrica (autoevaluación)
+- [x] Paginado real en historial de consultas — `GET /api/historial?page=&limit=` + botón "Cargar más" en `HistoryScreen` (rúbrica 3.5)
+- [ ] Transacciones/rollback en operaciones multi-paso — ej. envolver el INSERT + UPDATE de `POST /api/resenas` en `beginTransaction`/`COMMIT`/`ROLLBACK` (rúbrica 4.3, vale 3 pts)
+- [ ] Separar capa de negocio/datos en al menos 2-3 rutas críticas (alertas, reseñas) para mostrar arquitectura en capas (rúbrica 2.3, vale 4 pts de los 7)
+- [ ] Filtro por 2 parámetros resuelto en la API — ej. `GET /api/billeteras?nombre=&pais=` en vez del filtro client-side actual de `WalletsScreen` (rúbrica 3.4, vale 3 pts)
+- [ ] Rol de usuario real en BD — reemplazar `X-Admin-Key` compartida por un rol asignado a la cuenta del admin (rúbrica 5.2, vale 1.5 pts)
+- [ ] Columna de auditoría `modificado_por` en tablas clave (ej. `billeteras`, `cotizaciones`), seteada desde el panel admin (rúbrica 1.5, vale 2.5 pts)
+- [ ] Confirmar con el profesor si "API .NET 10 / ADO.NET" (rúbrica 2.1 y 2.5) es un requisito duro o un ejemplo genérico de la planilla — Node.js/Express no se puede migrar a último momento

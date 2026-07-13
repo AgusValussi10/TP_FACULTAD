@@ -199,7 +199,7 @@ La URL en `src/services/api.js` debe ser `http://localhost:3000` (valor por defe
 | POST | `/api/alertas` | Crear alerta `{ billetera_id, condicion, valor_objetivo }` |
 | PATCH | `/api/alertas/:id` | Activar/pausar alerta `{ activa: true/false }` |
 | DELETE | `/api/alertas/:id` | Eliminar alerta |
-| GET | `/api/historial` | Historial de consultas del usuario |
+| GET | `/api/historial?page=1&limit=10` | Historial de consultas del usuario, paginado real (`LIMIT`/`OFFSET` en la DB). Devuelve `{ resultados, page, limit, total, totalPages }` |
 | POST | `/api/historial` | Guardar consulta `{ monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars }` |
 | GET | `/api/favoritos` | Billeteras favoritas del usuario |
 | POST | `/api/favoritos` | Agregar favorito `{ billetera_id }` |

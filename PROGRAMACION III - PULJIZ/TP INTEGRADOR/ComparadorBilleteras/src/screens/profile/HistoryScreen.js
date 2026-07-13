@@ -83,33 +83,61 @@ function EmptyState() {
   );
 }
 
+function mapRow(r) {
+  return {
+    id: String(r.id),
+    amount: r.monto,
+    currency: r.moneda_destino,
+    country: r.moneda_destino === 'BRL' ? 'Brasil' : r.moneda_destino,
+    bestProvider: r.mejor_billetera ?? '—',
+    bestPrice: r.total_ars ?? 0,
+    date: formatFecha(r.consultado_en),
+  };
+}
+
+const PAGE_SIZE = 10;
+
 export default function HistoryScreen({ navigation }) {
   const { apiToken } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const load = useCallback(async () => {
     if (!apiToken) { setLoading(false); return; }
+    setLoading(true);
     try {
-      const rows = await getHistorial(apiToken);
-      const mapped = rows.map(r => ({
-        id: String(r.id),
-        amount: r.monto,
-        currency: r.moneda_destino,
-        country: r.moneda_destino === 'BRL' ? 'Brasil' : r.moneda_destino,
-        bestProvider: r.mejor_billetera ?? '—',
-        bestPrice: r.total_ars ?? 0,
-        date: formatFecha(r.consultado_en),
-      }));
-      setHistory(mapped);
+      const { resultados, totalPages: tp } = await getHistorial(apiToken, 1, PAGE_SIZE);
+      setHistory(resultados.map(mapRow));
+      setPage(1);
+      setTotalPages(tp);
     } catch {
       setHistory([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
   }, [apiToken]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const loadMore = async () => {
+    if (loadingMore || page >= totalPages) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const { resultados, totalPages: tp } = await getHistorial(apiToken, nextPage, PAGE_SIZE);
+      setHistory(prev => [...prev, ...resultados.map(mapRow)]);
+      setPage(nextPage);
+      setTotalPages(tp);
+    } catch {
+      // el usuario puede reintentar tocando "Cargar más" de nuevo
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleRepeat = (item) => {
     navigation.navigate('Results', {
@@ -143,6 +171,25 @@ export default function HistoryScreen({ navigation }) {
           )}
           ListEmptyComponent={<EmptyState />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListFooterComponent={
+            page < totalPages ? (
+              <TouchableOpacity
+                style={styles.loadMoreBtn}
+                onPress={loadMore}
+                activeOpacity={0.75}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Text style={styles.loadMoreText}>Cargar más</Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.primary} />
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : null
+          }
           contentContainerStyle={
             history.length === 0 ? styles.emptyContainer : styles.listContent
           }
@@ -213,4 +260,18 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  loadMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  loadMoreText: { fontSize: 13, fontWeight: '600', color: colors.primary },
 });

@@ -67,8 +67,8 @@ export default function HomeScreen({ navigation }) {
   const loadRecent = useCallback(async () => {
     if (!apiToken) return;
     try {
-      const rows = await getHistorial(apiToken);
-      setRecentQueries(rows.slice(0, 3).map(r => ({
+      const { resultados } = await getHistorial(apiToken, 1, 3);
+      setRecentQueries(resultados.map(r => ({
         id: String(r.id),
         text: `${r.monto} ${r.moneda_destino ?? 'BRL'} — ${formatFecha(r.consultado_en)}`,
         monto: r.monto,

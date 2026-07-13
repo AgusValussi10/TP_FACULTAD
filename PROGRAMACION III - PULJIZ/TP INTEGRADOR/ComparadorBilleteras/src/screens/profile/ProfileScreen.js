@@ -68,8 +68,8 @@ export default function ProfileScreen({ navigation }) {
   const loadHistory = useCallback(async () => {
     if (!apiToken) { setLoadingHistory(false); return; }
     try {
-      const rows = await getHistorial(apiToken);
-      setRecentHistory(rows.slice(0, 3).map(r => ({
+      const { resultados } = await getHistorial(apiToken, 1, 3);
+      setRecentHistory(resultados.map(r => ({
         id: String(r.id),
         amount: r.monto,
         currency: r.moneda_destino ?? 'BRL',

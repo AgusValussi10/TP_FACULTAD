@@ -22,6 +22,7 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Funcion para la pantalla de verificación de email.   
 export default function EmailVerificationScreen({ navigation, route }) {
   const email = route.params?.email ?? '';
   const [resending, setResending] = useState(false);

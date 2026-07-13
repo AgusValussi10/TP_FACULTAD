@@ -23,8 +23,8 @@ export function getCotizaciones(monto) {
   return request(`/api/cotizaciones?monto=${monto}`);
 }
 
-export function getHistorialCotizaciones(billetera_id) {
-  return request(`/api/cotizaciones/historial?billetera_id=${billetera_id}`);
+export function getHistorialCotizaciones(billetera_id, page = 1, limit = 10) {
+  return request(`/api/cotizaciones/historial?billetera_id=${billetera_id}&page=${page}&limit=${limit}`);
 }
 
 // ── Billeteras ────────────────────────────────────────────────
@@ -59,8 +59,8 @@ export function firebaseLoginBackend(idToken) {
 }
 
 // ── Historial ─────────────────────────────────────────────────
-export function getHistorial(token) {
-  return request('/api/historial', { headers: authHeaders(token) });
+export function getHistorial(token, page = 1, limit = 10) {
+  return request(`/api/historial?page=${page}&limit=${limit}`, { headers: authHeaders(token) });
 }
 
 export function saveHistorial(token, { monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars }) {

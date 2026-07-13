@@ -29,6 +29,7 @@ const colors = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Funcion para la pantalla de recuperación de contraseña.
 function getFirebaseError(code) {
   const map = {
     'auth/user-not-found': 'No existe una cuenta con este email',
