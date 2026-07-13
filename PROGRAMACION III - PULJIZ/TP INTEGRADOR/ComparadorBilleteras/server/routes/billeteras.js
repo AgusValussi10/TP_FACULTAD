@@ -1,18 +1,34 @@
 const router = require('express').Router();
 const pool = require('../db');
 
-// GET /api/billeteras
+// GET /api/billeteras?nombre=&pais=
 router.get('/', async (req, res) => {
+  const { nombre, pais } = req.query;
   try {
+    const condiciones = ['b.activa = 1'];
+    const params = [];
+    let joinPaises = '';
+
+    if (nombre) {
+      condiciones.push('b.nombre LIKE ?');
+      params.push(`%${nombre}%`);
+    }
+    if (pais) {
+      joinPaises = 'JOIN billetera_paises bp ON bp.billetera_id = b.id';
+      condiciones.push('bp.codigo_pais = ?');
+      params.push(pais.toUpperCase());
+    }
+
     const [billeteras] = await pool.query(`
-      SELECT b.id, b.nombre, b.iniciales, b.color_hex, b.descripcion,
+      SELECT DISTINCT b.id, b.nombre, b.iniciales, b.color_hex, b.descripcion,
              b.url_oficial, b.rating_promedio, b.cantidad_resenas,
              bc.comision_pct, bc.limite_diario_brl, bc.limite_mensual_brl, bc.tiempo_estimado
       FROM billeteras b
       JOIN billetera_condiciones bc ON bc.billetera_id = b.id
-      WHERE b.activa = 1
+      ${joinPaises}
+      WHERE ${condiciones.join(' AND ')}
       ORDER BY b.rating_promedio DESC
-    `);
+    `, params);
     res.json(billeteras);
   } catch (err) {
     console.error(err);

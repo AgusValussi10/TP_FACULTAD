@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { WALLETS } from '../../data/wallets';
 import BottomNav from '../../components/BottomNav';
 import { getBilleteras } from '../../services/api';
+
+const PAISES = [
+  { code: '', label: 'Todos', flag: '🌎' },
+  { code: 'AR', label: 'Argentina', flag: '🇦🇷' },
+  { code: 'BR', label: 'Brasil', flag: '🇧🇷' },
+  { code: 'UY', label: 'Uruguay', flag: '🇺🇾' },
+  { code: 'MX', label: 'México', flag: '🇲🇽' },
+  { code: 'CO', label: 'Colombia', flag: '🇨🇴' },
+];
 
 const colors = {
   primary: '#3b82f6',
@@ -80,35 +89,34 @@ function WalletItem({ wallet, onPress }) {
 
 export default function WalletsScreen({ navigation }) {
   const [query, setQuery] = useState('');
+  const [pais, setPais] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [wallets, setWallets] = useState(WALLETS);
 
   useEffect(() => {
-    getBilleteras()
-      .then(apiData => {
-        const enriched = apiData.map(w => {
-          const local = WALLETS.find(l => l.id === String(w.id)) ?? {};
-          return {
-            id: String(w.id),
-            name: w.nombre,
-            color: w.color_hex,
-            initials: w.iniciales,
-            rating: Number(w.rating_promedio),
-            ratingCount: w.cantidad_resenas,
-            countryFlags: local.countryFlags ?? ['🇦🇷', '🇧🇷'],
-            currencies: local.currencies ?? ['BRL', 'ARS'],
-          };
-        });
-        setWallets(enriched);
-      })
-      .catch(() => {});
-  }, []);
+    const timeout = setTimeout(() => {
+      getBilleteras({ nombre: query.trim(), pais })
+        .then(apiData => {
+          const enriched = apiData.map(w => {
+            const local = WALLETS.find(l => l.id === String(w.id)) ?? {};
+            return {
+              id: String(w.id),
+              name: w.nombre,
+              color: w.color_hex,
+              initials: w.iniciales,
+              rating: Number(w.rating_promedio),
+              ratingCount: w.cantidad_resenas,
+              countryFlags: local.countryFlags ?? ['🇦🇷', '🇧🇷'],
+              currencies: local.currencies ?? ['BRL', 'ARS'],
+            };
+          });
+          setWallets(enriched);
+        })
+        .catch(() => {});
+    }, 300);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return wallets;
-    return wallets.filter(w => w.name.toLowerCase().includes(q));
-  }, [query, wallets]);
+    return () => clearTimeout(timeout);
+  }, [query, pais]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -151,8 +159,30 @@ export default function WalletsScreen({ navigation }) {
         </View>
       </View>
 
+      <View style={styles.paisesWrapper}>
+        <FlatList
+          data={PAISES}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={item => item.code || 'todos'}
+          contentContainerStyle={styles.paisesList}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.paisChip, pais === item.code && styles.paisChipActive]}
+              onPress={() => setPais(item.code)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.paisChipFlag}>{item.flag}</Text>
+              <Text style={[styles.paisChipText, pais === item.code && styles.paisChipTextActive]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+
       <FlatList
-        data={filtered}
+        data={wallets}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
           <WalletItem
@@ -225,6 +255,43 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: colors.textPrimary,
+  },
+  paisesWrapper: {
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    paddingVertical: 10,
+  },
+  paisesList: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  paisChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginRight: 8,
+  },
+  paisChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  paisChipFlag: {
+    fontSize: 14,
+  },
+  paisChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  paisChipTextActive: {
+    color: '#ffffff',
   },
   list: {
     paddingHorizontal: 20,

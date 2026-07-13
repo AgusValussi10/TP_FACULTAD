@@ -8,13 +8,13 @@ App mobile (React Native + Expo SDK 54) para usuarios argentinos que viajan a Br
 
 ## Criterios de evaluación del TP
 
-Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 86.25/100.**
+Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 89.25/100.**
 
 | Criterio | Pts | Estimado | Estado |
 |---|---|---|---|
 | 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | 23.5 | 🟢 11 tablas + N-N real (`favoritos`); auditoría por usuario resuelta — `billeteras` y `cotizaciones` tienen `modificado_por` (+ `actualizado_en` en `billeteras`), completado desde el panel admin |
 | 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | 24.5 | 🟢 Arquitectura en 3 capas (routes/services/repositories) aplicada en `resenas` y `alertas`; falta extenderla al resto de las rutas. La rúbrica nombra "API .NET 10 / ADO.NET" — confirmar con el profesor si el stack Node/Express es válido |
-| 3. UI e integración con la API | 20 | 17 | 🟢 Paginado real en Historial (`GET /api/historial?page=&limit=`); falta filtro por 2 parámetros resuelto en la API (el buscador de `WalletsScreen` sigue siendo client-side) |
+| 3. UI e integración con la API | 20 | 20 | 🟢 Paginado real en Historial (`GET /api/historial?page=&limit=`); filtro por 2 parámetros resuelto en la API — `GET /api/billeteras?nombre=&pais=` con WHERE dinámico en SQL, reemplazando el filtro client-side de `WalletsScreen` |
 | 4. Operaciones maestro-detalle | 10 | 8 | 🟢 Transacción real en `POST /api/resenas` (`beginTransaction`/`COMMIT`/`ROLLBACK` envolviendo INSERT + UPDATE de rating); falta cubrir ABM cabecera+detalle más estricto (x3) |
 | 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | 9 | 🟢 JWT y rutas protegidas OK; panel admin con login real contra tabla `admin_usuarios` (rol `admin` en el JWT) reemplazando la clave compartida `X-Admin-Key` |
 | 6. Documentación técnica | 5 | 4.25 | 🟢 README completo; falta Swagger/OpenAPI o colección Postman |
@@ -149,7 +149,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 |---|---|---|
 | GET | `/api/cotizaciones?monto=500` | Ranking de billeteras para el monto dado |
 | GET | `/api/cotizaciones/historial?billetera_id=1` | Historial de tasas de una billetera |
-| GET | `/api/billeteras` | Listado de todas las billeteras |
+| GET | `/api/billeteras?nombre=&pais=` | Listado de billeteras, con filtro opcional por nombre (`LIKE`) y por país (`codigo_pais` vía `billetera_paises`), resuelto en SQL |
 | GET | `/api/billeteras/:id` | Detalle completo de una billetera |
 | POST | `/api/auth/register` | Crear cuenta `{ nombre, email, password }` |
 | POST | `/api/auth/login` | Login → devuelve JWT `{ token, usuario }` |
@@ -444,7 +444,7 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 - [x] Paginado real en historial de consultas — `GET /api/historial?page=&limit=` + botón "Cargar más" en `HistoryScreen` (rúbrica 3.5)
 - [x] Transacciones/rollback en operaciones multi-paso — `resenasService.crearResena()` envuelve el INSERT + UPDATE de `POST /api/resenas` en `beginTransaction`/`COMMIT`/`ROLLBACK` (rúbrica 4.3)
 - [x] Separar capa de negocio/datos en rutas críticas — `resenas` y `alertas` ahora tienen `routes/` (controller fino) → `services/` (validación + orquestación) → `repositories/` (SQL). Verificado end-to-end contra la DB real. Falta extender el patrón al resto de las rutas para el puntaje completo de 2.3 (rúbrica 2.3, quedan ~2 pts de los 7)
-- [ ] Filtro por 2 parámetros resuelto en la API — ej. `GET /api/billeteras?nombre=&pais=` en vez del filtro client-side actual de `WalletsScreen` (rúbrica 3.4, vale 3 pts)
+- [x] Filtro por 2 parámetros resuelto en la API — `GET /api/billeteras?nombre=&pais=` con WHERE dinámico en SQL (LIKE por nombre + JOIN/igualdad por `codigo_pais`), reemplazando el filtro client-side de `WalletsScreen` (rúbrica 3.4)
 - [x] Rol de usuario real en BD — login del panel admin contra tabla `admin_usuarios` (`fabri`/`agus`) con JWT `rol: 'admin'`, reemplaza `X-Admin-Key` (rúbrica 5.2)
 - [x] Columna de auditoría `modificado_por` en `billeteras` (+ `actualizado_en`) y `cotizaciones`, seteada automáticamente desde el panel admin con el usuario logueado (rúbrica 1.5)
 - [ ] Confirmar con el profesor si "API .NET 10 / ADO.NET" (rúbrica 2.1 y 2.5) es un requisito duro o un ejemplo genérico de la planilla — Node.js/Express no se puede migrar a último momento

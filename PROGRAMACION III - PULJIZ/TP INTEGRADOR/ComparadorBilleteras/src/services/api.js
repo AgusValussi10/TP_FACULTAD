@@ -28,8 +28,12 @@ export function getHistorialCotizaciones(billetera_id, page = 1, limit = 10) {
 }
 
 // ── Billeteras ────────────────────────────────────────────────
-export function getBilleteras() {
-  return request('/api/billeteras');
+export function getBilleteras(filtros = {}) {
+  const params = new URLSearchParams();
+  if (filtros.nombre) params.set('nombre', filtros.nombre);
+  if (filtros.pais) params.set('pais', filtros.pais);
+  const qs = params.toString();
+  return request(`/api/billeteras${qs ? `?${qs}` : ''}`);
 }
 
 export function getBilletera(id) {
