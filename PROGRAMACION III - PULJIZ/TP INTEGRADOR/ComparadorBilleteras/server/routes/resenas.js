@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth');
 const { validarResena, crearResena } = require('../services/resenasService');
-
+  
 // Endpoint que crea una reseña nueva y recalcula el rating de la billetera (transacción en el service)
 router.post('/', auth, async (req, res) => {
   const { billetera_id, calificacion, comentario } = req.body;
