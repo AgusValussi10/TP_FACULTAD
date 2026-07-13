@@ -6,6 +6,14 @@
 USE brasilpagos;
 
 -- =============================================================
+--  admin_usuarios (las dos únicas cuentas del panel admin)
+--  Contraseña de ambas: "admin" (hasheada con bcrypt, salt rounds 10)
+-- =============================================================
+INSERT INTO admin_usuarios (usuario, password_hash, nombre_visible) VALUES
+('fabri', '$2b$10$eAzB06w8R0upl.ZFyHBO9eGUo5JyfHLlwN8t4U7S017fnMVX7IlQq', 'Fabri'),
+('agus',  '$2b$10$hwEMzMmKrk5ZTyGMOO6Nt.ccxecd49SfUpCxcHJRg3DlCNkjANo9e', 'Agus');
+
+-- =============================================================
 --  billeteras
 -- =============================================================
 INSERT INTO billeteras (id, nombre, iniciales, color_hex, descripcion, url_oficial, rating_promedio, cantidad_resenas) VALUES

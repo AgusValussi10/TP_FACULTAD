@@ -128,6 +128,35 @@
     }
     .btn-refresh:hover { background: #e2e8f0; }
 
+    /* Login */
+    .login-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #f1f5f9;
+    }
+    .login-box {
+      background: white; border-radius: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 40px 36px; width: 320px; text-align: center;
+    }
+    .login-box h1 { font-size: 20px; font-weight: 800; color: #3b82f6; margin-bottom: 4px; }
+    .login-box p { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    .login-box input {
+      width: 100%; padding: 12px 14px; border-radius: 10px;
+      border: 1.5px solid #e2e8f0; font-size: 14px; margin-bottom: 12px;
+      background: #f8fafc;
+    }
+    .login-box input:focus { outline: none; border-color: #3b82f6; background: white; }
+    .login-error { margin-top: 14px; font-size: 13px; color: #dc2626; min-height: 16px; }
+
+    /* Sesión admin (header) */
+    .admin-session { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+    .admin-session span { font-size: 13px; opacity: 0.9; }
+    .btn-logout {
+      padding: 7px 14px; background: rgba(255,255,255,0.15); color: white;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.25); }
+
     /* Misc */
     .actions { display: flex; gap: 8px; white-space: nowrap; }
     .badge-count {
@@ -232,10 +261,29 @@
 </head>
 <body>
 
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h1>BrasilPagos</h1>
+    <p>Panel Admin</p>
+    <input type="text" id="loginUsuario" placeholder="Usuario" autocomplete="username"
+      onkeydown="if(event.key==='Enter') document.getElementById('loginPassword').focus()"/>
+    <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') hacerLogin()"/>
+    <button class="btn-primary btn-full" onclick="hacerLogin()">INGRESAR</button>
+    <p class="login-error" id="loginError"></p>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+
 <header>
   <div>
     <h1>BrasilPagos — Panel Admin</h1>
     <span id="lastRefresh"></span>
+  </div>
+  <div class="admin-session">
+    <span id="adminNombreLabel"></span>
+    <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
   </div>
 </header>
 
@@ -346,10 +394,11 @@
             <th>Comisión</th>
             <th>Rating</th>
             <th style="width:130px">Visible en app</th>
+            <th style="width:150px">Modificado por</th>
           </tr>
         </thead>
         <tbody id="billeterasTable">
-          <tr><td colspan="7" class="empty">Cargando...</td></tr>
+          <tr><td colspan="8" class="empty">Cargando...</td></tr>
         </tbody>
       </table>
     </div>
@@ -438,9 +487,17 @@
   </div>
 </div>
 
+</div><!-- /app -->
+
 <script>
-  const API       = 'http://localhost:3000/api';
-  const ADMIN_KEY = 'brasilpagos_secret_2026';
+  const API = 'http://localhost:3000/api';
+
+  let adminToken  = localStorage.getItem('adminToken')  || null;
+  let adminNombre = localStorage.getItem('adminNombre') || null;
+
+  function authHeaders(extra) {
+    return { Authorization: 'Bearer ' + adminToken, ...(extra || {}) };
+  }
 
   const COLORS = {
     'Mercado Pago':'#00b1ea','Ualá':'#7c3aed','Bimo':'#f59e0b',
@@ -451,6 +508,53 @@
 
   let billeteras = [];
   let usuarios   = [];
+
+  // ── Sesión / login ──────────────────────────────────────────────────────────
+
+  async function hacerLogin() {
+    const usuario  = document.getElementById('loginUsuario').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorEl  = document.getElementById('loginError');
+    errorEl.textContent = '';
+    if (!usuario || !password) { errorEl.textContent = 'Completá usuario y contraseña'; return; }
+
+    try {
+      const res  = await fetch(`${API}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errorEl.textContent = data.error || 'No se pudo iniciar sesión'; return; }
+
+      adminToken  = data.token;
+      adminNombre = data.nombreVisible;
+      localStorage.setItem('adminToken', adminToken);
+      localStorage.setItem('adminNombre', adminNombre);
+      mostrarApp();
+    } catch {
+      errorEl.textContent = 'No se pudo conectar con el servidor';
+    }
+  }
+
+  function cerrarSesion() {
+    adminToken = null;
+    adminNombre = null;
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminNombre');
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+
+  function mostrarApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('adminNombreLabel').textContent = 'Conectado como: ' + adminNombre;
+    cargarDashboard();
+  }
+
+  if (adminToken) mostrarApp();
 
   // ── Tabs ────────────────────────────────────────────────────────────────────
 
@@ -471,9 +575,10 @@
   async function cargarDashboard() {
     try {
       const [statsRes, ratesRes] = await Promise.all([
-        fetch(`${API}/admin/stats`,        { headers: { 'X-Admin-Key': ADMIN_KEY } }),
+        fetch(`${API}/admin/stats`,        { headers: authHeaders() }),
         fetch(`${API}/cotizaciones?monto=1`),
       ]);
+      if (statsRes.status === 401 || statsRes.status === 403) { cerrarSesion(); return; }
       const stats = await statsRes.json();
       const rates = await ratesRes.json();
 
@@ -545,7 +650,7 @@
     try {
       const res  = await fetch(`${API}/cotizaciones`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ tasas }),
       });
       const data = await res.json();
@@ -566,12 +671,13 @@
 
   async function cargarBilleterasTab() {
     document.getElementById('billeterasTable').innerHTML =
-      '<tr><td colspan="7" class="empty">Cargando...</td></tr>';
+      '<tr><td colspan="8" class="empty">Cargando...</td></tr>';
     try {
       const [billRes, ratesRes] = await Promise.all([
-        fetch(`${API}/admin/billeteras`, { headers: { 'X-Admin-Key': ADMIN_KEY } }),
+        fetch(`${API}/admin/billeteras`, { headers: authHeaders() }),
         fetch(`${API}/cotizaciones?monto=1`),
       ]);
+      if (billRes.status === 401 || billRes.status === 403) { cerrarSesion(); return; }
       const bills  = await billRes.json();
       const rates  = await ratesRes.json();
       const rateMap = {};
@@ -615,6 +721,11 @@
                 <span class="toggle-label" id="tlabel_${b.id}">${activa ? 'Visible' : 'Oculta'}</span>
               </div>
             </td>
+            <td id="modby_${b.id}">
+              ${b.modificado_por
+                ? `<div>${esc(b.modificado_por)}</div><div class="small-date">${new Date(b.actualizado_en).toLocaleString('es-AR')}</div>`
+                : '<span style="color:#94a3b8">—</span>'}
+            </td>
           </tr>
         `;
       }).join('');
@@ -629,25 +740,33 @@
     try {
       const res  = await fetch(`${API}/admin/billeteras/${id}/rating`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ rating_promedio: val }),
       });
       const data = await res.json();
-      if (res.ok) toast('✓ Rating actualizado', true);
+      if (res.ok) { toast('✓ Rating actualizado', true); marcarModificadoPor(id); }
       else toast(data.error || 'Error al guardar', false);
     } catch { toast('No se pudo conectar', false); }
+  }
+
+  function marcarModificadoPor(id) {
+    const cell = document.getElementById(`modby_${id}`);
+    if (cell) {
+      cell.innerHTML = `<div>${esc(adminNombre)}</div><div class="small-date">${new Date().toLocaleString('es-AR')}</div>`;
+    }
   }
 
   async function toggleBilletera(id, checkbox) {
     try {
       const res  = await fetch(`${API}/admin/billeteras/${id}/toggle`, {
-        method: 'PATCH', headers: { 'X-Admin-Key': ADMIN_KEY },
+        method: 'PATCH', headers: authHeaders(),
       });
       const data = await res.json();
       if (res.ok) {
         const label = document.getElementById(`tlabel_${id}`);
         label.textContent = data.activa ? 'Visible' : 'Oculta';
         toast(data.activa ? '✓ Billetera visible en la app' : '✓ Billetera oculta de la app', true);
+        marcarModificadoPor(id);
       } else {
         checkbox.checked = !checkbox.checked;
         toast(data.error || 'Error al actualizar', false);
@@ -701,7 +820,7 @@
     try {
       const res  = await fetch(`${API}/admin/usuarios`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ nombre, email, password, pais_residencia: pais }),
       });
       const data = await res.json();
@@ -729,7 +848,8 @@
     document.getElementById('usersTable').innerHTML =
       '<tr><td colspan="7" class="empty">Cargando...</td></tr>';
     try {
-      const res = await fetch(`${API}/admin/firebase-usuarios`, { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetch(`${API}/admin/firebase-usuarios`, { headers: authHeaders() });
+      if (res.status === 401 || res.status === 403) { cerrarSesion(); return; }
       if (!res.ok) {
         const err = await res.json();
         document.getElementById('usersTable').innerHTML =
@@ -820,7 +940,7 @@
     try {
       const res = await fetch(`${API}/admin/usuarios/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ nombre, email, pais_residencia: null }),
       });
       const data = await res.json();
@@ -834,7 +954,7 @@
     try {
       const res  = await fetch(`${API}/admin/sincronizar-usuario`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ email, nombre }),
       });
       const data = await res.json();
@@ -858,7 +978,7 @@
     cerrarConfirm();
     try {
       const res  = await fetch(`${API}/admin/usuarios/${id}`, {
-        method: 'DELETE', headers: { 'X-Admin-Key': ADMIN_KEY },
+        method: 'DELETE', headers: authHeaders(),
       });
       const data = await res.json();
       if (res.ok) { toast('✓ ' + data.message, true); await cargarUsuarios(); }
@@ -895,8 +1015,6 @@
       .replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // Carga inicial
-  cargarDashboard();
 </script>
 </body>
 </html>

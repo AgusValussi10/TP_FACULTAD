@@ -1,16 +1,40 @@
-const router      = require('express').Router();
-const pool        = require('../db');
+const router        = require('express').Router();
+const pool          = require('../db');
+const bcrypt        = require('bcryptjs');
+const jwt           = require('jsonwebtoken');
 const firebaseAdmin = require('../firebaseAdmin');
+const checkAdminAuth = require('../middleware/adminAuth');
 
-function checkAdminKey(req, res, next) {
-  if (req.headers['x-admin-key'] !== process.env.JWT_SECRET) {
-    return res.status(403).json({ error: 'Acceso denegado' });
+// POST /api/admin/login  (usuario/password de admin_usuarios → JWT de admin)
+router.post('/login', async (req, res) => {
+  const { usuario, password } = req.body;
+  if (!usuario || !password) {
+    return res.status(400).json({ error: 'usuario y password son requeridos' });
   }
-  next();
-}
+  try {
+    const [rows] = await pool.query('SELECT * FROM admin_usuarios WHERE usuario = ?', [usuario]);
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+    const admin = rows[0];
+    const ok = await bcrypt.compare(password, admin.password_hash);
+    if (!ok) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+    const token = jwt.sign(
+      { adminUsuario: admin.usuario, rol: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+    res.json({ token, adminUsuario: admin.usuario, nombreVisible: admin.nombre_visible });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
 
 // GET /api/admin/stats
-router.get('/stats', checkAdminKey, async (req, res) => {
+router.get('/stats', checkAdminAuth, async (req, res) => {
   try {
     const [[{ usuarios }]]  = await pool.query('SELECT COUNT(*) as usuarios FROM usuarios');
     const [[{ billeteras }]]= await pool.query('SELECT COUNT(*) as billeteras FROM billeteras');
@@ -27,7 +51,7 @@ router.get('/stats', checkAdminKey, async (req, res) => {
 });
 
 // GET /api/admin/usuarios
-router.get('/usuarios', checkAdminKey, async (req, res) => {
+router.get('/usuarios', checkAdminAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT id, nombre, email, pais_residencia, moneda_base, creado_en FROM usuarios ORDER BY creado_en DESC'
@@ -40,7 +64,7 @@ router.get('/usuarios', checkAdminKey, async (req, res) => {
 });
 
 // POST /api/admin/usuarios  (crear nuevo en MySQL + Firebase)
-router.post('/usuarios', checkAdminKey, async (req, res) => {
+router.post('/usuarios', checkAdminAuth, async (req, res) => {
   const { nombre, email, password, pais_residencia } = req.body;
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'nombre, email y password son requeridos' });
@@ -77,7 +101,6 @@ router.post('/usuarios', checkAdminKey, async (req, res) => {
     }
 
     // Crear en MySQL
-    const bcrypt = require('bcryptjs');
     const hash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
       'INSERT INTO usuarios (nombre, email, password_hash, pais_residencia) VALUES (?, ?, ?, ?)',
@@ -96,7 +119,7 @@ router.post('/usuarios', checkAdminKey, async (req, res) => {
 });
 
 // PUT /api/admin/usuarios/:id
-router.put('/usuarios/:id', checkAdminKey, async (req, res) => {
+router.put('/usuarios/:id', checkAdminAuth, async (req, res) => {
   const { nombre, email, pais_residencia } = req.body;
   const { id } = req.params;
   if (!nombre || !email) {
@@ -136,7 +159,7 @@ router.put('/usuarios/:id', checkAdminKey, async (req, res) => {
 });
 
 // DELETE /api/admin/usuarios/:id
-router.delete('/usuarios/:id', checkAdminKey, async (req, res) => {
+router.delete('/usuarios/:id', checkAdminAuth, async (req, res) => {
   try {
     const [[usuario]] = await pool.query('SELECT email FROM usuarios WHERE id = ?', [req.params.id]);
     if (!usuario) {
@@ -168,11 +191,12 @@ router.delete('/usuarios/:id', checkAdminKey, async (req, res) => {
 });
 
 // GET /api/admin/billeteras  (todas, sin filtrar activa)
-router.get('/billeteras', checkAdminKey, async (req, res) => {
+router.get('/billeteras', checkAdminAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT b.id, b.nombre, b.iniciales, b.color_hex, b.activa,
              b.rating_promedio, b.cantidad_resenas,
+             b.actualizado_en, b.modificado_por,
              bc.comision_pct
       FROM billeteras b
       LEFT JOIN billetera_condiciones bc ON bc.billetera_id = b.id
@@ -186,7 +210,7 @@ router.get('/billeteras', checkAdminKey, async (req, res) => {
 });
 
 // PUT /api/admin/billeteras/:id/rating
-router.put('/billeteras/:id/rating', checkAdminKey, async (req, res) => {
+router.put('/billeteras/:id/rating', checkAdminAuth, async (req, res) => {
   const { rating_promedio, cantidad_resenas } = req.body;
   if (rating_promedio == null) return res.status(400).json({ error: 'rating_promedio es requerido' });
   const rating = parseFloat(rating_promedio);
@@ -195,8 +219,8 @@ router.put('/billeteras/:id/rating', checkAdminKey, async (req, res) => {
   }
   try {
     const [result] = await pool.query(
-      'UPDATE billeteras SET rating_promedio = ?, cantidad_resenas = ? WHERE id = ?',
-      [rating.toFixed(1), cantidad_resenas || 0, req.params.id]
+      'UPDATE billeteras SET rating_promedio = ?, cantidad_resenas = ?, modificado_por = ? WHERE id = ?',
+      [rating.toFixed(1), cantidad_resenas || 0, req.adminUsuario, req.params.id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Billetera no encontrada' });
     res.json({ message: 'Rating actualizado' });
@@ -207,12 +231,15 @@ router.put('/billeteras/:id/rating', checkAdminKey, async (req, res) => {
 });
 
 // PATCH /api/admin/billeteras/:id/toggle
-router.patch('/billeteras/:id/toggle', checkAdminKey, async (req, res) => {
+router.patch('/billeteras/:id/toggle', checkAdminAuth, async (req, res) => {
   try {
     const [[b]] = await pool.query('SELECT activa FROM billeteras WHERE id = ?', [req.params.id]);
     if (!b) return res.status(404).json({ error: 'Billetera no encontrada' });
     const nuevo = b.activa ? 0 : 1;
-    await pool.query('UPDATE billeteras SET activa = ? WHERE id = ?', [nuevo, req.params.id]);
+    await pool.query(
+      'UPDATE billeteras SET activa = ?, modificado_por = ? WHERE id = ?',
+      [nuevo, req.adminUsuario, req.params.id]
+    );
     res.json({ activa: nuevo });
   } catch (err) {
     console.error(err);
@@ -222,7 +249,7 @@ router.patch('/billeteras/:id/toggle', checkAdminKey, async (req, res) => {
 
 // GET /api/admin/firebase-usuarios
 // Devuelve todos los usuarios de Firebase Auth + marca cuáles tienen cuenta MySQL
-router.get('/firebase-usuarios', checkAdminKey, async (req, res) => {
+router.get('/firebase-usuarios', checkAdminAuth, async (req, res) => {
   if (!firebaseAdmin) {
     return res.status(503).json({ error: 'Firebase Admin no configurado (falta serviceAccountKey.json)' });
   }
@@ -290,7 +317,7 @@ router.get('/firebase-usuarios', checkAdminKey, async (req, res) => {
 
 // POST /api/admin/sincronizar-usuario
 // Crea el registro MySQL para un usuario que solo existe en Firebase
-router.post('/sincronizar-usuario', checkAdminKey, async (req, res) => {
+router.post('/sincronizar-usuario', checkAdminAuth, async (req, res) => {
   const { email, nombre } = req.body;
   if (!email) return res.status(400).json({ error: 'email es requerido' });
   try {
@@ -298,7 +325,6 @@ router.post('/sincronizar-usuario', checkAdminKey, async (req, res) => {
     if (existing.length > 0) {
       return res.status(409).json({ error: 'El usuario ya existe en MySQL' });
     }
-    const bcrypt = require('bcryptjs');
     const placeholderHash = await bcrypt.hash(Math.random().toString(36), 10);
     const [result] = await pool.query(
       'INSERT INTO usuarios (nombre, email, password_hash) VALUES (?, ?, ?)',

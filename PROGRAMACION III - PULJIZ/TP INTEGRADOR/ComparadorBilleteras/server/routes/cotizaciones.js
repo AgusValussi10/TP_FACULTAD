@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const checkAdminAuth = require('../middleware/adminAuth');
 
 // GET /api/cotizaciones?monto=500
 // Devuelve el ranking de billeteras ordenado por mejor cotización
@@ -61,20 +62,17 @@ router.get('/historial', async (req, res) => {
   }
 });
 
-// POST /api/cotizaciones  (solo admin — usa header X-Admin-Key)
+// POST /api/cotizaciones  (solo admin — requiere JWT de admin_usuarios)
 // Body: { tasas: [ { billetera_id, tasa }, ... ] }
-router.post('/', async (req, res) => {
-  if (req.headers['x-admin-key'] !== process.env.JWT_SECRET) {
-    return res.status(403).json({ error: 'No autorizado' });
-  }
+router.post('/', checkAdminAuth, async (req, res) => {
   const { tasas } = req.body;
   if (!Array.isArray(tasas) || tasas.length === 0) {
     return res.status(400).json({ error: 'tasas debe ser un array no vacío' });
   }
   try {
-    const values = tasas.map(t => [t.billetera_id, 'ARS', 'BRL', t.tasa]);
+    const values = tasas.map(t => [t.billetera_id, 'ARS', 'BRL', t.tasa, req.adminUsuario]);
     await pool.query(
-      'INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa) VALUES ?',
+      'INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, modificado_por) VALUES ?',
       [values]
     );
     res.status(201).json({ message: `${tasas.length} cotizaciones registradas` });

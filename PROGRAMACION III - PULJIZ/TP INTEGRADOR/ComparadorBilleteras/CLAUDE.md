@@ -8,15 +8,15 @@ App mobile (React Native + Expo SDK 54) para usuarios argentinos que viajan a Br
 
 ## Criterios de evaluación del TP
 
-Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 77.25/100.**
+Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 86.25/100.**
 
 | Criterio | Pts | Estimado | Estado |
 |---|---|---|---|
-| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | 21 | 🟡 11 tablas + N-N real (`favoritos`); falta auditoría por usuario (solo hay `creado_en`/`actualizado_en`, no `modificado_por`) |
-| 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | 22.5 | 🟡 Falta separar capa de negocio/datos (todo vive en `routes/*.js`). La rúbrica nombra "API .NET 10 / ADO.NET" — confirmar con el profesor si el stack Node/Express es válido |
+| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | 23.5 | 🟢 11 tablas + N-N real (`favoritos`); auditoría por usuario resuelta — `billeteras` y `cotizaciones` tienen `modificado_por` (+ `actualizado_en` en `billeteras`), completado desde el panel admin |
+| 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | 24.5 | 🟢 Arquitectura en 3 capas (routes/services/repositories) aplicada en `resenas` y `alertas`; falta extenderla al resto de las rutas. La rúbrica nombra "API .NET 10 / ADO.NET" — confirmar con el profesor si el stack Node/Express es válido |
 | 3. UI e integración con la API | 20 | 17 | 🟢 Paginado real en Historial (`GET /api/historial?page=&limit=`); falta filtro por 2 parámetros resuelto en la API (el buscador de `WalletsScreen` sigue siendo client-side) |
-| 4. Operaciones maestro-detalle | 10 | 5 | 🔴 Sin transacciones — ninguna ruta usa `beginTransaction`/`COMMIT`/`ROLLBACK` (ej. `POST /api/resenas` hace INSERT + UPDATE sueltos) |
-| 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | 7.5 | 🟡 JWT y rutas protegidas OK; falta rol de usuario real en BD (el admin usa clave compartida `X-Admin-Key`, no un rol) |
+| 4. Operaciones maestro-detalle | 10 | 8 | 🟢 Transacción real en `POST /api/resenas` (`beginTransaction`/`COMMIT`/`ROLLBACK` envolviendo INSERT + UPDATE de rating); falta cubrir ABM cabecera+detalle más estricto (x3) |
+| 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | 9 | 🟢 JWT y rutas protegidas OK; panel admin con login real contra tabla `admin_usuarios` (rol `admin` en el JWT) reemplazando la clave compartida `X-Admin-Key` |
 | 6. Documentación técnica | 5 | 4.25 | 🟢 README completo; falta Swagger/OpenAPI o colección Postman |
 
 ---
@@ -70,7 +70,14 @@ ComparadorBilleteras/
 │   ├── db.js              pool de conexiones MySQL
 │   ├── .env               credenciales (no commitear)
 │   ├── middleware/
-│   │   └── auth.js        verifica JWT en header Authorization: Bearer
+│   │   ├── auth.js        verifica JWT de usuario en header Authorization: Bearer
+│   │   └── adminAuth.js   verifica JWT de admin (rol: 'admin') — reemplaza el viejo X-Admin-Key
+│   ├── services/           capa de negocio — validación + orquestación (arquitectura en 3 capas)
+│   │   ├── resenasService.js   valida calificación 1-5, crea reseña + recalcula rating en transacción
+│   │   └── alertasService.js   valida condición, listar/crear/actualizar/eliminar
+│   ├── repositories/       capa de datos — únicas funciones que tocan pool.query
+│   │   ├── resenasRepository.js
+│   │   └── alertasRepository.js
 │   ├── routes/
 │   │   ├── auth.js        POST /register, POST /login, GET /me
 │   │   ├── cotizaciones.js GET /?monto=, GET /historial, POST / (admin)
@@ -78,13 +85,14 @@ ComparadorBilleteras/
 │   │   ├── alertas.js     GET /, POST /, PATCH /:id, DELETE /:id
 │   │   ├── historial.js   GET /?page=&limit= (paginado real), POST /
 │   │   ├── favoritos.js   GET /, POST /, DELETE /:billetera_id
-│   │   └── admin.js       rutas admin (ver abajo)
+│   │   └── admin.js       POST /login + rutas admin (ver abajo)
 │   ├── firebaseAdmin.js   inicializa Firebase Admin SDK (requiere serviceAccountKey.json)
 │   └── admin/
-│       └── index.html     panel web — tabs: Dashboard, Cotizaciones, Billeteras, Usuarios
+│       └── index.html     panel web — login + tabs: Dashboard, Cotizaciones, Billeteras, Usuarios
 ├── database/
-│   ├── brasilpagos_schema.sql   CREATE DATABASE + 11 tablas + FK + índices
-│   └── brasilpagos_datos.sql    seed: 13 billeteras (incl. AstroPay, belo, Cocos Capital)
+│   ├── brasilpagos_schema.sql     CREATE DATABASE + 12 tablas + FK + índices
+│   ├── brasilpagos_datos.sql      seed: 13 billeteras (incl. AstroPay, belo, Cocos Capital) + 2 admin_usuarios
+│   └── migracion_admin_auth.sql   ALTER TABLE aditivo para BDs ya creadas (admin_usuarios + modificado_por)
 ├── App.js
 └── android/
 ```
@@ -146,6 +154,7 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | POST | `/api/auth/register` | Crear cuenta `{ nombre, email, password }` |
 | POST | `/api/auth/login` | Login → devuelve JWT `{ token, usuario }` |
 | POST | `/api/auth/firebase-login` | Intercambia Firebase ID token por JWT propio `{ idToken }` — crea usuario MySQL si no existe. Usa Firebase Admin SDK si hay serviceAccountKey.json, sino verifica vía API pública de Google |
+| POST | `/api/admin/login` | Login del panel admin `{ usuario, password }` → JWT con `{ adminUsuario, rol: 'admin' }`, expira en 8h. Valida contra la tabla `admin_usuarios` (solo `fabri` y `agus`, sin endpoint de alta) |
 
 ### Endpoints protegidos (requieren `Authorization: Bearer <token>`)
 
@@ -163,15 +172,15 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | DELETE | `/api/favoritos/:billetera_id` | Quitar favorito |
 | POST | `/api/resenas` | Crear reseña `{ billetera_id, calificacion (1-5), comentario }` — inserta en `resenas` y recalcula `rating_promedio` + `cantidad_resenas` en `billeteras` |
 
-### Endpoints admin (requieren header `X-Admin-Key`)
+### Endpoints admin (requieren `Authorization: Bearer <token admin>`, obtenido en `POST /api/admin/login`)
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| POST | `/api/cotizaciones` | Cargar nuevas tasas `{ tasas: [{ billetera_id, tasa }] }` |
+| POST | `/api/cotizaciones` | Cargar nuevas tasas `{ tasas: [{ billetera_id, tasa }] }` — graba `modificado_por` con el usuario admin logueado |
 | GET | `/api/admin/stats` | Stats del dashboard (usuarios, billeteras, consultas, alertas, hoy) |
 | GET | `/api/admin/billeteras` | Todas las billeteras sin filtrar `activa` |
-| PATCH | `/api/admin/billeteras/:id/toggle` | Mostrar/ocultar billetera en la app |
-| PUT | `/api/admin/billeteras/:id/rating` | Actualizar rating y cantidad de reseñas `{ rating_promedio, cantidad_resenas }` |
+| PATCH | `/api/admin/billeteras/:id/toggle` | Mostrar/ocultar billetera en la app — graba `modificado_por` |
+| PUT | `/api/admin/billeteras/:id/rating` | Actualizar rating y cantidad de reseñas `{ rating_promedio, cantidad_resenas }` — graba `modificado_por` |
 | GET | `/api/admin/usuarios` | Listado de usuarios MySQL |
 | POST | `/api/admin/usuarios` | Crear usuario en MySQL + Firebase `{ nombre, email, password, pais_residencia }` |
 | PUT | `/api/admin/usuarios/:id` | Editar nombre/email en MySQL y Firebase (sincroniza displayName) |
@@ -193,7 +202,19 @@ node index.js
 - **Contraseñas:** hasheadas con `bcryptjs` (salt rounds: 10). Nunca se almacena la contraseña en texto plano.
 - **JWT:** firmado con `JWT_SECRET` del `.env`, expira en 7 días. El middleware `auth.js` lo verifica en cada ruta protegida.
 - **Firebase Auth:** login con email/contraseña y Google. El email debe estar verificado para poder entrar a la app (`emailVerified` chequeado en login y en `onAuthStateChanged`). Si el email no está verificado, Firebase cierra la sesión automáticamente.
-- **Panel admin:** protegido con `X-Admin-Key` (mismo valor que `JWT_SECRET`).
+- **Panel admin:** login real contra la tabla `admin_usuarios` (ver abajo), ya no usa la clave compartida `X-Admin-Key`.
+
+### Login de administradores (panel admin — rúbrica 5.2 y 1.5)
+
+Reemplaza la vieja clave compartida `X-Admin-Key` por un login real con rol, y de paso resuelve la auditoría por usuario:
+
+- Tabla `admin_usuarios` con **solo dos cuentas fijas** (`fabri` / `agus`, contraseña `admin` para ambas, hasheada con bcrypt). A propósito **sin endpoint de alta** — no está pensado para escalar a más usuarios, solo para que cada persona del grupo pueda operar el panel con su propia identidad.
+- `POST /api/admin/login` valida usuario/contraseña y devuelve un JWT con `{ adminUsuario, rol: 'admin' }`, expira en 8h.
+- `middleware/adminAuth.js` reemplaza el viejo `checkAdminKey` en `admin.js` y en `POST /api/cotizaciones`: valida `Authorization: Bearer <token>` y exige `rol === 'admin'`.
+- Cada mutación admin (`toggle`, `rating`, carga de cotizaciones) graba `modificado_por = req.adminUsuario` automáticamente — sin pedir nombre a mano.
+- `billeteras` ahora tiene `actualizado_en` (antes solo tenía `creado_en`) + `modificado_por`. `cotizaciones` tiene `modificado_por` (queda quién cargó cada tasa).
+- El panel (`server/admin/index.html`) tiene pantalla de login antes de los tabs, guarda el JWT en `localStorage`, muestra "Conectado como: X" en el header con botón de cierre de sesión, y la tabla de Billeteras muestra columna "Modificado por" con fecha.
+- Para una BD ya creada (sin recrearla), correr `database/migracion_admin_auth.sql` — es aditivo (`CREATE TABLE IF NOT EXISTS` + `ALTER TABLE ADD COLUMN`), no borra datos.
 
 ### Flujo de autenticación (Firebase + backend JWT)
 
@@ -421,9 +442,9 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 
 ### Gaps detectados contra la rúbrica (autoevaluación)
 - [x] Paginado real en historial de consultas — `GET /api/historial?page=&limit=` + botón "Cargar más" en `HistoryScreen` (rúbrica 3.5)
-- [ ] Transacciones/rollback en operaciones multi-paso — ej. envolver el INSERT + UPDATE de `POST /api/resenas` en `beginTransaction`/`COMMIT`/`ROLLBACK` (rúbrica 4.3, vale 3 pts)
-- [ ] Separar capa de negocio/datos en al menos 2-3 rutas críticas (alertas, reseñas) para mostrar arquitectura en capas (rúbrica 2.3, vale 4 pts de los 7)
+- [x] Transacciones/rollback en operaciones multi-paso — `resenasService.crearResena()` envuelve el INSERT + UPDATE de `POST /api/resenas` en `beginTransaction`/`COMMIT`/`ROLLBACK` (rúbrica 4.3)
+- [x] Separar capa de negocio/datos en rutas críticas — `resenas` y `alertas` ahora tienen `routes/` (controller fino) → `services/` (validación + orquestación) → `repositories/` (SQL). Verificado end-to-end contra la DB real. Falta extender el patrón al resto de las rutas para el puntaje completo de 2.3 (rúbrica 2.3, quedan ~2 pts de los 7)
 - [ ] Filtro por 2 parámetros resuelto en la API — ej. `GET /api/billeteras?nombre=&pais=` en vez del filtro client-side actual de `WalletsScreen` (rúbrica 3.4, vale 3 pts)
-- [ ] Rol de usuario real en BD — reemplazar `X-Admin-Key` compartida por un rol asignado a la cuenta del admin (rúbrica 5.2, vale 1.5 pts)
-- [ ] Columna de auditoría `modificado_por` en tablas clave (ej. `billeteras`, `cotizaciones`), seteada desde el panel admin (rúbrica 1.5, vale 2.5 pts)
+- [x] Rol de usuario real en BD — login del panel admin contra tabla `admin_usuarios` (`fabri`/`agus`) con JWT `rol: 'admin'`, reemplaza `X-Admin-Key` (rúbrica 5.2)
+- [x] Columna de auditoría `modificado_por` en `billeteras` (+ `actualizado_en`) y `cotizaciones`, seteada automáticamente desde el panel admin con el usuario logueado (rúbrica 1.5)
 - [ ] Confirmar con el profesor si "API .NET 10 / ADO.NET" (rúbrica 2.1 y 2.5) es un requisito duro o un ejemplo genérico de la planilla — Node.js/Express no se puede migrar a último momento
