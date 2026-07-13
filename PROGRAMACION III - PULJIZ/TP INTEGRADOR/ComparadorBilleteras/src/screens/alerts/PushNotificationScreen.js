@@ -15,6 +15,7 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Pantalla que muestra un mockup estático de cómo se ve una notificación push en pantalla bloqueada
 export default function PushNotificationScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>

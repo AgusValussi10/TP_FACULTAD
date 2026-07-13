@@ -37,6 +37,7 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Componente que renderiza el rating de una billetera como estrellas + valor numérico
 function Stars({ rating }) {
   return (
     <View style={styles.starsRow}>
@@ -53,6 +54,7 @@ function Stars({ rating }) {
   );
 }
 
+// Componente que renderiza una fila del directorio de billeteras (logo, rating, países, monedas)
 function WalletItem({ wallet, onPress }) {
   return (
     <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.7}>
@@ -87,12 +89,14 @@ function WalletItem({ wallet, onPress }) {
   );
 }
 
+// Pantalla que lista el directorio de billeteras activas, con buscador por nombre y filtro por país
 export default function WalletsScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [pais, setPais] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [wallets, setWallets] = useState(WALLETS);
 
+  // Pide a la API las billeteras filtradas por nombre/país (con debounce de 300ms), y completa banderas/monedas con la data local como fallback
   useEffect(() => {
     const timeout = setTimeout(() => {
       getBilleteras({ nombre: query.trim(), pais })

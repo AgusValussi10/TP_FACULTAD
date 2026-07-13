@@ -18,6 +18,7 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Pantalla que muestra el formulario para crear una nueva alerta de cotización
 export default function CreateAlertScreen({ navigation }) {
   const { apiToken } = useAuth();
   const [activeWallets, setActiveWallets] = useState([]);
@@ -27,6 +28,7 @@ export default function CreateAlertScreen({ navigation }) {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Carga las billeteras activas desde la API para poblar el selector, y preselecciona la primera
   useEffect(() => {
     getBilleteras()
       .then(apiData => {
@@ -42,12 +44,14 @@ export default function CreateAlertScreen({ navigation }) {
       .catch(() => {});
   }, []);
 
+  // Texto de vista previa que resume la alerta antes de guardarla
   const conditionLabel = conditionType === 'supere' ? 'supere' : 'baje de';
   const previewText =
     selectedWallet && targetValue
       ? `Te avisaremos cuando ${selectedWallet} ${conditionLabel} $ ${targetValue} ARS por BRL`
       : 'Completá el formulario para ver una vista previa';
 
+  // Función para validar el formulario y guardar la alerta llamando a POST /api/alertas
   const handleSave = async () => {
     if (!targetValue) {
       Alert.alert('Valor requerido', 'Ingresá el valor objetivo de la alerta.');

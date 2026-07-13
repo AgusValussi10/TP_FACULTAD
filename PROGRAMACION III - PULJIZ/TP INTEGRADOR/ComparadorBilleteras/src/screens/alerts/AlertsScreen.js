@@ -20,16 +20,19 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Función para armar el texto legible de la condición de una alerta (ej: "BRL supere $ 900 ARS")
 function buildConditionLabel(condicion, valorObjetivo) {
   const valor = `$ ${Number(valorObjetivo).toLocaleString('es-AR')} ARS`;
   return condicion === 'supera' ? `BRL supere ${valor}` : `BRL baje de ${valor}`;
 }
 
+// Pantalla que lista las alertas del usuario con toggle activa/pausada
 export default function AlertsScreen({ navigation }) {
   const { apiToken } = useAuth();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Función para traer las alertas del usuario desde la API y mapearlas al formato de la UI
   const load = useCallback(async () => {
     if (!apiToken) { setLoading(false); return; }
     try {
@@ -49,8 +52,10 @@ export default function AlertsScreen({ navigation }) {
     }
   }, [apiToken]);
 
+  // Recarga las alertas cada vez que la pantalla toma foco (ej: al volver de crear una nueva)
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // Función para activar/pausar una alerta con actualización optimista y rollback si falla la API
   const handleToggle = async (id) => {
     const current = alerts.find(a => a.id === id);
     if (!current) return;

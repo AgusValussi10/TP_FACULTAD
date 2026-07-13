@@ -11,9 +11,11 @@ const colors = {
   skeleton: '#e0e0e0',
 };
 
+// Componente que renderiza un placeholder animado (parpadeo continuo) para simular contenido cargando
 function Skeleton({ width, height, style }) {
   const opacity = useRef(new Animated.Value(1)).current;
 
+  // Anima la opacidad en loop para el efecto de "shimmer" del skeleton
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -34,6 +36,7 @@ function Skeleton({ width, height, style }) {
   );
 }
 
+// Pantalla que muestra skeleton loaders mientras se cargan los resultados de cotizaciones
 export default function LoadingResultsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>

@@ -6,7 +6,9 @@ const pool = require('../db');
 const EMAIL = process.argv[2] || 'avalussi.facultad@gmail.com';
 const CANTIDAD = parseInt(process.argv[3], 10) || 20;
 
+// Función que busca al usuario y a las billeteras activas, genera consultas de prueba y las inserta en lote
 async function main() {
+  // Busca el usuario destino por email; si no existe no tiene sentido seguir
   const [[usuario]] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [EMAIL]);
   if (!usuario) {
     console.error(`No existe un usuario con el email ${EMAIL}`);
@@ -19,6 +21,7 @@ async function main() {
     process.exit(1);
   }
 
+  // Genera CANTIDAD consultas con monto/tasa aleatorios, distribuidas entre las billeteras activas
   const filas = [];
   for (let i = 0; i < CANTIDAD; i++) {
     const monto = Math.round((Math.random() * 900 + 100) * 100) / 100;       // 100–1000 BRL
@@ -29,6 +32,7 @@ async function main() {
     filas.push([usuario.id, monto, 'BRL', billetera.id, mejorTasa, totalArs, diasAtras]);
   }
 
+  // Inserta todas las filas en un único INSERT múltiple, con fecha escalonada vía DATE_SUB
   await pool.query(
     `INSERT INTO historial_consultas
        (usuario_id, monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars, consultado_en)

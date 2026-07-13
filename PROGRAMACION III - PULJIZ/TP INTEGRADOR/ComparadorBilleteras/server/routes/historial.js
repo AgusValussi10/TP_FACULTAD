@@ -2,20 +2,23 @@ const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 
+// Todas las rutas requieren token de usuario logueado
 router.use(authMiddleware);
 
-// GET /api/historial?page=1&limit=10
-// Historial de consultas del usuario, paginado real (LIMIT/OFFSET resuelto en la DB)
+// Endpoint que devuelve el historial de consultas del usuario, paginado real (LIMIT/OFFSET en la DB)
 router.get('/', async (req, res) => {
+  // Normaliza page/limit para evitar valores inválidos o negativos, limit tope 100
   const page = Math.max(parseInt(req.query.page) || 1, 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
   const offset = (page - 1) * limit;
   try {
+    // Total de registros del usuario, usado para calcular totalPages
     const [[{ total }]] = await pool.query(
       'SELECT COUNT(*) AS total FROM historial_consultas WHERE usuario_id = ?',
       [req.user.id]
     );
 
+    // Trae solo la página pedida, con el nombre de la billetera ganadora de cada consulta
     const [rows] = await pool.query(`
       SELECT h.id, h.monto, h.moneda_destino, h.mejor_tasa, h.total_ars,
              h.consultado_en, b.nombre AS mejor_billetera, b.color_hex
@@ -33,7 +36,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/historial
+// Endpoint que guarda una consulta nueva en el historial del usuario autenticado
 router.post('/', async (req, res) => {
   if (!req.body) return res.status(400).json({ error: 'Body requerido' });
   const { monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars } = req.body;

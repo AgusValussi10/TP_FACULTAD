@@ -12,11 +12,13 @@ const colors = {
 
 const PROGRESS_BAR_WIDTH = SCREEN_WIDTH - 80;
 
+// Pantalla de splash con logo animado y barra de progreso; navega a Home al terminar la animación
 export default function LoadingSplashScreen({ navigation }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+  // Anima el logo (escala+opacidad) y la barra de progreso; al completar navega a Home
   useEffect(() => {
     Animated.parallel([
       Animated.spring(scaleAnim, {

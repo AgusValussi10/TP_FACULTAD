@@ -36,12 +36,14 @@ const COMPARE_ROWS = [
   { key: 'rating',         label: 'Rating',           icon: 'star-outline'        },
 ];
 
+// Función para formatear el valor de una celda de la tabla comparativa según el tipo de dato
 function formatCellValue(key, wallet) {
   if (key === 'currencies') return wallet.currencies.join(' · ');
   if (key === 'rating') return `${wallet.rating.toFixed(1)} ★`;
   return wallet[key];
 }
 
+// Componente que renderiza el selector de billetera (A o B) para abrir el picker
 function WalletSelector({ label, wallet, onPress }) {
   return (
     <TouchableOpacity style={styles.selector} onPress={onPress} activeOpacity={0.75}>
@@ -66,6 +68,7 @@ function WalletSelector({ label, wallet, onPress }) {
   );
 }
 
+// Componente que muestra el modal con la lista de billeteras para elegir (excluye la ya seleccionada en el otro slot)
 function PickerModal({ visible, onClose, onSelect, excludeName, wallets }) {
   const available = wallets.filter(w => w.name !== excludeName);
 
@@ -109,7 +112,9 @@ function PickerModal({ visible, onClose, onSelect, excludeName, wallets }) {
   );
 }
 
+// Pantalla que muestra la tabla comparativa lado a lado de 2 billeteras (comisión, límites, monedas, rating)
 export default function WalletCompareScreen({ route, navigation }) {
+  // Preselecciona las billeteras cuando se navega desde ResultsScreen con el chip "Comparar 2"
   const initialWallet1 = route?.params?.initialWallet1 ?? null;
   const initialWallet2 = route?.params?.initialWallet2 ?? null;
 
@@ -118,6 +123,7 @@ export default function WalletCompareScreen({ route, navigation }) {
   const [pickerTarget, setPickerTarget] = useState(null);
   const [activeWallets, setActiveWallets] = useState(WALLETS);
 
+  // Carga las billeteras activas desde la API y las enriquece con datos locales de fallback (color, límites, monedas)
   useEffect(() => {
     getBilleteras()
       .then(apiData => {
@@ -149,13 +155,16 @@ export default function WalletCompareScreen({ route, navigation }) {
   const wB = walletB ? activeWallets.find(w => w.name === walletB) ?? null : null;
   const canCompare = wA && wB;
 
+  // Función para abrir el picker sobre el slot A o B
   const openPicker = (target) => setPickerTarget(target);
   const closePicker = () => setPickerTarget(null);
+  // Función para asignar la billetera elegida al slot correspondiente (A o B)
   const handleSelect = (name) => {
     if (pickerTarget === 'A') setWalletA(name);
     else setWalletB(name);
   };
 
+  // Función para ir a Results con un monto de ejemplo y ver la comparación en el ranking completo
   const handleCompare = () => {
     navigation.navigate('Results', { amount: 500, currency: 'BRL', country: 'Brasil' });
   };

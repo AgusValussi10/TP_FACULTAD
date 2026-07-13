@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 
-// POST /api/auth/register
+// Endpoint que crea una cuenta nueva de usuario (valida datos y hashea la contraseña)
 router.post('/register', async (req, res) => {
   const { nombre, email, password } = req.body;
   if (!nombre || !email || !password) {
@@ -16,6 +16,7 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
   }
   try {
+    // Evita duplicar cuentas con el mismo email
     const [existing] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
@@ -32,7 +33,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
+// Endpoint que loguea a un usuario existente por email/contraseña y devuelve un JWT
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -44,10 +45,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
     const usuario = rows[0];
+    // Compara la contraseña en texto plano contra el hash guardado
     const ok = await bcrypt.compare(password, usuario.password_hash);
     if (!ok) {
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
+    // JWT propio de la API, separado del login de Firebase
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, nombre: usuario.nombre },
       process.env.JWT_SECRET,
@@ -63,7 +66,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/firebase-login  (intercambia Firebase ID token por JWT propio)
+// Endpoint que intercambia un ID token de Firebase por el JWT propio de la API, creando el usuario en MySQL si no existe
 router.post('/firebase-login', async (req, res) => {
   const { idToken } = req.body;
   if (!idToken) return res.status(400).json({ error: 'idToken requerido' });
@@ -104,6 +107,7 @@ router.post('/firebase-login', async (req, res) => {
     let [rows] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
     let usuario;
     if (rows.length === 0) {
+      // Primer login con Firebase: crea el usuario en MySQL sin password propia (login siempre vía Firebase)
       const [result] = await pool.query(
         'INSERT INTO usuarios (nombre, email, password_hash, pais_residencia) VALUES (?, ?, ?, ?)',
         [nombre, email, '', 'Argentina']
@@ -126,7 +130,7 @@ router.post('/firebase-login', async (req, res) => {
   }
 });
 
-// GET /api/auth/me  (requiere token)
+// Endpoint que devuelve los datos del usuario autenticado (a partir del JWT)
 const authMiddleware = require('../middleware/auth');
 router.get('/me', authMiddleware, async (req, res) => {
   try {

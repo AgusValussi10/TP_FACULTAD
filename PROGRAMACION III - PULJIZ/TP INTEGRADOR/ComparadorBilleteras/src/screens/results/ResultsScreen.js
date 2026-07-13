@@ -32,6 +32,7 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Componente que renderiza el logo circular de una billetera (color + iniciales) según sus metadatos
 function ProviderLogo({ name, colorHex }) {
   const meta = getWalletMeta(name);
   return (
@@ -41,6 +42,7 @@ function ProviderLogo({ name, colorHex }) {
   );
 }
 
+// Componente que renderiza la card de una billetera en el ranking; la ganadora tiene layout y botones distintos ("Ver detalles" / "Ir a la app")
 function ProviderCard({ item, onSeeMore, onOpenApp }) {
   if (item.isBest) {
     return (
@@ -90,6 +92,7 @@ function ProviderCard({ item, onSeeMore, onOpenApp }) {
   );
 }
 
+// Pantalla que muestra el ranking animado de billeteras para el monto consultado, con ahorro vs la peor opción
 export default function ResultsScreen({ route, navigation }) {
   const { amount, currency, country, skipSave } = route.params;
   const { apiToken } = useAuth();
@@ -101,8 +104,10 @@ export default function ResultsScreen({ route, navigation }) {
   const [modalWallet, setModalWallet] = useState(null);
 
   const cardAnims = useRef([]);
+  // Si viene skipSave=true (repetir consulta desde Historial/Home) arranca como "ya guardado" para no duplicar el registro
   const savedRef = useRef(!!skipSave);
 
+  // Pide a la API el ranking de billeteras para el monto y arma el array que consume la UI (incluye ahorro % vs la peor opción)
   useEffect(() => {
     let cancelled = false;
     async function fetchData() {
@@ -115,6 +120,7 @@ export default function ResultsScreen({ route, navigation }) {
 
         const mapped = rows.map((r) => ({
           id: String(r.billetera_id),
+          // Normaliza el nombre de la API contra WALLET_META para evitar mismatches (ej. "Cocos" vs "Cocos Capital")
           name: getCanonicalName(r.nombre),
           colorHex: r.color_hex,
           rate: r.tasa,
@@ -141,6 +147,7 @@ export default function ResultsScreen({ route, navigation }) {
     return () => { cancelled = true; };
   }, []);
 
+  // Guarda la consulta en el historial del usuario una sola vez, cuando ya hay token y mejor resultado (efecto separado para evitar condición de carrera)
   useEffect(() => {
     if (!apiToken || !bestResult || savedRef.current) return;
     savedRef.current = true;
@@ -153,6 +160,7 @@ export default function ResultsScreen({ route, navigation }) {
     }).catch(() => {});
   }, [apiToken, bestResult]);
 
+  // Dispara la animación escalonada de entrada de las cards una vez que llegan los resultados
   useEffect(() => {
     if (results.length === 0 || cardAnims.current.length === 0) return;
     Animated.stagger(
@@ -166,6 +174,7 @@ export default function ResultsScreen({ route, navigation }) {
     ).start();
   }, [results]);
 
+  // Función para compartir el ranking completo por el share nativo del sistema
   const handleShare = async () => {
     try {
       const best = results[0];
@@ -181,12 +190,15 @@ export default function ResultsScreen({ route, navigation }) {
     }
   };
 
+  // Función para ir directo al perfil completo de una billetera
   const handleSeeMore = (wallet) => {
     navigation.navigate('WalletProfile', { walletName: wallet.name });
   };
 
+  // Función para abrir el modal de confirmación antes de salir a la app/sitio externo de la billetera
   const handleOpenApp = (wallet) => setModalWallet(wallet);
 
+  // Función para abrir la app o sitio web externo de la billetera ganadora tras confirmar en el modal
   const handleConfirmApp = async () => {
     const meta = modalWallet ? getWalletMeta(modalWallet.name) : null;
     setModalWallet(null);
@@ -196,6 +208,7 @@ export default function ResultsScreen({ route, navigation }) {
     }
   };
 
+  // Función para navegar a la comparación lado a lado, preseleccionando las dos primeras billeteras del ranking
   const handleCompare = () => {
     navigation.navigate('WalletCompare', {
       amount,

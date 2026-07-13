@@ -28,6 +28,7 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Función para formatear una fecha ISO como texto relativo (hace X hs / días / semanas)
 function formatFecha(isoString) {
   const date = new Date(isoString);
   const now = new Date();
@@ -40,6 +41,7 @@ function formatFecha(isoString) {
   return `Hace ${Math.floor(diffD / 7)} semana${Math.floor(diffD / 7) > 1 ? 's' : ''}`;
 }
 
+// Componente que renderiza una fila de menú clickeable con ícono, label y valor opcional
 function MenuRow({ icon, label, value, onPress, danger }) {
   return (
     <TouchableOpacity style={styles.menuRow} onPress={onPress} activeOpacity={0.7}>
@@ -56,6 +58,7 @@ function MenuRow({ icon, label, value, onPress, danger }) {
   );
 }
 
+// Pantalla que muestra el perfil del usuario, accesos rápidos a cuenta/config/favoritos y las últimas 3 búsquedas
 export default function ProfileScreen({ navigation }) {
   const { user, apiToken, signOut } = useAuth();
   const [recentHistory, setRecentHistory] = useState([]);
@@ -65,6 +68,7 @@ export default function ProfileScreen({ navigation }) {
   const email = user?.email || '';
   const initial = displayName.charAt(0).toUpperCase();
 
+  // Función para pedir a la API solo las últimas 3 consultas del usuario (sin traer de más y cortar con slice)
   const loadHistory = useCallback(async () => {
     if (!apiToken) { setLoadingHistory(false); return; }
     try {
@@ -83,8 +87,10 @@ export default function ProfileScreen({ navigation }) {
     }
   }, [apiToken]);
 
+  // Recarga el historial reciente cada vez que la pantalla vuelve a estar en foco
   useFocusEffect(useCallback(() => { loadHistory(); }, [loadHistory]));
 
+  // Función para cerrar sesión y volver al login
   const handleSignOut = async () => {
     await signOut();
     navigation.replace('Login');

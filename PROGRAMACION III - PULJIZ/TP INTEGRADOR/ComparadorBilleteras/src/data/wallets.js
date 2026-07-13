@@ -1,3 +1,4 @@
+// Metadatos visuales/estáticos por billetera (color, ícono, descripción corta, link de la app), usados como fallback local cuando falta info de la API
 export const WALLET_META = {
   'Mercado Pago': {
     color: '#00b1ea',
@@ -131,6 +132,7 @@ export const WALLET_META = {
   },
 };
 
+// Tasas de cambio locales de respaldo por billetera (fallback si la API no responde)
 export const PROVIDERS = {
   BRL: [
     { id: '1',  name: 'Mercado Pago',  rate: 970.46  },
@@ -149,17 +151,21 @@ export const PROVIDERS = {
   ],
 };
 
+// Función para formatear un monto como pesos argentinos con separador de miles
 export function formatARS(amount) {
   return `$ ${Math.round(amount).toLocaleString('es-AR')} ARS`;
 }
 
+// Función para armar el ranking de billeteras (fallback local): ordena por tasa y calcula ahorro vs la peor opción
 export function buildResults(amount, currency = 'BRL') {
   const providers = PROVIDERS[currency] ?? PROVIDERS['BRL'];
+  // Ordena de menor a mayor tasa (mejor cotización primero)
   const sorted = [...providers].sort((a, b) => a.rate - b.rate);
   const worstPrice = sorted[sorted.length - 1].rate * amount;
 
   return sorted.map((p, index) => {
     const price = p.rate * amount;
+    // Ahorro respecto de la peor opción disponible
     const savings = worstPrice - price;
     const savingsPct = (savings / worstPrice) * 100;
     return {
@@ -172,6 +178,7 @@ export function buildResults(amount, currency = 'BRL') {
   });
 }
 
+// Datos completos de las billeteras (detalle, pros/contras, requisitos, reseñas) usados como fallback local cuando falta info de la API
 export const WALLETS = [
   {
     id: '1',
@@ -487,15 +494,18 @@ export const WALLETS = [
   },
 ];
 
+// Función para resolver el nombre canónico de una billetera cuando el nombre que viene de la API no coincide exactamente con las keys de WALLET_META (ej. "Cocos" vs "Cocos Capital")
 export function getCanonicalName(name) {
   if (WALLET_META[name]) return name;
   const lower = name.toLowerCase();
+  // Busca una key que empiece con el nombre recibido o viceversa (match parcial case-insensitive)
   const key = Object.keys(WALLET_META).find(
     k => k.toLowerCase().startsWith(lower) || lower.startsWith(k.toLowerCase())
   );
   return key ?? name;
 }
 
+// Función para obtener los metadatos visuales de una billetera por nombre, con el mismo match parcial que getCanonicalName como fallback
 export function getWalletMeta(name) {
   if (WALLET_META[name]) return WALLET_META[name];
   const lower = name.toLowerCase();
@@ -504,6 +514,7 @@ export function getWalletMeta(name) {
   );
   return (
     (key && WALLET_META[key]) ?? {
+      // Objeto vacío por defecto si no se encuentra ningún match
       color: '#6c757d',
       initials: name.slice(0, 2).toUpperCase(),
       description: '',
@@ -515,6 +526,7 @@ export function getWalletMeta(name) {
   );
 }
 
+// Función para buscar el detalle completo (fallback local) de una billetera por nombre exacto
 export function getWalletByName(name) {
   return WALLETS.find(w => w.name === name) ?? null;
 }

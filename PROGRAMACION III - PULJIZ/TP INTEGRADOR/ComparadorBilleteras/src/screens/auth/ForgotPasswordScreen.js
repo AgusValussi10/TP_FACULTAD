@@ -29,7 +29,7 @@ const colors = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Funcion para la pantalla de recuperación de contraseña.
+// Función para traducir los códigos de error de Firebase Auth a mensajes en español
 function getFirebaseError(code) {
   const map = {
     'auth/user-not-found': 'No existe una cuenta con este email',
@@ -40,6 +40,7 @@ function getFirebaseError(code) {
   return map[code] || 'Ocurrió un error. Intentá de nuevo';
 }
 
+// Pantalla que permite pedir un email de recuperación de contraseña vía Firebase
 export default function ForgotPasswordScreen({ navigation }) {
   const { resetPassword } = useAuth();
 
@@ -49,6 +50,7 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [sent, setSent] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
 
+  // Función para validar el email y disparar el reset de contraseña contra Firebase
   const handleSend = async () => {
     if (!EMAIL_REGEX.test(email.trim())) {
       setError('Ingresá un email con formato válido');

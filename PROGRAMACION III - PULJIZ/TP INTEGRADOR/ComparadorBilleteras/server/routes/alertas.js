@@ -2,10 +2,10 @@ const router = require('express').Router();
 const authMiddleware = require('../middleware/auth');
 const service = require('../services/alertasService');
 
-// Todas las rutas requieren token
+// Todas las rutas requieren token de usuario logueado
 router.use(authMiddleware);
 
-// GET /api/alertas
+// Endpoint que lista las alertas del usuario autenticado
 router.get('/', async (req, res) => {
   try {
     const alertas = await service.listar(req.user.id);
@@ -16,10 +16,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/alertas
+// Endpoint que crea una alerta nueva para el usuario autenticado
 router.post('/', async (req, res) => {
   const { billetera_id, condicion, valor_objetivo, moneda_destino } = req.body;
 
+  // Validación de campos y condición delegada al service
   const error = service.validarAlerta({ billetera_id, condicion, valor_objetivo });
   if (error) return res.status(400).json({ error });
 
@@ -32,7 +33,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/alertas/:id  — activar/desactivar
+// Endpoint que activa o pausa una alerta existente del usuario autenticado
 router.patch('/:id', async (req, res) => {
   const { activa } = req.body;
   if (activa === undefined) return res.status(400).json({ error: 'activa es requerido' });
@@ -47,7 +48,7 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/alertas/:id
+// Endpoint que elimina una alerta del usuario autenticado
 router.delete('/:id', async (req, res) => {
   try {
     const ok = await service.eliminar({ id: req.params.id, usuario_id: req.user.id });

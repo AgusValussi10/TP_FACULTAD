@@ -12,6 +12,7 @@ const colors = {
   textMuted: '#adb5bd',
 };
 
+// Pantalla que muestra el estado vacío cuando no hay cotizaciones disponibles para la moneda elegida
 export default function EmptyResultsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>

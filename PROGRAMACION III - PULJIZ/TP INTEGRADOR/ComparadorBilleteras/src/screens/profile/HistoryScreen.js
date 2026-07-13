@@ -30,10 +30,12 @@ const colors = {
 const CURRENCY_FLAG = { BRL: '🇧🇷', USD: '🇺🇸', EUR: '🇪🇺' };
 const CURRENCY_METHOD = { BRL: 'PIX', USD: 'USD', EUR: 'EUR' };
 
+// Función para formatear un monto como pesos argentinos con separador de miles
 function formatARS(amount) {
   return `$ ${Math.round(amount).toLocaleString('es-AR')} ARS`;
 }
 
+// Función para formatear una fecha ISO como texto relativo (hace X hs / días / semanas)
 function formatFecha(isoString) {
   const date = new Date(isoString);
   const now = new Date();
@@ -48,6 +50,7 @@ function formatFecha(isoString) {
   return `Hace ${Math.floor(diffD / 7)} semanas`;
 }
 
+// Componente que renderiza una fila individual del historial (monto, mejor billetera, fecha)
 function HistoryItem({ item, onRepeat }) {
   return (
     <TouchableOpacity style={styles.item} onPress={onRepeat} activeOpacity={0.7}>
@@ -71,6 +74,7 @@ function HistoryItem({ item, onRepeat }) {
   );
 }
 
+// Componente que muestra el estado vacío cuando el usuario todavía no hizo consultas
 function EmptyState() {
   return (
     <View style={styles.empty}>
@@ -83,6 +87,7 @@ function EmptyState() {
   );
 }
 
+// Función para mapear una fila cruda de la API al formato que usa la UI del historial
 function mapRow(r) {
   return {
     id: String(r.id),
@@ -97,6 +102,7 @@ function mapRow(r) {
 
 const PAGE_SIZE = 10;
 
+// Pantalla que muestra el historial completo de consultas del usuario, con paginado real (botón "Cargar más")
 export default function HistoryScreen({ navigation }) {
   const { apiToken } = useAuth();
   const [history, setHistory] = useState([]);
@@ -105,6 +111,7 @@ export default function HistoryScreen({ navigation }) {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // Función para cargar la primera página del historial desde la API
   const load = useCallback(async () => {
     if (!apiToken) { setLoading(false); return; }
     setLoading(true);
@@ -121,8 +128,10 @@ export default function HistoryScreen({ navigation }) {
     }
   }, [apiToken]);
 
+  // Recarga el historial desde la primera página cada vez que la pantalla vuelve a estar en foco
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // Función para pedir la siguiente página y anexarla al listado existente (botón "Cargar más")
   const loadMore = async () => {
     if (loadingMore || page >= totalPages) return;
     setLoadingMore(true);
@@ -139,6 +148,7 @@ export default function HistoryScreen({ navigation }) {
     }
   };
 
+  // Función para repetir una consulta anterior, navegando a Results sin volver a guardar en el historial
   const handleRepeat = (item) => {
     navigation.navigate('Results', {
       amount: item.amount,

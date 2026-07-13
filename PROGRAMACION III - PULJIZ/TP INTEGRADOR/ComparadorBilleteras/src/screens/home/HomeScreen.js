@@ -40,6 +40,7 @@ const DESTINATION = {
   subtitle: 'Transferencia instantánea',
 };
 
+// Función para mostrar la fecha de una consulta en formato relativo (ej: "Hace 2hs", "Ayer")
 function formatFecha(isoString) {
   const diffH = Math.floor((Date.now() - new Date(isoString)) / 3600000);
   const diffD = Math.floor(diffH / 24);
@@ -50,6 +51,7 @@ function formatFecha(isoString) {
   return `Hace ${Math.floor(diffD / 7)} semana${Math.floor(diffD / 7) > 1 ? 's' : ''}`;
 }
 
+// Función para formatear el monto ingresado con separador de miles en formato argentino
 function formatAmount(val) {
   if (!val) return '';
   const [int, dec] = val.split('.');
@@ -57,6 +59,7 @@ function formatAmount(val) {
   return dec !== undefined ? `${intFormatted},${dec}` : intFormatted;
 }
 
+// Pantalla principal: destino fijo (Brasil vía PIX), input de monto y últimas consultas del usuario
 export default function HomeScreen({ navigation }) {
   const { apiToken } = useAuth();
   const [amount, setAmount] = useState('');
@@ -64,6 +67,7 @@ export default function HomeScreen({ navigation }) {
   const [recentQueries, setRecentQueries] = useState([]);
   const buttonScale = useRef(new Animated.Value(1)).current;
 
+  // Función para traer las últimas 3 consultas del usuario desde la API (paginado real, sin traer de más)
   const loadRecent = useCallback(async () => {
     if (!apiToken) return;
     try {
@@ -79,8 +83,10 @@ export default function HomeScreen({ navigation }) {
     }
   }, [apiToken]);
 
+  // Recarga las últimas consultas cada vez que la pantalla toma foco
   useFocusEffect(useCallback(() => { loadRecent(); }, [loadRecent]));
 
+  // Función que anima un pequeño "bounce" del botón antes de ejecutar la acción
   const animateButton = (callback) => {
     Animated.sequence([
       Animated.timing(buttonScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
@@ -88,6 +94,7 @@ export default function HomeScreen({ navigation }) {
     ]).start(callback);
   };
 
+  // Función para navegar a Results con el monto ingresado, validando que sea un número positivo
   const handleCompare = () => {
     if (!amount || parseFloat(amount) <= 0) return;
     animateButton(() => {
@@ -176,7 +183,7 @@ export default function HomeScreen({ navigation }) {
                 amount: item.monto,
                 currency: item.moneda_destino,
                 country: 'Brasil',
-                skipSave: true,
+                skipSave: true, // evita re-guardar en el historial una consulta que ya existe
               })}
             >
               <View style={styles.bullet} />

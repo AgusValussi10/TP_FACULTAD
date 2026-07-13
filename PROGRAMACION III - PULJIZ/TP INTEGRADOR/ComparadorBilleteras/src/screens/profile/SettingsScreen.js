@@ -24,10 +24,12 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Componente que renderiza el título de una sección de configuración
 function SectionHeader({ title }) {
   return <Text style={styles.sectionHeader}>{title}</Text>;
 }
 
+// Componente que renderiza una fila de configuración, como navegación (con valor y flecha) o como switch
 function SettingRow({ label, value, onPress, isToggle, toggleValue, onToggle }) {
   return (
     <TouchableOpacity
@@ -53,6 +55,7 @@ function SettingRow({ label, value, onPress, isToggle, toggleValue, onToggle }) 
   );
 }
 
+// Pantalla que muestra los toggles de notificaciones, tema, idioma y datos de cuenta (mockup local)
 export default function SettingsScreen({ navigation }) {
   const [alertasEnabled, setAlertasEnabled] = useState(true);
   const [resumenEnabled, setResumenEnabled] = useState(false);

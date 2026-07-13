@@ -2,6 +2,7 @@
 
 const pool = require('../db');
 
+// Función para traer todas las alertas de un usuario, con datos de la billetera asociada
 async function findByUsuario(usuario_id) {
   const [rows] = await pool.query(
     `SELECT a.id, a.billetera_id, b.nombre AS billetera_nombre, b.color_hex,
@@ -16,6 +17,7 @@ async function findByUsuario(usuario_id) {
   return rows;
 }
 
+// Función para insertar una alerta nueva y devolver su id generado
 async function insertAlerta({ usuario_id, billetera_id, condicion, valor_objetivo, moneda_destino }) {
   const [result] = await pool.query(
     'INSERT INTO alertas (usuario_id, billetera_id, condicion, valor_objetivo, moneda_destino) VALUES (?, ?, ?, ?, ?)',
@@ -24,6 +26,7 @@ async function insertAlerta({ usuario_id, billetera_id, condicion, valor_objetiv
   return result.insertId;
 }
 
+// Función para activar/pausar una alerta, verificando que sea del usuario dueño
 async function updateActiva({ id, usuario_id, activa }) {
   const [result] = await pool.query(
     'UPDATE alertas SET activa = ? WHERE id = ? AND usuario_id = ?',
@@ -32,6 +35,7 @@ async function updateActiva({ id, usuario_id, activa }) {
   return result.affectedRows;
 }
 
+// Función para eliminar una alerta, verificando que sea del usuario dueño
 async function remove({ id, usuario_id }) {
   const [result] = await pool.query(
     'DELETE FROM alertas WHERE id = ? AND usuario_id = ?',

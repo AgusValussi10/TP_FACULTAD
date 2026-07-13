@@ -5,7 +5,7 @@ const jwt           = require('jsonwebtoken');
 const firebaseAdmin = require('../firebaseAdmin');
 const checkAdminAuth = require('../middleware/adminAuth');
 
-// POST /api/admin/login  (usuario/password de admin_usuarios → JWT de admin)
+// Endpoint que loguea a un administrador contra la tabla admin_usuarios y devuelve un JWT con rol admin
 router.post('/login', async (req, res) => {
   const { usuario, password } = req.body;
   if (!usuario || !password) {
@@ -21,6 +21,7 @@ router.post('/login', async (req, res) => {
     if (!ok) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
+    // JWT de admin, expira en 8h, incluye el rol para que adminAuth.js lo valide
     const token = jwt.sign(
       { adminUsuario: admin.usuario, rol: 'admin' },
       process.env.JWT_SECRET,
@@ -33,7 +34,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// GET /api/admin/stats
+// Endpoint que devuelve los contadores del dashboard admin (usuarios, billeteras, consultas, alertas, hoy)
 router.get('/stats', checkAdminAuth, async (req, res) => {
   try {
     const [[{ usuarios }]]  = await pool.query('SELECT COUNT(*) as usuarios FROM usuarios');
@@ -50,7 +51,7 @@ router.get('/stats', checkAdminAuth, async (req, res) => {
   }
 });
 
-// GET /api/admin/usuarios
+// Endpoint que lista todos los usuarios registrados en MySQL
 router.get('/usuarios', checkAdminAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -63,7 +64,7 @@ router.get('/usuarios', checkAdminAuth, async (req, res) => {
   }
 });
 
-// POST /api/admin/usuarios  (crear nuevo en MySQL + Firebase)
+// Endpoint que crea un usuario nuevo tanto en MySQL como en Firebase (si está configurado)
 router.post('/usuarios', checkAdminAuth, async (req, res) => {
   const { nombre, email, password, pais_residencia } = req.body;
   if (!nombre || !email || !password) {
@@ -81,7 +82,7 @@ router.post('/usuarios', checkAdminAuth, async (req, res) => {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
     }
 
-    // Crear en Firebase si está disponible
+    // Crear en Firebase si está disponible (sin bloquear la creación en MySQL si falla)
     let firebaseCreado = false;
     if (firebaseAdmin) {
       try {
@@ -118,7 +119,7 @@ router.post('/usuarios', checkAdminAuth, async (req, res) => {
   }
 });
 
-// PUT /api/admin/usuarios/:id
+// Endpoint que edita nombre/email/país de un usuario en MySQL y sincroniza el nombre en Firebase
 router.put('/usuarios/:id', checkAdminAuth, async (req, res) => {
   const { nombre, email, pais_residencia } = req.body;
   const { id } = req.params;
@@ -126,6 +127,7 @@ router.put('/usuarios/:id', checkAdminAuth, async (req, res) => {
     return res.status(400).json({ error: 'nombre y email son requeridos' });
   }
   try {
+    // Evita que el nuevo email choque con el de otro usuario
     const [conflict] = await pool.query(
       'SELECT id FROM usuarios WHERE email = ? AND id != ?',
       [email, id]
@@ -158,7 +160,7 @@ router.put('/usuarios/:id', checkAdminAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/usuarios/:id
+// Endpoint que elimina un usuario de MySQL y, si existe, también de Firebase
 router.delete('/usuarios/:id', checkAdminAuth, async (req, res) => {
   try {
     const [[usuario]] = await pool.query('SELECT email FROM usuarios WHERE id = ?', [req.params.id]);
@@ -166,6 +168,7 @@ router.delete('/usuarios/:id', checkAdminAuth, async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    // Si no está en Firebase (auth/user-not-found) no se considera error, solo se borra de MySQL
     let firebaseEliminado = false;
     if (firebaseAdmin) {
       try {
@@ -190,7 +193,7 @@ router.delete('/usuarios/:id', checkAdminAuth, async (req, res) => {
   }
 });
 
-// GET /api/admin/billeteras  (todas, sin filtrar activa)
+// Endpoint que lista todas las billeteras sin filtrar por activa (para el panel admin)
 router.get('/billeteras', checkAdminAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -209,7 +212,7 @@ router.get('/billeteras', checkAdminAuth, async (req, res) => {
   }
 });
 
-// PUT /api/admin/billeteras/:id/rating
+// Endpoint que actualiza manualmente el rating y cantidad de reseñas de una billetera (deja auditoría modificado_por)
 router.put('/billeteras/:id/rating', checkAdminAuth, async (req, res) => {
   const { rating_promedio, cantidad_resenas } = req.body;
   if (rating_promedio == null) return res.status(400).json({ error: 'rating_promedio es requerido' });
@@ -218,6 +221,7 @@ router.put('/billeteras/:id/rating', checkAdminAuth, async (req, res) => {
     return res.status(400).json({ error: 'El rating debe ser un número entre 0 y 5' });
   }
   try {
+    // Registra qué admin hizo el cambio (modificado_por) además del nuevo rating
     const [result] = await pool.query(
       'UPDATE billeteras SET rating_promedio = ?, cantidad_resenas = ?, modificado_por = ? WHERE id = ?',
       [rating.toFixed(1), cantidad_resenas || 0, req.adminUsuario, req.params.id]
@@ -230,7 +234,7 @@ router.put('/billeteras/:id/rating', checkAdminAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/admin/billeteras/:id/toggle
+// Endpoint que muestra/oculta una billetera en la app (toggle del campo activa, deja auditoría modificado_por)
 router.patch('/billeteras/:id/toggle', checkAdminAuth, async (req, res) => {
   try {
     const [[b]] = await pool.query('SELECT activa FROM billeteras WHERE id = ?', [req.params.id]);
@@ -247,8 +251,7 @@ router.patch('/billeteras/:id/toggle', checkAdminAuth, async (req, res) => {
   }
 });
 
-// GET /api/admin/firebase-usuarios
-// Devuelve todos los usuarios de Firebase Auth + marca cuáles tienen cuenta MySQL
+// Endpoint que devuelve todos los usuarios de Firebase Auth + marca cuáles tienen cuenta MySQL
 router.get('/firebase-usuarios', checkAdminAuth, async (req, res) => {
   if (!firebaseAdmin) {
     return res.status(503).json({ error: 'Firebase Admin no configurado (falta serviceAccountKey.json)' });
@@ -315,8 +318,7 @@ router.get('/firebase-usuarios', checkAdminAuth, async (req, res) => {
   }
 });
 
-// POST /api/admin/sincronizar-usuario
-// Crea el registro MySQL para un usuario que solo existe en Firebase
+// Endpoint que crea el registro MySQL para un usuario que solo existe en Firebase
 router.post('/sincronizar-usuario', checkAdminAuth, async (req, res) => {
   const { email, nombre } = req.body;
   if (!email) return res.status(400).json({ error: 'email es requerido' });

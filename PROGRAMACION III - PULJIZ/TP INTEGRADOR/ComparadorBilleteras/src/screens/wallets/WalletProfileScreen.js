@@ -38,16 +38,19 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Función para formatear una fecha como día/mes corto (usada en reseñas y en el gráfico de evolución)
 function formatDate(raw) {
   if (!raw) return '';
   const d = new Date(raw);
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
+// Componente que renderiza el título de una sección de la pantalla
 function SectionTitle({ text }) {
   return <Text style={styles.sectionTitle}>{text}</Text>;
 }
 
+// Componente que renderiza un rating como fila de estrellas (solo lectura)
 function Stars({ rating, size = 13 }) {
   return (
     <View style={styles.starsRow}>
@@ -63,6 +66,7 @@ function Stars({ rating, size = 13 }) {
   );
 }
 
+// Componente que renderiza un selector de estrellas interactivo, usado en el form de nueva reseña
 function StarPicker({ value, onChange }) {
   return (
     <View style={styles.starPickerRow}>
@@ -79,6 +83,7 @@ function StarPicker({ value, onChange }) {
   );
 }
 
+// Componente que renderiza una reseña individual (autor, estrellas, fecha, comentario)
 function ReviewCard({ review }) {
   return (
     <View style={styles.reviewCard}>
@@ -99,10 +104,12 @@ function ReviewCard({ review }) {
   );
 }
 
+// Componente que renderiza el gráfico de barras puro (sin librerías) de evolución de la tasa, con rango min/max
 function TasaChart({ data }) {
   if (!data || data.length < 2) {
     return <Text style={styles.chartEmpty}>Sin datos de historial aún</Text>;
   }
+  // Usa como máximo los últimos 20 registros de tasa
   const points = data.slice(-20);
   const tasas = points.map(p => parseFloat(p.tasa));
   const min = Math.min(...tasas);
@@ -138,6 +145,7 @@ function TasaChart({ data }) {
   );
 }
 
+// Pantalla que muestra el perfil completo de una billetera: descripción, comisiones, pros/contras, requisitos, países, gráfico de evolución de tasa y reseñas
 export default function WalletProfileScreen({ route, navigation }) {
   const { walletName } = route.params;
   const wallet = getWalletByName(walletName);
@@ -152,6 +160,7 @@ export default function WalletProfileScreen({ route, navigation }) {
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  // Chequea si esta billetera ya está en los favoritos del usuario logueado
   useEffect(() => {
     if (!apiToken || !wallet) return;
     getFavoritos(apiToken)
@@ -159,17 +168,20 @@ export default function WalletProfileScreen({ route, navigation }) {
       .catch(() => {});
   }, [apiToken, wallet]);
 
+  // Carga el detalle completo (con reseñas) y el historial de tasa de la billetera desde la API
   useEffect(() => {
     if (!wallet?.id) return;
     getBilletera(wallet.id).then(setApiWallet).catch(() => {});
     getHistorialCotizaciones(wallet.id).then(setHistorial).catch(() => {});
   }, [wallet?.id]);
 
+  // Función para refrescar el detalle de la billetera (usada tras enviar una reseña, para traer el rating actualizado)
   const reloadApiWallet = () => {
     if (!wallet?.id) return;
     getBilletera(wallet.id).then(setApiWallet).catch(() => {});
   };
 
+  // Función para agregar o quitar la billetera de favoritos, persistiendo en la API
   const toggleFavorite = async () => {
     if (!apiToken) return;
     try {
@@ -185,6 +197,7 @@ export default function WalletProfileScreen({ route, navigation }) {
     }
   };
 
+  // Función para validar y enviar una reseña nueva, y refrescar el rating del hero tras guardarla
   const handleSubmitReview = async () => {
     if (!reviewComment.trim()) {
       Alert.alert('Falta el comentario', 'Escribí algo antes de enviar.');

@@ -2,9 +2,10 @@ const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 
+// Todas las rutas requieren token de usuario logueado
 router.use(authMiddleware);
 
-// GET /api/favoritos
+// Endpoint que lista las billeteras favoritas (activas) del usuario autenticado
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -21,7 +22,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/favoritos  { billetera_id }
+// Endpoint que agrega una billetera a favoritos (INSERT IGNORE evita duplicados)
 router.post('/', async (req, res) => {
   const { billetera_id } = req.body;
   if (!billetera_id) return res.status(400).json({ error: 'billetera_id es requerido' });
@@ -37,7 +38,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// DELETE /api/favoritos/:billetera_id
+// Endpoint que quita una billetera de favoritos
 router.delete('/:billetera_id', async (req, res) => {
   try {
     const [result] = await pool.query(

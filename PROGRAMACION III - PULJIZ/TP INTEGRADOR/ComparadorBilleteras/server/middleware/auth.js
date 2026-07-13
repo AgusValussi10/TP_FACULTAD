@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 
+// Middleware que valida el JWT de usuario y cuelga el payload decodificado en req.user
 module.exports = function authMiddleware(req, res, next) {
   const header = req.headers['authorization'];
   if (!header || !header.startsWith('Bearer ')) {

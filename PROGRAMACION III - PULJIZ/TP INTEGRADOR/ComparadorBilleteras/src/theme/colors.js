@@ -1,3 +1,4 @@
+// Paleta de colores central de la app (design system)
 export const colors = {
   primary: '#3b82f6',
   primaryDark: '#2563eb',

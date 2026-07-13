@@ -8,11 +8,11 @@ App mobile (React Native + Expo SDK 54) para usuarios argentinos que viajan a Br
 
 ## Criterios de evaluación del TP
 
-Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 89.25/100.**
+Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 89.75/100.**
 
 | Criterio | Pts | Estimado | Estado |
 |---|---|---|---|
-| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | 23.5 | 🟢 11 tablas + N-N real (`favoritos`); auditoría por usuario resuelta — `billeteras` y `cotizaciones` tienen `modificado_por` (+ `actualizado_en` en `billeteras`), completado desde el panel admin |
+| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | 24 | 🟢 11 tablas + N-N real (`favoritos`); auditoría por usuario resuelta — `billeteras` y `cotizaciones` tienen `modificado_por` (+ `actualizado_en` en `billeteras`), completado desde el panel admin. Migración real (`migracion_admin_auth.sql`, aditiva) + seeder de prueba (`seed-historial-usuario.js`) ya cubren scripts/migraciones/seeders (falta solo versionado tipo Flyway/Knex) |
 | 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | 24.5 | 🟢 Arquitectura en 3 capas (routes/services/repositories) aplicada en `resenas` y `alertas`; falta extenderla al resto de las rutas. La rúbrica nombra "API .NET 10 / ADO.NET" — confirmar con el profesor si el stack Node/Express es válido |
 | 3. UI e integración con la API | 20 | 20 | 🟢 Paginado real en Historial (`GET /api/historial?page=&limit=`); filtro por 2 parámetros resuelto en la API — `GET /api/billeteras?nombre=&pais=` con WHERE dinámico en SQL, reemplazando el filtro client-side de `WalletsScreen` |
 | 4. Operaciones maestro-detalle | 10 | 8 | 🟢 Transacción real en `POST /api/resenas` (`beginTransaction`/`COMMIT`/`ROLLBACK` envolviendo INSERT + UPDATE de rating); falta cubrir ABM cabecera+detalle más estricto (x3) |
@@ -268,6 +268,14 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 - **`HomeScreen`** y **`ProfileScreen`** (que solo necesitan las últimas 3 consultas) piden `getHistorial(apiToken, 1, 3)` directo, sin traer de más y cortar con `.slice()`.
 - El endpoint `/api/cotizaciones/historial` (evolución de tasa por billetera en `WalletProfileScreen`) **no** está paginado — sigue con `LIMIT 30` fijo a propósito, para no duplicar la misma feature en dos pantallas.
 - Seeder de prueba: `server/scripts/seed-historial-usuario.js [email] [cantidad]` — agrega N consultas de prueba al historial de un usuario existente (busca el `usuario_id` por email, distribuye entre las billeteras activas, fechas escalonadas).
+
+### Filtro por 2 parámetros en la API — búsqueda de billeteras (rúbrica 3.4)
+
+`GET /api/billeteras` acepta `?nombre=&pais=` y resuelve el filtro en la DB con un `WHERE` dinámico (LIKE por nombre + JOIN/igualdad por `codigo_pais` contra `billetera_paises`, con `DISTINCT` para evitar duplicados por el JOIN), en vez de traer todo y filtrar en el cliente.
+
+- **`WalletsScreen`** — ya no filtra el array local con `.filter()`. Cada cambio en el buscador o en los chips de país (🌎 Todos/🇦🇷/🇧🇷/🇺🇾/🇲🇽/🇨🇴) dispara `getBilleteras({ nombre, pais })` con debounce de 300ms.
+- `src/services/api.js` — `getBilleteras(filtros)` arma el querystring (`nombre`, `pais`) a partir del objeto de filtros.
+- Verificado contra la DB real: filtro solo por nombre, solo por país, y combinado.
 
 ---
 
