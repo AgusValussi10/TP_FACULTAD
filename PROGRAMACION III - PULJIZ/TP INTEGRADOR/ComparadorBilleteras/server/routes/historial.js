@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     // Trae solo la página pedida, con el nombre de la billetera ganadora de cada consulta
     const [rows] = await pool.query(`
       SELECT h.id, h.monto, h.moneda_destino, h.mejor_tasa, h.total_ars,
-             h.consultado_en, b.nombre AS mejor_billetera, b.color_hex
+      h.consultado_en, b.nombre AS mejor_billetera, b.color_hex
       FROM historial_consultas h
       LEFT JOIN billeteras b ON b.id = h.mejor_billetera_id
       WHERE h.usuario_id = ?

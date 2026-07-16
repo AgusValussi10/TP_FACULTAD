@@ -6,12 +6,12 @@ const pool = require('../db');
 async function findByUsuario(usuario_id) {
   const [rows] = await pool.query(
     `SELECT a.id, a.billetera_id, b.nombre AS billetera_nombre, b.color_hex,
-            a.moneda_origen, a.moneda_destino, a.condicion, a.valor_objetivo,
-            a.activa, a.disparada_en, a.creado_en
-     FROM alertas a
-     JOIN billeteras b ON b.id = a.billetera_id
-     WHERE a.usuario_id = ?
-     ORDER BY a.creado_en DESC`,
+      a.moneda_origen, a.moneda_destino, a.condicion, a.valor_objetivo,
+      a.activa, a.disparada_en, a.creado_en
+      FROM alertas a
+      JOIN billeteras b ON b.id = a.billetera_id
+      WHERE a.usuario_id = ?
+      ORDER BY a.creado_en DESC`,
     [usuario_id]
   );
   return rows;

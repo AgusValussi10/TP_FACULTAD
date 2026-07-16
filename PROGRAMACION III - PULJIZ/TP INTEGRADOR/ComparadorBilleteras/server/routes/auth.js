@@ -21,11 +21,11 @@ router.post('/register', async (req, res) => {
     if (existing.length > 0) {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
     }
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 10); //10 = número de rondas de salting
     const [result] = await pool.query(
-      'INSERT INTO usuarios (nombre, email, password_hash) VALUES (?, ?, ?)',
+      'INSERT INTO usuarios (nombre, email, password_hash) VALUES (?, ?, ?)', // Usamos ? como placeholders para evitar SQL injection
       [nombre, email, hash]
-    );
+    );  
     res.status(201).json({ message: 'Usuario creado', id: result.insertId });
   } catch (err) {
     console.error(err);

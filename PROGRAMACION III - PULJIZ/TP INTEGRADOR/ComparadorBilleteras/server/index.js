@@ -5,8 +5,8 @@ const path = require('path');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(cors()); //permite que la app pueda pegarle a esta API sin que el navegador/cliente la bloquee por política de CORS
+app.use(express.json()); //parsea automáticamente el body de las requests que vienen en JSON
 
 // Panel admin (HTML estático)
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
