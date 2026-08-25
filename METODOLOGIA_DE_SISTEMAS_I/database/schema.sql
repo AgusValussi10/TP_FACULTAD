@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS noticias (
     estado      ENUM('borrador','publicada','archivada') NOT NULL DEFAULT 'borrador',
     fecha_pub   DATE,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at  TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO noticias (titulo, resumen, contenido, categoria, imagen_url, estado, fecha_pub)
