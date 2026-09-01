@@ -33,13 +33,13 @@ if (!preg_match('/^[\p{L}\s\'\-]{2,50}$/u', $apellido)) {
 }
 
 // Validar fecha de nacimiento (formato Y-m-d, año entre 1920 y 2025)
-$fechaObj = DateTime::createFromFormat('Y-m-d', $fecha);
-if (!$fechaObj || $fechaObj->format('Y-m-d') !== $fecha) {
+$fecha_obj = DateTime::createFromFormat('Y-m-d', $fecha);
+if (!$fecha_obj || $fecha_obj->format('Y-m-d') !== $fecha) {
     echo json_encode(['success' => false, 'message' => 'La fecha de nacimiento no tiene un formato válido.']);
     exit;
 }
-$anioNac = (int) $fechaObj->format('Y');
-if ($anioNac < 1920 || $anioNac > 2025) {
+$anio_nac = (int) $fecha_obj->format('Y');
+if ($anio_nac < 1920 || $anio_nac > 2025) {
     echo json_encode(['success' => false, 'message' => 'La fecha de nacimiento debe estar entre 1920 y 2025.']);
     exit;
 }

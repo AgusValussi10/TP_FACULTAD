@@ -67,7 +67,7 @@ $res6 = $conn->query(
 if ($res6) while ($r = $res6->fetch_assoc()) $consultas[] = $r;
 
 $con_stats = ['total'=>0,'pendiente'=>0,'leida'=>0,'respondida'=>0,'archivada'=>0];
-foreach ($consultas as $c) { $con_stats[$c['estado']]++; $con_stats['total']++; }
+foreach ($consultas as $consulta) { $con_stats[$consulta['estado']]++; $con_stats['total']++; }
 
 $noticias = [];
 $res7 = $conn->query(
@@ -82,7 +82,7 @@ $res7 = $conn->query(
 if ($res7) while ($r = $res7->fetch_assoc()) $noticias[] = $r;
 
 $not_stats = ['total'=>0,'borrador'=>0,'publicada'=>0,'archivada'=>0];
-foreach ($noticias as $n) { $not_stats[$n['estado']]++; $not_stats['total']++; }
+foreach ($noticias as $noticia) { $not_stats[$noticia['estado']]++; $not_stats['total']++; }
 
 $conn->close();
 ?>
@@ -426,32 +426,32 @@ $conn->close();
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($solicitudes as $s): ?>
-          <tr id="row-<?= $s['id'] ?>" class="row-<?= $s['estado'] ?>" data-nombre="<?= htmlspecialchars($s['nombre_alumno']) ?>" data-apellido="<?= htmlspecialchars($s['apellido_alumno']) ?>">
-            <td><?= $s['id'] ?></td>
-            <td><strong><?= htmlspecialchars($s['apellido_alumno'] . ', ' . $s['nombre_alumno']) ?></strong></td>
-            <td><?= htmlspecialchars($s['nivel_educativo']) ?></td>
-            <td><?= htmlspecialchars($s['nombre_tutor']) ?></td>
-            <td><?= htmlspecialchars($s['telefono']) ?></td>
-            <td><?= htmlspecialchars($s['email']) ?></td>
-            <td><span class="comentario-txt"><?= $s['comentarios'] ? htmlspecialchars($s['comentarios']) : '—' ?></span></td>
-            <td style="white-space:nowrap"><?= $s['fecha'] ?></td>
-            <td id="estado-<?= $s['id'] ?>">
-              <span class="estado-badge estado-<?= $s['estado'] ?>"><?= ucfirst($s['estado']) ?></span>
+          <?php foreach ($solicitudes as $solicitud): ?>
+          <tr id="row-<?= $solicitud['id'] ?>" class="row-<?= $solicitud['estado'] ?>" data-nombre="<?= htmlspecialchars($solicitud['nombre_alumno']) ?>" data-apellido="<?= htmlspecialchars($solicitud['apellido_alumno']) ?>">
+            <td><?= $solicitud['id'] ?></td>
+            <td><strong><?= htmlspecialchars($solicitud['apellido_alumno'] . ', ' . $solicitud['nombre_alumno']) ?></strong></td>
+            <td><?= htmlspecialchars($solicitud['nivel_educativo']) ?></td>
+            <td><?= htmlspecialchars($solicitud['nombre_tutor']) ?></td>
+            <td><?= htmlspecialchars($solicitud['telefono']) ?></td>
+            <td><?= htmlspecialchars($solicitud['email']) ?></td>
+            <td><span class="comentario-txt"><?= $solicitud['comentarios'] ? htmlspecialchars($solicitud['comentarios']) : '—' ?></span></td>
+            <td style="white-space:nowrap"><?= $solicitud['fecha'] ?></td>
+            <td id="estado-<?= $solicitud['id'] ?>">
+              <span class="estado-badge estado-<?= $solicitud['estado'] ?>"><?= ucfirst($solicitud['estado']) ?></span>
             </td>
             <td>
-              <div class="acciones" id="acciones-<?= $s['id'] ?>">
-                <?php if ($s['estado'] !== 'contactado'): ?>
-                  <button class="btn-accion btn-contactado" onclick="cambiarEstado(<?= $s['id'] ?>,'contactado')">Contactado</button>
+              <div class="acciones" id="acciones-<?= $solicitud['id'] ?>">
+                <?php if ($solicitud['estado'] !== 'contactado'): ?>
+                  <button class="btn-accion btn-contactado" onclick="cambiarEstado(<?= $solicitud['id'] ?>,'contactado')">Contactado</button>
                 <?php endif; ?>
-                <?php if ($s['estado'] !== 'admitido'): ?>
-                  <button class="btn-accion btn-admitido"   onclick="abrirModalAdmitir(<?= $s['id'] ?>)">Admitir</button>
+                <?php if ($solicitud['estado'] !== 'admitido'): ?>
+                  <button class="btn-accion btn-admitido"   onclick="abrirModalAdmitir(<?= $solicitud['id'] ?>)">Admitir</button>
                 <?php endif; ?>
-                <?php if ($s['estado'] !== 'rechazado'): ?>
-                  <button class="btn-accion btn-rechazado"  onclick="cambiarEstado(<?= $s['id'] ?>,'rechazado')">Rechazar</button>
+                <?php if ($solicitud['estado'] !== 'rechazado'): ?>
+                  <button class="btn-accion btn-rechazado"  onclick="cambiarEstado(<?= $solicitud['id'] ?>,'rechazado')">Rechazar</button>
                 <?php endif; ?>
-                <?php if ($s['estado'] !== 'pendiente'): ?>
-                  <button class="btn-accion btn-pendiente"  onclick="cambiarEstado(<?= $s['id'] ?>,'pendiente')">↩ Pendiente</button>
+                <?php if ($solicitud['estado'] !== 'pendiente'): ?>
+                  <button class="btn-accion btn-pendiente"  onclick="cambiarEstado(<?= $solicitud['id'] ?>,'pendiente')">↩ Pendiente</button>
                 <?php endif; ?>
               </div>
             </td>
@@ -471,8 +471,8 @@ $conn->close();
     <!-- Stats opiniones -->
     <?php
       $op_stats = ['total'=>0,'pendiente'=>0,'aprobado'=>0,'rechazado'=>0];
-      foreach ($opiniones as $o) {
-          $op_stats[$o['estado']]++;
+      foreach ($opiniones as $opinion) {
+          $op_stats[$opinion['estado']]++;
           $op_stats['total']++;
       }
     ?>
@@ -528,27 +528,27 @@ $conn->close();
             <?php
             $meses_es = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-            foreach ($opiniones as $o):
-              $periodo = $meses_es[(int)$o['mes']] . ' ' . $o['anio'];
-              $rowCls  = $o['estado'] === 'aprobado' ? 'row-admitido' : ($o['estado'] === 'rechazado' ? 'row-rechazado' : '');
-              $badgeCls = $o['estado'] === 'aprobado' ? 'admitido' : $o['estado'];
-              $badgeLbl = $o['estado'] === 'aprobado' ? 'Aprobada' : ucfirst($o['estado']);
+            foreach ($opiniones as $opinion):
+              $periodo = $meses_es[(int)$opinion['mes']] . ' ' . $opinion['anio'];
+              $rowCls  = $opinion['estado'] === 'aprobado' ? 'row-admitido' : ($opinion['estado'] === 'rechazado' ? 'row-rechazado' : '');
+              $badgeCls = $opinion['estado'] === 'aprobado' ? 'admitido' : $opinion['estado'];
+              $badgeLbl = $opinion['estado'] === 'aprobado' ? 'Aprobada' : ucfirst($opinion['estado']);
             ?>
-            <tr id="op-row-<?= $o['id'] ?>" class="<?= $rowCls ?>" data-ts="<?= $o['ts'] ?>" data-desc="<?= htmlspecialchars($o['nombre']) ?>">
-              <td><?= $o['id'] ?></td>
-              <td><span class="nombre-opinion"><?= htmlspecialchars($o['nombre']) ?></span></td>
-              <td><span class="texto-opinion"><?= htmlspecialchars($o['texto']) ?></span></td>
+            <tr id="op-row-<?= $opinion['id'] ?>" class="<?= $rowCls ?>" data-ts="<?= $opinion['ts'] ?>" data-desc="<?= htmlspecialchars($opinion['nombre']) ?>">
+              <td><?= $opinion['id'] ?></td>
+              <td><span class="nombre-opinion"><?= htmlspecialchars($opinion['nombre']) ?></span></td>
+              <td><span class="texto-opinion"><?= htmlspecialchars($opinion['texto']) ?></span></td>
               <td><span class="mes-anio"><?= $periodo ?></span></td>
-              <td style="white-space:nowrap"><?= $o['fecha'] ?></td>
-              <td id="op-estado-<?= $o['id'] ?>">
+              <td style="white-space:nowrap"><?= $opinion['fecha'] ?></td>
+              <td id="op-estado-<?= $opinion['id'] ?>">
                 <span class="estado-badge estado-<?= $badgeCls ?>"><?= $badgeLbl ?></span>
               </td>
               <td>
-                <div class="acciones" id="op-acc-<?= $o['id'] ?>">
-                  <?php if ($o['estado'] !== 'aprobado'):  ?><button class="btn-accion btn-admitido"  onclick="opinionAccion(<?= $o['id'] ?>,'aprobado')">Aprobar</button><?php endif; ?>
-                  <?php if ($o['estado'] !== 'rechazado'): ?><button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $o['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
-                  <?php if ($o['estado'] !== 'pendiente'): ?><button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $o['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('opinion',<?= $o['id'] ?>,<?= htmlspecialchars(json_encode($o['nombre'])) ?>)">🗑️ Eliminar</button>
+                <div class="acciones" id="op-acc-<?= $opinion['id'] ?>">
+                  <?php if ($opinion['estado'] !== 'aprobado'):  ?><button class="btn-accion btn-admitido"  onclick="opinionAccion(<?= $opinion['id'] ?>,'aprobado')">Aprobar</button><?php endif; ?>
+                  <?php if ($opinion['estado'] !== 'rechazado'): ?><button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $opinion['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
+                  <?php if ($opinion['estado'] !== 'pendiente'): ?><button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $opinion['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('opinion',<?= $opinion['id'] ?>,<?= htmlspecialchars(json_encode($opinion['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -746,31 +746,31 @@ $conn->close();
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($consultas as $c):
-              $rowCls = match($c['estado']) {
+            <?php foreach ($consultas as $consulta):
+              $rowCls = match($consulta['estado']) {
                 'leida'      => 'row-contactado',
                 'respondida' => 'row-admitido',
                 'archivada'  => 'row-rechazado',
                 default      => ''
               };
             ?>
-            <tr id="con-row-<?= $c['id'] ?>" class="<?= $rowCls ?>" data-desc="<?= htmlspecialchars($c['nombre']) ?>">
-              <td><?= $c['id'] ?></td>
-              <td><strong><?= htmlspecialchars($c['nombre']) ?></strong></td>
-              <td><?= htmlspecialchars($c['email']) ?></td>
-              <td><?= $c['asunto'] ? htmlspecialchars($c['asunto']) : '—' ?></td>
-              <td><span class="comentario-txt"><?= htmlspecialchars($c['mensaje']) ?></span></td>
-              <td style="white-space:nowrap"><?= $c['fecha'] ?></td>
-              <td id="con-estado-<?= $c['id'] ?>">
-                <span class="estado-badge estado-<?= $c['estado'] === 'leida' ? 'contactado' : ($c['estado'] === 'respondida' ? 'admitido' : ($c['estado'] === 'archivada' ? 'rechazado' : 'pendiente')) ?>"><?= ucfirst($c['estado']) ?></span>
+            <tr id="con-row-<?= $consulta['id'] ?>" class="<?= $rowCls ?>" data-desc="<?= htmlspecialchars($consulta['nombre']) ?>">
+              <td><?= $consulta['id'] ?></td>
+              <td><strong><?= htmlspecialchars($consulta['nombre']) ?></strong></td>
+              <td><?= htmlspecialchars($consulta['email']) ?></td>
+              <td><?= $consulta['asunto'] ? htmlspecialchars($consulta['asunto']) : '—' ?></td>
+              <td><span class="comentario-txt"><?= htmlspecialchars($consulta['mensaje']) ?></span></td>
+              <td style="white-space:nowrap"><?= $consulta['fecha'] ?></td>
+              <td id="con-estado-<?= $consulta['id'] ?>">
+                <span class="estado-badge estado-<?= $consulta['estado'] === 'leida' ? 'contactado' : ($consulta['estado'] === 'respondida' ? 'admitido' : ($consulta['estado'] === 'archivada' ? 'rechazado' : 'pendiente')) ?>"><?= ucfirst($consulta['estado']) ?></span>
               </td>
               <td>
-                <div class="acciones" id="con-acc-<?= $c['id'] ?>">
-                  <?php if ($c['estado'] !== 'leida'):      ?><button class="btn-accion btn-contactado" onclick="conAccion(<?= $c['id'] ?>,'leida')">Leída</button><?php endif; ?>
-                  <?php if ($c['estado'] !== 'respondida'): ?><button class="btn-accion btn-admitido"   onclick="conAccion(<?= $c['id'] ?>,'respondida')">Respondida</button><?php endif; ?>
-                  <?php if ($c['estado'] !== 'archivada'):  ?><button class="btn-accion btn-rechazado"  onclick="conAccion(<?= $c['id'] ?>,'archivada')">Archivar</button><?php endif; ?>
-                  <?php if ($c['estado'] !== 'pendiente'):  ?><button class="btn-accion btn-pendiente"  onclick="conAccion(<?= $c['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('consulta',<?= $c['id'] ?>,<?= htmlspecialchars(json_encode($c['nombre'])) ?>)">🗑️ Eliminar</button>
+                <div class="acciones" id="con-acc-<?= $consulta['id'] ?>">
+                  <?php if ($consulta['estado'] !== 'leida'):      ?><button class="btn-accion btn-contactado" onclick="conAccion(<?= $consulta['id'] ?>,'leida')">Leída</button><?php endif; ?>
+                  <?php if ($consulta['estado'] !== 'respondida'): ?><button class="btn-accion btn-admitido"   onclick="conAccion(<?= $consulta['id'] ?>,'respondida')">Respondida</button><?php endif; ?>
+                  <?php if ($consulta['estado'] !== 'archivada'):  ?><button class="btn-accion btn-rechazado"  onclick="conAccion(<?= $consulta['id'] ?>,'archivada')">Archivar</button><?php endif; ?>
+                  <?php if ($consulta['estado'] !== 'pendiente'):  ?><button class="btn-accion btn-pendiente"  onclick="conAccion(<?= $consulta['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('consulta',<?= $consulta['id'] ?>,<?= htmlspecialchars(json_encode($consulta['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -895,42 +895,42 @@ $conn->close();
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($noticias as $n):
-              $rowCls = match($n['estado']) {
+            <?php foreach ($noticias as $noticia):
+              $rowCls = match($noticia['estado']) {
                 'publicada' => 'row-admitido',
                 'archivada' => 'row-rechazado',
                 default     => ''
               };
-              $catCls = 'cat-' . $n['categoria'];
-              $catLabel = ['institucional'=>'🏫 Institucional','academica'=>'📚 Académica','deportiva'=>'⚽ Deportiva','cultural'=>'🎭 Cultural','general'=>'📰 General'][$n['categoria']] ?? ucfirst($n['categoria']);
+              $catCls = 'cat-' . $noticia['categoria'];
+              $catLabel = ['institucional'=>'🏫 Institucional','academica'=>'📚 Académica','deportiva'=>'⚽ Deportiva','cultural'=>'🎭 Cultural','general'=>'📰 General'][$noticia['categoria']] ?? ucfirst($noticia['categoria']);
             ?>
-            <tr id="not-row-<?= $n['id'] ?>" class="<?= $rowCls ?>">
-              <td><?= $n['id'] ?></td>
+            <tr id="not-row-<?= $noticia['id'] ?>" class="<?= $rowCls ?>">
+              <td><?= $noticia['id'] ?></td>
               <td>
-                <span class="noticia-titulo"><?= htmlspecialchars($n['titulo']) ?></span>
-                <?php if ($n['resumen']): ?>
-                  <br><span class="noticia-resumen"><?= htmlspecialchars($n['resumen']) ?></span>
+                <span class="noticia-titulo"><?= htmlspecialchars($noticia['titulo']) ?></span>
+                <?php if ($noticia['resumen']): ?>
+                  <br><span class="noticia-resumen"><?= htmlspecialchars($noticia['resumen']) ?></span>
                 <?php endif; ?>
               </td>
               <td><span class="cat-tag <?= $catCls ?>"><?= $catLabel ?></span></td>
-              <td id="not-estado-<?= $n['id'] ?>">
-                <span class="estado-badge estado-<?= $n['estado'] ?>"><?= ucfirst($n['estado']) ?></span>
+              <td id="not-estado-<?= $noticia['id'] ?>">
+                <span class="estado-badge estado-<?= $noticia['estado'] ?>"><?= ucfirst($noticia['estado']) ?></span>
               </td>
-              <td style="white-space:nowrap"><?= $n['fecha_pub_fmt'] ?: '—' ?></td>
-              <td style="white-space:nowrap"><?= $n['fecha'] ?></td>
+              <td style="white-space:nowrap"><?= $noticia['fecha_pub_fmt'] ?: '—' ?></td>
+              <td style="white-space:nowrap"><?= $noticia['fecha'] ?></td>
               <td>
-                <div class="acciones" id="not-acc-<?= $n['id'] ?>">
-                  <button class="btn-accion btn-contactado" onclick="abrirEditarNoticia(<?= $n['id'] ?>)">✏️ Editar</button>
-                  <?php if ($n['estado'] !== 'publicada'): ?>
-                    <button class="btn-accion btn-admitido" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'publicada')">Publicar</button>
+                <div class="acciones" id="not-acc-<?= $noticia['id'] ?>">
+                  <button class="btn-accion btn-contactado" onclick="abrirEditarNoticia(<?= $noticia['id'] ?>)">✏️ Editar</button>
+                  <?php if ($noticia['estado'] !== 'publicada'): ?>
+                    <button class="btn-accion btn-admitido" onclick="cambiarEstadoNoticia(<?= $noticia['id'] ?>, 'publicada')">Publicar</button>
                   <?php endif; ?>
-                  <?php if ($n['estado'] === 'publicada'): ?>
-                    <button class="btn-accion btn-pendiente" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'borrador')">Despublicar</button>
+                  <?php if ($noticia['estado'] === 'publicada'): ?>
+                    <button class="btn-accion btn-pendiente" onclick="cambiarEstadoNoticia(<?= $noticia['id'] ?>, 'borrador')">Despublicar</button>
                   <?php endif; ?>
-                  <?php if ($n['estado'] !== 'archivada'): ?>
-                    <button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(<?= $n['id'] ?>, 'archivada')">Archivar</button>
+                  <?php if ($noticia['estado'] !== 'archivada'): ?>
+                    <button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(<?= $noticia['id'] ?>, 'archivada')">Archivar</button>
                   <?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('noticia',<?= $n['id'] ?>,<?= htmlspecialchars(json_encode($n['titulo'])) ?>)">🗑️ Eliminar</button>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('noticia',<?= $noticia['id'] ?>,<?= htmlspecialchars(json_encode($noticia['titulo'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
