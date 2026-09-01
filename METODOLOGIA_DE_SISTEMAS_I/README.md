@@ -36,7 +36,5 @@ php -d extension=mysqli -S 0.0.0.0:8000
 ## Integrantes
 
 - Fabrizio Rios
-- Agustin
-- Juan Macantero
+- Agustin Valussi
 
-(Completar apellidos/nombres exactos de cada integrante antes de la entrega.)
