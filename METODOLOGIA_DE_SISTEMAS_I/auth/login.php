@@ -57,7 +57,6 @@ if (!password_verify($password, $user['password_hash'])) {
     exit;
 }
 
-// Login exitoso
 $_SESSION['usuario_id']  = $user['id'];
 $_SESSION['nombre']      = $user['nombre'];
 $_SESSION['rol']         = $user['rol'];
