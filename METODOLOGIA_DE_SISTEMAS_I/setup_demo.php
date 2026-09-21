@@ -245,12 +245,6 @@ foreach ($tablas as $nombre => $sql) {
 echo '</ul>';
 flush();
 
-// Agregar columna nivel_anterior_aprobado si no existe (idempotente)
-$conn->query("ALTER TABLE solicitudes_inscripcion ADD COLUMN IF NOT EXISTS nivel_anterior_aprobado TINYINT(1) NULL DEFAULT NULL AFTER comentarios");
-
-// Ampliar ENUM de rol para incluir 'enfermeria' si no estaba
-$conn->query("ALTER TABLE usuarios MODIFY COLUMN rol ENUM('alumno','docente','padre','admin','enfermeria') NOT NULL");
-
 // ── USUARIOS DEMO ────────────────────────────────────────────────────────────
 
 $usuarios_demo = [
