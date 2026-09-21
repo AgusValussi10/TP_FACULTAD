@@ -59,6 +59,7 @@ $id       = (int)($_POST['id']      ?? 0);
 $usuario  = trim($_POST['usuario']  ?? '');
 $password = trim($_POST['password'] ?? '');
 $nombre   = trim($_POST['nombre']   ?? '');
+$curso_id = (int)($_POST['curso_id'] ?? 0);
 
 if (!$id || !$usuario || !$password || !$nombre) {
     echo json_encode(['success' => false, 'message' => 'Completá todos los campos.']);
@@ -100,12 +101,35 @@ if ($solicitud['nivel_educativo'] === 'Inicial') {
     exit;
 }
 
+// RFG08: validar disponibilidad de vacantes si se indica un curso de destino.
+if ($curso_id > 0) {
+    $vac = $conn->prepare(
+        "SELECT c.capacidad, COUNT(ac.alumno_id) AS inscriptos
+         FROM cursos c LEFT JOIN alumno_curso ac ON ac.curso_id = c.id
+         WHERE c.id = ? GROUP BY c.capacidad"
+    );
+    $vac->bind_param('i', $curso_id);
+    $vac->execute();
+    $rowVac = $vac->get_result()->fetch_assoc();
+    $vac->close();
+    if ($rowVac) {
+        $disponibles = (int)$rowVac['capacidad'] - (int)$rowVac['inscriptos'];
+        if ($disponibles <= 0) {
+            echo json_encode(['success' => false, 'message' => 'El curso seleccionado no tiene vacantes disponibles.']);
+            $conn->close();
+            exit;
+        }
+    }
+}
+
 $resultadoUsuario = crearUsuarioAlumno($conn, $usuario, $password, $nombre);
 if ($resultadoUsuario['error']) {
     echo json_encode(['success' => false, 'message' => $resultadoUsuario['error']]);
     $conn->close();
     exit;
 }
+
+$nuevoAlumnoId = $conn->insert_id;
 
 marcarSolicitudAdmitida($conn, $id);
 
@@ -114,6 +138,14 @@ if ($solicitud['nivel_educativo'] !== 'Inicial' && $nivel_anterior_confirmado) {
     $upd2->bind_param('i', $id);
     $upd2->execute();
     $upd2->close();
+}
+
+// RFG08: inscribir al alumno en el curso indicado (si se especificó uno).
+if ($curso_id > 0 && $nuevoAlumnoId) {
+    $ins = $conn->prepare("INSERT IGNORE INTO alumno_curso (alumno_id, curso_id) VALUES (?, ?)");
+    $ins->bind_param('ii', $nuevoAlumnoId, $curso_id);
+    $ins->execute();
+    $ins->close();
 }
 
 $conn->close();

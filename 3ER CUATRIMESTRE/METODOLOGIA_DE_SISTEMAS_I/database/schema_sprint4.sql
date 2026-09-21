@@ -10,7 +10,7 @@ USE educar_db;
 -- RFG08: capacidad máxima de alumnos por curso.
 -- Se agrega a la tabla cursos existente.
 ALTER TABLE cursos
-  ADD COLUMN IF NOT EXISTS capacidad TINYINT UNSIGNED NOT NULL DEFAULT 30 AFTER nivel_educativo;
+  ADD COLUMN capacidad TINYINT UNSIGNED NOT NULL DEFAULT 30 AFTER nivel_educativo;
 
 -- RFG16: legajo completo del alumno — tabla de sanciones disciplinarias
 -- (se usa también en RFG14/Sprint 6, pero el legajo ya la necesita para mostrarla).

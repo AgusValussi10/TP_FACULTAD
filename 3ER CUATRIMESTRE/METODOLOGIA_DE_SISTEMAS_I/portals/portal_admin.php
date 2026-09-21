@@ -181,8 +181,8 @@ $conn->close();
     .modal-box .modal-sub { font-size:.85rem; color:#6B7280; margin-bottom:1.2rem; }
     .modal-field { margin-bottom:.9rem; }
     .modal-field label { display:block; font-size:.83rem; font-weight:700; margin-bottom:.3rem; color:#374151; }
-    .modal-field input { width:100%; padding:.65rem .9rem; border:2px solid #E5E7EB; border-radius:10px; font-size:.9rem; font-family:inherit; transition:border-color .2s; }
-    .modal-field input:focus { outline:none; border-color:#059669; }
+    .modal-field input, .modal-field select { width:100%; padding:.65rem .9rem; border:2px solid #E5E7EB; border-radius:10px; font-size:.9rem; font-family:inherit; transition:border-color .2s; }
+    .modal-field input:focus, .modal-field select:focus { outline:none; border-color:#059669; }
     .modal-error { color:#DC2626; font-size:.83rem; font-weight:700; margin-bottom:.8rem; min-height:1.1rem; }
     .modal-btns { display:flex; gap:.7rem; justify-content:flex-end; margin-top:1.2rem; }
     .btn-cancelar { background:#F3F4F6; color:#374151; border:none; border-radius:10px; padding:.6rem 1.2rem; font-weight:800; cursor:pointer; font-family:inherit; }
@@ -956,6 +956,12 @@ $conn->close();
       <input type="text" id="modal-nombre-completo" readonly style="background:#F9FAFB;color:#6B7280;">
     </div>
     <div class="modal-field">
+      <label>Curso de destino</label>
+      <select id="modal-curso">
+        <option value="">Sin asignar curso todavía</option>
+      </select>
+    </div>
+    <div class="modal-field">
       <label>Usuario *</label>
       <input type="text" id="modal-usuario" placeholder="ej: garcia.ana" autocomplete="off">
     </div>
@@ -1045,6 +1051,41 @@ $conn->close();
   // Debe coincidir con EDAD_MINIMA_INICIAL en gestion/helpers.php (RFG04).
   const EDAD_MINIMA_INICIAL = 3;
 
+  // RFG08: cursos con vacantes, para el selector de "Curso de destino" del modal de admisión.
+  let cursosCache = null;
+
+  async function cargarCursosCache() {
+    if (cursosCache) return cursosCache;
+    try {
+      const res  = await fetch('../gestion/vacantes_listar.php', { method: 'POST' });
+      const data = await res.json();
+      cursosCache = data.success ? data.cursos : [];
+    } catch {
+      cursosCache = [];
+    }
+    return cursosCache;
+  }
+
+  async function poblarSelectCurso(nivel) {
+    const sel = document.getElementById('modal-curso');
+    sel.innerHTML = '<option value="">Sin asignar curso todavía</option>';
+    const cursos = await cargarCursosCache();
+    cursos
+      .filter(c => c.nivel_educativo === nivel)
+      .forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        if (c.vacantes_disponibles > 0) {
+          opt.textContent = `${c.nombre} — ${c.vacantes_disponibles} vacantes disponibles`;
+        } else {
+          opt.textContent = `${c.nombre} — Sin vacantes`;
+          opt.disabled = true;
+        }
+        sel.appendChild(opt);
+      });
+    sel.value = '';
+  }
+
   function calcularEdad(fechaISO) {
     const hoy = new Date(); const nac = new Date(fechaISO);
     let edad = hoy.getFullYear() - nac.getFullYear();
@@ -1089,6 +1130,7 @@ $conn->close();
     document.getElementById('modal-usuario').value         = normalizar(apellido) + '.' + normalizar(nombre);
     document.getElementById('modal-password').value        = '';
     document.getElementById('modal-error').textContent     = '';
+    poblarSelectCurso(nivel);
 
     const chkNivelAnterior = document.getElementById('modal-nivel-anterior');
     const wrapNivelAnterior = document.getElementById('modal-nivel-anterior-wrap');
@@ -1153,6 +1195,7 @@ $conn->close();
       body.append('password', password);
       body.append('nombre',   nombre);
       body.append('nivel_anterior_confirmado', chkNivelAnterior.checked ? '1' : '0');
+      body.append('curso_id', document.getElementById('modal-curso').value || '0');
       const res  = await fetch('../inscripciones/admitir.php', { method: 'POST', body });
       const data = await res.json();
 
