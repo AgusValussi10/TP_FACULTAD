@@ -32,6 +32,9 @@ if (!$ok || $conn->connect_error) {
 echo "<p style='color:green'><strong>Conexion OK</strong></p>";
 flush();
 
+// Sin esto, los nombres con tildes/ñ/° (García, Rodríguez, 3°A) se guardan corruptos.
+$conn->set_charset('utf8');
+
 // ── TABLAS ──────────────────────────────────────────────────────────────────
 
 $tablas = [
@@ -122,6 +125,7 @@ $tablas = [
         id              INT AUTO_INCREMENT PRIMARY KEY,
         nombre          VARCHAR(20) NOT NULL,
         nivel_educativo ENUM('Inicial','Primario','Secundario') NOT NULL,
+        capacidad       TINYINT UNSIGNED NOT NULL DEFAULT 30,
         UNIQUE (nombre)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
 
@@ -232,6 +236,17 @@ $tablas = [
         FOREIGN KEY (alumno_id)  REFERENCES usuarios(id) ON DELETE CASCADE,
         FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+
+    "sanciones" => "CREATE TABLE IF NOT EXISTS sanciones (
+        id             INT AUTO_INCREMENT PRIMARY KEY,
+        alumno_id      INT NOT NULL,
+        tipo           ENUM('apercibimiento','suspension','otra') NOT NULL,
+        descripcion    TEXT NOT NULL,
+        fecha          DATE NOT NULL,
+        registrado_por INT NOT NULL,
+        FOREIGN KEY (alumno_id)      REFERENCES usuarios(id) ON DELETE CASCADE,
+        FOREIGN KEY (registrado_por) REFERENCES usuarios(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
 ];
 
 echo '<h2>Creando tablas...</h2><ul>';
@@ -243,6 +258,21 @@ foreach ($tablas as $nombre => $sql) {
     }
 }
 echo '</ul>';
+flush();
+
+// Sprint 4: si "cursos" ya existía de antes sin la columna capacidad, agregarla.
+$colCheck = $conn->query(
+    "SELECT COUNT(*) AS existe FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cursos' AND COLUMN_NAME = 'capacidad'"
+);
+$tieneCapacidad = $colCheck ? (int)$colCheck->fetch_assoc()['existe'] : 1;
+if (!$tieneCapacidad) {
+    if ($conn->query("ALTER TABLE cursos ADD COLUMN capacidad TINYINT UNSIGNED NOT NULL DEFAULT 30 AFTER nivel_educativo")) {
+        echo "<p style='color:green'>OK: columna capacidad agregada a cursos</p>";
+    } else {
+        echo "<p style='color:red'>Error agregando capacidad a cursos: " . htmlspecialchars($conn->error) . "</p>";
+    }
+}
 flush();
 
 // ── USUARIOS DEMO ────────────────────────────────────────────────────────────
