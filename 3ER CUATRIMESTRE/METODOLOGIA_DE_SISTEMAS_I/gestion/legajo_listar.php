@@ -23,13 +23,27 @@ if (!$alumno) {
     exit;
 }
 
-// Curso actual
+// Curso actual (incluye condición de regularización, RFG13/RN12)
 $stmt = $conn->prepare(
-    "SELECT c.nombre AS curso, c.nivel_educativo FROM alumno_curso ac JOIN cursos c ON c.id = ac.curso_id WHERE ac.alumno_id = ?"
+    "SELECT c.nombre AS curso, c.nivel_educativo, ac.condicion FROM alumno_curso ac JOIN cursos c ON c.id = ac.curso_id WHERE ac.alumno_id = ?"
 );
 $stmt->bind_param('i', $alumno_id);
 $stmt->execute();
 $curso = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+// Cuotas pendientes con días de atraso (RFG13/RN12).
+$stmt = $conn->prepare(
+    "SELECT concepto, mes, anio, importe, recargo,
+            DATE_FORMAT(fecha_vencimiento,'%d/%m/%Y') AS fecha_vencimiento,
+            GREATEST(0, DATEDIFF(CURDATE(), fecha_vencimiento)) AS dias_atraso
+     FROM cuotas
+     WHERE alumno_id = ? AND estado = 'pendiente'
+     ORDER BY fecha_vencimiento"
+);
+$stmt->bind_param('i', $alumno_id);
+$stmt->execute();
+$cuotas_pendientes = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
 // Calificaciones
@@ -102,13 +116,14 @@ $stmt->close();
 $conn->close();
 
 echo json_encode([
-    'success'        => true,
-    'alumno'         => $alumno,
-    'curso'          => $curso,
-    'calificaciones' => $calificaciones,
-    'asistencia'     => $asistencia,
-    'recuperatorios' => $recuperatorios,
-    'sanciones'      => $sanciones,
-    'enfermeria'     => $enfermeria,
-    'servicios'      => $servicios,
+    'success'           => true,
+    'alumno'            => $alumno,
+    'curso'             => $curso,
+    'calificaciones'    => $calificaciones,
+    'asistencia'        => $asistencia,
+    'recuperatorios'    => $recuperatorios,
+    'sanciones'         => $sanciones,
+    'enfermeria'        => $enfermeria,
+    'servicios'         => $servicios,
+    'cuotas_pendientes' => $cuotas_pendientes,
 ]);

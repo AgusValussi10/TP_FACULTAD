@@ -141,6 +141,7 @@ $tablas = [
     "alumno_curso" => "CREATE TABLE IF NOT EXISTS alumno_curso (
         alumno_id INT NOT NULL PRIMARY KEY,
         curso_id  INT NOT NULL,
+        condicion ENUM('regular','pendiente_regularizacion') NOT NULL DEFAULT 'regular',
         FOREIGN KEY (alumno_id) REFERENCES usuarios(id) ON DELETE CASCADE,
         FOREIGN KEY (curso_id)  REFERENCES cursos(id)   ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
@@ -247,6 +248,40 @@ $tablas = [
         FOREIGN KEY (alumno_id)      REFERENCES usuarios(id) ON DELETE CASCADE,
         FOREIGN KEY (registrado_por) REFERENCES usuarios(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+
+    "deportes" => "CREATE TABLE IF NOT EXISTS deportes (
+        id          INT AUTO_INCREMENT PRIMARY KEY,
+        nombre      VARCHAR(60) NOT NULL,
+        horario     VARCHAR(100) NOT NULL,
+        cupo_maximo TINYINT UNSIGNED NOT NULL DEFAULT 20,
+        UNIQUE KEY uq_deporte (nombre)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+
+    "inscripciones_deportivas" => "CREATE TABLE IF NOT EXISTS inscripciones_deportivas (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        alumno_id  INT NOT NULL,
+        deporte_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_inscripcion_deporte (alumno_id, deporte_id),
+        FOREIGN KEY (alumno_id)  REFERENCES usuarios(id) ON DELETE CASCADE,
+        FOREIGN KEY (deporte_id) REFERENCES deportes(id)  ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+
+    "cuotas" => "CREATE TABLE IF NOT EXISTS cuotas (
+        id                INT AUTO_INCREMENT PRIMARY KEY,
+        alumno_id         INT NOT NULL,
+        concepto          ENUM('matricula','cuota') NOT NULL DEFAULT 'cuota',
+        mes               TINYINT UNSIGNED NOT NULL,
+        anio              SMALLINT UNSIGNED NOT NULL,
+        importe           DECIMAL(10,2) NOT NULL,
+        recargo           DECIMAL(10,2) NOT NULL DEFAULT 0,
+        fecha_vencimiento DATE NOT NULL,
+        estado            ENUM('pendiente','pagada') NOT NULL DEFAULT 'pendiente',
+        fecha_pago        DATE NULL,
+        created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_cuota (alumno_id, concepto, mes, anio),
+        FOREIGN KEY (alumno_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
 ];
 
 echo '<h2>Creando tablas...</h2><ul>';
@@ -275,6 +310,21 @@ if (!$tieneCapacidad) {
 }
 flush();
 
+// Sprint 5: si "alumno_curso" ya existía de antes sin la columna condicion, agregarla.
+$colCheck2 = $conn->query(
+    "SELECT COUNT(*) AS existe FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alumno_curso' AND COLUMN_NAME = 'condicion'"
+);
+$tieneCondicion = $colCheck2 ? (int)$colCheck2->fetch_assoc()['existe'] : 1;
+if (!$tieneCondicion) {
+    if ($conn->query("ALTER TABLE alumno_curso ADD COLUMN condicion ENUM('regular','pendiente_regularizacion') NOT NULL DEFAULT 'regular'")) {
+        echo "<p style='color:green'>OK: columna condicion agregada a alumno_curso</p>";
+    } else {
+        echo "<p style='color:red'>Error agregando condicion a alumno_curso: " . htmlspecialchars($conn->error) . "</p>";
+    }
+}
+flush();
+
 // ── USUARIOS DEMO ────────────────────────────────────────────────────────────
 
 $usuarios_demo = [
@@ -285,6 +335,7 @@ $usuarios_demo = [
     ['nombre' => 'Roberto Silva',    'usuario' => 'roberto.silva',    'password' => 'docente456', 'rol' => 'docente'],
     ['nombre' => 'Laura Martínez',   'usuario' => 'laura.martinez',   'password' => 'padre123',   'rol' => 'padre'],
     ['nombre' => 'Diego Fernández',  'usuario' => 'diego.fernandez',  'password' => 'padre456',   'rol' => 'padre'],
+    ['nombre' => 'Sandra Benítez',   'usuario' => 'sandra.benitez',   'password' => 'enfermeria123', 'rol' => 'enfermeria'],
 ];
 
 $stmt = $conn->prepare(
@@ -359,6 +410,15 @@ $conn->query("INSERT IGNORE INTO padre_alumno (padre_id, alumno_id)
     SELECT p.id, a.id FROM usuarios p, usuarios a
     WHERE p.usuario = 'diego.fernandez' AND a.usuario = 'carlos.lopez'");
 echo "<li>Vínculo diego.fernandez → carlos.lopez: OK</li>";
+
+$conn->query("INSERT IGNORE INTO deportes (nombre, horario, cupo_maximo) VALUES
+    ('Atletismo', 'Lunes y Miércoles 16:00–17:30', 20),
+    ('Natación', 'Martes y Jueves 15:00–16:00', 16),
+    ('Fútbol', 'Lunes, Miércoles y Viernes 17:00–18:30', 22),
+    ('Artes Marciales', 'Martes y Jueves 17:00–18:00', 18),
+    ('Vóleibol', 'Miércoles y Viernes 16:00–17:30', 18),
+    ('Danza', 'Lunes y Jueves 15:30–16:30', 20)");
+echo "<li>Catálogo de deportes: OK</li>";
 
 echo '</ul>';
 

@@ -11,10 +11,10 @@ require_once '../gestion/helpers.php';
 
 $padre_id = (int) $_SESSION['usuario_id'];
 
-// Hijos vinculados, con curso y nivel (RFG09/RFG10).
+// Hijos vinculados, con curso, nivel y condición de regularización (RFG09/RFG10/RFG13).
 $hijos = [];
 $stmt = $conn->prepare(
-    "SELECT u.id, u.nombre, c.nombre AS curso_nombre, c.nivel_educativo
+    "SELECT u.id, u.nombre, c.nombre AS curso_nombre, c.nivel_educativo, ac.condicion
      FROM padre_alumno pa
      JOIN usuarios u ON u.id = pa.alumno_id
      LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id
@@ -29,6 +29,8 @@ while ($row = $res->fetch_assoc()) {
     $hijos[] = $row;
 }
 $stmt->close();
+
+$hijos_pendientes_regularizacion = array_filter($hijos, fn($h) => ($h['condicion'] ?? 'regular') === 'pendiente_regularizacion');
 
 // Últimas notificaciones (RFG10), más recientes primero.
 $notificaciones = [];
@@ -220,6 +222,11 @@ $conn->close();
     .boletin-prom-anual { margin-top: .6rem; padding: .4rem .8rem; border-radius: 10px; font-size: .88rem; font-weight: 800; }
     .boletin-aprobada   { background: #d1fae5; color: #065F46; }
     .boletin-reprobada  { background: #fee2e2; color: #991B1B; }
+    .aviso-mora {
+      max-width: 1100px; margin: 1.2rem auto 0; padding: .9rem 1.2rem;
+      background: #FEE2E2; color: #991B1B; border-radius: 12px;
+      font-weight: 700; font-size: .88rem;
+    }
 
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
   </style>
@@ -245,6 +252,14 @@ $conn->close();
   <p>Seguí el progreso escolar de tu hijo/a desde acá.</p>
   <span class="rol-badge">Portal Familias</span>
 </div>
+
+<?php if (!empty($hijos_pendientes_regularizacion)): ?>
+<div class="aviso-mora">
+  ⚠️ Hay cuotas atrasadas hace más de <?= DIAS_LIMITE_REGULARIZACION ?> días para
+  <?= htmlspecialchars(implode(', ', array_column($hijos_pendientes_regularizacion, 'nombre'))) ?>.
+  Situación: pendiente de regularización.
+</div>
+<?php endif; ?>
 
 <div class="container">
   <div class="grid">
@@ -280,6 +295,14 @@ $conn->close();
       <div class="card-header"><span class="icon">🍽️</span><h2>Servicios</h2></div>
       <div class="card-body">
         <a href="../gestion/servicios.php" class="accion-btn">🍽️ Reservar comedor / transporte</a>
+      </div>
+    </div>
+
+    <!-- DEPORTES -->
+    <div class="card">
+      <div class="card-header"><span class="icon">🏅</span><h2>Deportes</h2></div>
+      <div class="card-body">
+        <a href="../gestion/deportes.php" class="accion-btn">🏅 Inscribirse a instalaciones deportivas</a>
       </div>
     </div>
 
