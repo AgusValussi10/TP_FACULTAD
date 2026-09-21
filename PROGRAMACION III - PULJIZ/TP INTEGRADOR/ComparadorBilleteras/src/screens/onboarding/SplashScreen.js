@@ -8,6 +8,7 @@ const colors = {
   whiteSoft: 'rgba(255,255,255,0.8)',
 };
 
+// Pantalla de splash inicial: anima logo y puntitos, y redirige según haya o no sesión activa
 export default function SplashScreen({ navigation }) {
   const { user, loading } = useAuth();
   const [timerDone, setTimerDone] = useState(false);
@@ -18,12 +19,14 @@ export default function SplashScreen({ navigation }) {
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
 
+  // Dispara las animaciones de entrada del logo y los puntitos de carga, y arranca el timer mínimo de splash
   useEffect(() => {
     Animated.parallel([
       Animated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.spring(logoScale, { toValue: 1, friction: 5, useNativeDriver: true }),
     ]).start();
 
+    // Función que anima un puntito con delay y loop infinito (efecto "cargando...")
     const animateDot = (dot, delay) =>
       Animated.loop(
         Animated.sequence([
@@ -41,6 +44,7 @@ export default function SplashScreen({ navigation }) {
     return () => clearTimeout(timer);
   }, []);
 
+  // Una vez que terminó el timer mínimo y Firebase resolvió el estado de auth, navega a Home u Onboarding
   useEffect(() => {
     if (!timerDone || loading) return;
     if (user) {

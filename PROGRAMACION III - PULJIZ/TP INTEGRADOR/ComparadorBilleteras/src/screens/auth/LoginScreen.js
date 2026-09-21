@@ -47,6 +47,7 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Función para traducir los códigos de error de Firebase Auth a mensajes en español
 function getFirebaseError(code) {
   const map = {
     'auth/user-not-found': 'No existe una cuenta con este email',
@@ -60,6 +61,7 @@ function getFirebaseError(code) {
   return map[code] || 'Ocurrió un error. Intentá de nuevo';
 }
 
+// Pantalla de login con email/contraseña y Google Sign-In, chequea que el email esté verificado
 export default function LoginScreen({ navigation }) {
   const { signInWithEmail, signInWithGoogleCredential, signOut } = useAuth();
 
@@ -83,6 +85,7 @@ export default function LoginScreen({ navigation }) {
     GOOGLE_DISCOVERY
   );
 
+  // Función para loguear con email/contraseña vía Firebase; corta sesión si el email no está verificado
   const handleLogin = async () => {
     if (!email.trim() || !password) {
       setError('Completá todos los campos');
@@ -105,6 +108,7 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  // Función para el login con Google: intercambia el code por id_token y lo manda a Firebase
   const handleGoogleLogin = async () => {
     // En Expo Go el scheme nativo no está registrado → informar al usuario
     if (isExpoGo) {

@@ -18,9 +18,11 @@ const colors = {
   background:   '#ffffff',
 };
 
+// Componente que renderiza un ícono de tab individual, con animación de "pop" al activarse
 function TabItem({ tab, isActive, onPress }) {
   const scale = useRef(new Animated.Value(1)).current;
 
+  // Anima un pequeño rebote de escala cada vez que este tab pasa a estar activo
   useEffect(() => {
     if (isActive) {
       Animated.sequence([
@@ -49,6 +51,7 @@ function TabItem({ tab, isActive, onPress }) {
   );
 }
 
+// Componente de barra de navegación inferior con 5 tabs y pill activo animado
 export default function BottomNav({ active, navigation }) {
   return (
     <View style={styles.container}>

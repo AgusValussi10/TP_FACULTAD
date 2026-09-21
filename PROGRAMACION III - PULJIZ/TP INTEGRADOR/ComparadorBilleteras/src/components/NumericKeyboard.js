@@ -28,6 +28,7 @@ const KEYS = [
   ['.', '0', 'back'],
 ];
 
+// Función para formatear el valor ingresado con separador de miles en formato argentino
 function formatDisplay(val) {
   if (!val) return '0';
   const [int, dec] = val.split('.');
@@ -35,6 +36,7 @@ function formatDisplay(val) {
   return dec !== undefined ? `${intFormatted},${dec}` : intFormatted;
 }
 
+// Componente bottom sheet con teclado numérico custom para ingresar el monto a comparar
 export default function NumericKeyboard({
   visible,
   onClose,
@@ -48,6 +50,7 @@ export default function NumericKeyboard({
     if (visible) setValue(initialValue);
   }, [visible, initialValue]);
 
+  // Función que procesa cada tecla presionada: borrar, punto decimal o dígito (con límite de 2 decimales)
   const handleKey = (key) => {
     if (key === 'back') {
       setValue((v) => v.slice(0, -1));
@@ -66,6 +69,7 @@ export default function NumericKeyboard({
     });
   };
 
+  // Función que valida el monto ingresado y lo confirma hacia el componente padre
   const handleConfirm = () => {
     const num = parseFloat(value);
     if (isNaN(num) || num <= 0) return;

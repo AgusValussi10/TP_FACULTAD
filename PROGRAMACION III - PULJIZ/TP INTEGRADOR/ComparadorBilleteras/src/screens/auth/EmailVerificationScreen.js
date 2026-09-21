@@ -22,10 +22,12 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Pantalla que avisa que se envió el email de verificación y permite reenviarlo
 export default function EmailVerificationScreen({ navigation, route }) {
   const email = route.params?.email ?? '';
   const [resending, setResending] = useState(false);
 
+  // Función para reenviar el email de verificación (mock: solo muestra el aviso)
   const handleResend = async () => {
     setResending(true);
     try {

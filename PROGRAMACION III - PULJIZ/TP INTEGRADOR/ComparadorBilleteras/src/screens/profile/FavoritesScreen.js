@@ -28,11 +28,13 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Pantalla que muestra las billeteras favoritas del usuario, con opción de quitarlas
 export default function FavoritesScreen({ navigation }) {
   const { apiToken } = useAuth();
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Recarga los favoritos reales del usuario desde la API cada vez que la pantalla vuelve a estar en foco
   useFocusEffect(
     useCallback(() => {
       if (!apiToken) return;
@@ -44,6 +46,7 @@ export default function FavoritesScreen({ navigation }) {
     }, [apiToken])
   );
 
+  // Función para quitar un favorito, con confirmación previa y persistencia en la API
   const handleRemove = (billetera_id, nombre) => {
     Alert.alert(
       'Quitar favorito',

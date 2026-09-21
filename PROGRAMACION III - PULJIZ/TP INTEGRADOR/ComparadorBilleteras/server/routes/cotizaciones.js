@@ -1,12 +1,13 @@
 const router = require('express').Router();
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const checkAdminAuth = require('../middleware/adminAuth');
 
-// GET /api/cotizaciones?monto=500
-// Devuelve el ranking de billeteras ordenado por mejor cotización
+// Endpoint que devuelve el ranking de billeteras ordenado por mejor cotización para el monto dado
 router.get('/', async (req, res) => {
   const monto = parseFloat(req.query.monto) || 1;
   try {
+    // Usa la VIEW cotizaciones_actuales (última tasa por billetera) y calcula el total en ARS con comisión incluida
     const [rows] = await pool.query(`
       SELECT
         ca.billetera_id,
@@ -27,6 +28,7 @@ router.get('/', async (req, res) => {
       return res.json({ monto, moneda: 'BRL', resultados: [] });
     }
 
+    // Marca la mejor opción y calcula el ahorro de cada billetera contra la peor cotización
     const peorTotal = rows[rows.length - 1].total_ars;
     const resultados = rows.map((r, i) => ({
       ...r,
@@ -41,8 +43,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/cotizaciones/historial?billetera_id=1
-// Historial de tasas de una billetera (últimos 30 registros)
+// Endpoint que devuelve el historial de tasas de una billetera (últimos 30 registros, sin paginar a propósito)
 router.get('/historial', async (req, res) => {
   const { billetera_id } = req.query;
   if (!billetera_id) return res.status(400).json({ error: 'billetera_id es requerido' });
@@ -61,20 +62,17 @@ router.get('/historial', async (req, res) => {
   }
 });
 
-// POST /api/cotizaciones  (solo admin — usa header X-Admin-Key)
-// Body: { tasas: [ { billetera_id, tasa }, ... ] }
-router.post('/', async (req, res) => {
-  if (req.headers['x-admin-key'] !== process.env.JWT_SECRET) {
-    return res.status(403).json({ error: 'No autorizado' });
-  }
+// Endpoint admin que carga nuevas tasas en lote — Body: { tasas: [ { billetera_id, tasa }, ... ] }
+router.post('/', checkAdminAuth, async (req, res) => {
   const { tasas } = req.body;
   if (!Array.isArray(tasas) || tasas.length === 0) {
     return res.status(400).json({ error: 'tasas debe ser un array no vacío' });
   }
   try {
-    const values = tasas.map(t => [t.billetera_id, 'ARS', 'BRL', t.tasa]);
+    // Arma un INSERT múltiple, dejando registrado qué admin cargó cada tasa (auditoría modificado_por)
+    const values = tasas.map(t => [t.billetera_id, 'ARS', 'BRL', t.tasa, req.adminUsuario]);
     await pool.query(
-      'INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa) VALUES ?',
+      'INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, modificado_por) VALUES ?',
       [values]
     );
     res.status(201).json({ message: `${tasas.length} cotizaciones registradas` });

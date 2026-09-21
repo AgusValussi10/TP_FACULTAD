@@ -1,19 +1,23 @@
 # CLAUDE.md — BrasilPagos
-
 App mobile (React Native + Expo SDK 54) para usuarios argentinos que viajan a Brasil. Compara cotizaciones ARS→BRL de billeteras virtuales argentinas para pagos vía PIX.
 
 ---
 
+# CPF / CNPJ para cotizar PIX
+08.258.164/0001-25
+
 ## Criterios de evaluación del TP
 
-| Criterio | Pts | Estado |
-|---|---|---|
-| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | ✅ Completo — 13 billeteras |
-| 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | ✅ Completo |
-| 3. UI e integración con la API | 20 | ✅ Completo — app conectada a la API |
-| 4. Operaciones maestro-detalle | 10 | ✅ BD + UI conectada a API |
-| 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | ✅ Completo |
-| 6. Documentación técnica | 5 | ✅ Completo — README.md |
+Autoevaluación contra la rúbrica oficial del profesor (100 pts, aprobación ≥60). **Puntaje estimado: 89.75/100.**
+
+| Criterio | Pts | Estimado | Estado |
+|---|---|---|---|
+| 1. Modelo de datos (tablas, relaciones, normalización, scripts) | 25 | 24 | 🟢 11 tablas + N-N real (`favoritos`); auditoría por usuario resuelta — `billeteras` y `cotizaciones` tienen `modificado_por` (+ `actualizado_en` en `billeteras`), completado desde el panel admin. Migración real (`migracion_admin_auth.sql`, aditiva) + seeder de prueba (`seed-historial-usuario.js`) ya cubren scripts/migraciones/seeders (falta solo versionado tipo Flyway/Knex) |
+| 2. API REST y lógica de negocio (endpoints, validaciones, errores) | 30 | 24.5 | 🟢 Arquitectura en 3 capas (routes/services/repositories) aplicada en `resenas` y `alertas`; falta extenderla al resto de las rutas. La rúbrica nombra "API .NET 10 / ADO.NET" — confirmar con el profesor si el stack Node/Express es válido |
+| 3. UI e integración con la API | 20 | 20 | 🟢 Paginado real en Historial (`GET /api/historial?page=&limit=`); filtro por 2 parámetros resuelto en la API — `GET /api/billeteras?nombre=&pais=` con WHERE dinámico en SQL, reemplazando el filtro client-side de `WalletsScreen` |
+| 4. Operaciones maestro-detalle | 10 | 8 | 🟢 Transacción real en `POST /api/resenas` (`beginTransaction`/`COMMIT`/`ROLLBACK` envolviendo INSERT + UPDATE de rating); falta cubrir ABM cabecera+detalle más estricto (x3) |
+| 5. Seguridad y control de acceso (auth, JWT, protección de rutas) | 10 | 9 | 🟢 JWT y rutas protegidas OK; panel admin con login real contra tabla `admin_usuarios` (rol `admin` en el JWT) reemplazando la clave compartida `X-Admin-Key` |
+| 6. Documentación técnica | 5 | 4.25 | 🟢 README completo; falta Swagger/OpenAPI o colección Postman |
 
 ---
 
@@ -66,21 +70,29 @@ ComparadorBilleteras/
 │   ├── db.js              pool de conexiones MySQL
 │   ├── .env               credenciales (no commitear)
 │   ├── middleware/
-│   │   └── auth.js        verifica JWT en header Authorization: Bearer
+│   │   ├── auth.js        verifica JWT de usuario en header Authorization: Bearer
+│   │   └── adminAuth.js   verifica JWT de admin (rol: 'admin') — reemplaza el viejo X-Admin-Key
+│   ├── services/           capa de negocio — validación + orquestación (arquitectura en 3 capas)
+│   │   ├── resenasService.js   valida calificación 1-5, crea reseña + recalcula rating en transacción
+│   │   └── alertasService.js   valida condición, listar/crear/actualizar/eliminar
+│   ├── repositories/       capa de datos — únicas funciones que tocan pool.query
+│   │   ├── resenasRepository.js
+│   │   └── alertasRepository.js
 │   ├── routes/
 │   │   ├── auth.js        POST /register, POST /login, GET /me
 │   │   ├── cotizaciones.js GET /?monto=, GET /historial, POST / (admin)
 │   │   ├── billeteras.js  GET /, GET /:id
 │   │   ├── alertas.js     GET /, POST /, PATCH /:id, DELETE /:id
-│   │   ├── historial.js   GET /, POST /
+│   │   ├── historial.js   GET /?page=&limit= (paginado real), POST /
 │   │   ├── favoritos.js   GET /, POST /, DELETE /:billetera_id
-│   │   └── admin.js       rutas admin (ver abajo)
+│   │   └── admin.js       POST /login + rutas admin (ver abajo)
 │   ├── firebaseAdmin.js   inicializa Firebase Admin SDK (requiere serviceAccountKey.json)
 │   └── admin/
-│       └── index.html     panel web — tabs: Dashboard, Cotizaciones, Billeteras, Usuarios
+│       └── index.html     panel web — login + tabs: Dashboard, Cotizaciones, Billeteras, Usuarios
 ├── database/
-│   ├── brasilpagos_schema.sql   CREATE DATABASE + 11 tablas + FK + índices
-│   └── brasilpagos_datos.sql    seed: 13 billeteras (incl. AstroPay, belo, Cocos Capital)
+│   ├── brasilpagos_schema.sql     CREATE DATABASE + 12 tablas + FK + índices
+│   ├── brasilpagos_datos.sql      seed: 13 billeteras (incl. AstroPay, belo, Cocos Capital) + 2 admin_usuarios
+│   └── migracion_admin_auth.sql   ALTER TABLE aditivo para BDs ya creadas (admin_usuarios + modificado_por)
 ├── App.js
 └── android/
 ```
@@ -137,11 +149,12 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 |---|---|---|
 | GET | `/api/cotizaciones?monto=500` | Ranking de billeteras para el monto dado |
 | GET | `/api/cotizaciones/historial?billetera_id=1` | Historial de tasas de una billetera |
-| GET | `/api/billeteras` | Listado de todas las billeteras |
+| GET | `/api/billeteras?nombre=&pais=` | Listado de billeteras, con filtro opcional por nombre (`LIKE`) y por país (`codigo_pais` vía `billetera_paises`), resuelto en SQL |
 | GET | `/api/billeteras/:id` | Detalle completo de una billetera |
 | POST | `/api/auth/register` | Crear cuenta `{ nombre, email, password }` |
 | POST | `/api/auth/login` | Login → devuelve JWT `{ token, usuario }` |
 | POST | `/api/auth/firebase-login` | Intercambia Firebase ID token por JWT propio `{ idToken }` — crea usuario MySQL si no existe. Usa Firebase Admin SDK si hay serviceAccountKey.json, sino verifica vía API pública de Google |
+| POST | `/api/admin/login` | Login del panel admin `{ usuario, password }` → JWT con `{ adminUsuario, rol: 'admin' }`, expira en 8h. Valida contra la tabla `admin_usuarios` (solo `fabri` y `agus`, sin endpoint de alta) |
 
 ### Endpoints protegidos (requieren `Authorization: Bearer <token>`)
 
@@ -152,22 +165,22 @@ INSERT INTO cotizaciones (billetera_id, moneda_origen, moneda_destino, tasa, reg
 | POST | `/api/alertas` | Crear alerta `{ billetera_id, condicion, valor_objetivo }` |
 | PATCH | `/api/alertas/:id` | Activar/pausar alerta `{ activa: true/false }` |
 | DELETE | `/api/alertas/:id` | Eliminar alerta |
-| GET | `/api/historial` | Historial de consultas del usuario |
+| GET | `/api/historial?page=1&limit=10` | Historial de consultas del usuario, paginado real (`LIMIT`/`OFFSET` en la DB). Devuelve `{ resultados, page, limit, total, totalPages }` |
 | POST | `/api/historial` | Guardar consulta `{ monto, moneda_destino, mejor_billetera_id, mejor_tasa, total_ars }` |
 | GET | `/api/favoritos` | Billeteras favoritas del usuario (solo activas) |
 | POST | `/api/favoritos` | Agregar favorito `{ billetera_id }` — INSERT IGNORE (no duplica) |
 | DELETE | `/api/favoritos/:billetera_id` | Quitar favorito |
 | POST | `/api/resenas` | Crear reseña `{ billetera_id, calificacion (1-5), comentario }` — inserta en `resenas` y recalcula `rating_promedio` + `cantidad_resenas` en `billeteras` |
 
-### Endpoints admin (requieren header `X-Admin-Key`)
+### Endpoints admin (requieren `Authorization: Bearer <token admin>`, obtenido en `POST /api/admin/login`)
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| POST | `/api/cotizaciones` | Cargar nuevas tasas `{ tasas: [{ billetera_id, tasa }] }` |
+| POST | `/api/cotizaciones` | Cargar nuevas tasas `{ tasas: [{ billetera_id, tasa }] }` — graba `modificado_por` con el usuario admin logueado |
 | GET | `/api/admin/stats` | Stats del dashboard (usuarios, billeteras, consultas, alertas, hoy) |
 | GET | `/api/admin/billeteras` | Todas las billeteras sin filtrar `activa` |
-| PATCH | `/api/admin/billeteras/:id/toggle` | Mostrar/ocultar billetera en la app |
-| PUT | `/api/admin/billeteras/:id/rating` | Actualizar rating y cantidad de reseñas `{ rating_promedio, cantidad_resenas }` |
+| PATCH | `/api/admin/billeteras/:id/toggle` | Mostrar/ocultar billetera en la app — graba `modificado_por` |
+| PUT | `/api/admin/billeteras/:id/rating` | Actualizar rating y cantidad de reseñas `{ rating_promedio, cantidad_resenas }` — graba `modificado_por` |
 | GET | `/api/admin/usuarios` | Listado de usuarios MySQL |
 | POST | `/api/admin/usuarios` | Crear usuario en MySQL + Firebase `{ nombre, email, password, pais_residencia }` |
 | PUT | `/api/admin/usuarios/:id` | Editar nombre/email en MySQL y Firebase (sincroniza displayName) |
@@ -189,7 +202,19 @@ node index.js
 - **Contraseñas:** hasheadas con `bcryptjs` (salt rounds: 10). Nunca se almacena la contraseña en texto plano.
 - **JWT:** firmado con `JWT_SECRET` del `.env`, expira en 7 días. El middleware `auth.js` lo verifica en cada ruta protegida.
 - **Firebase Auth:** login con email/contraseña y Google. El email debe estar verificado para poder entrar a la app (`emailVerified` chequeado en login y en `onAuthStateChanged`). Si el email no está verificado, Firebase cierra la sesión automáticamente.
-- **Panel admin:** protegido con `X-Admin-Key` (mismo valor que `JWT_SECRET`).
+- **Panel admin:** login real contra la tabla `admin_usuarios` (ver abajo), ya no usa la clave compartida `X-Admin-Key`.
+
+### Login de administradores (panel admin — rúbrica 5.2 y 1.5)
+
+Reemplaza la vieja clave compartida `X-Admin-Key` por un login real con rol, y de paso resuelve la auditoría por usuario:
+
+- Tabla `admin_usuarios` con **solo dos cuentas fijas** (`fabri` / `agus`, contraseña `admin` para ambas, hasheada con bcrypt). A propósito **sin endpoint de alta** — no está pensado para escalar a más usuarios, solo para que cada persona del grupo pueda operar el panel con su propia identidad.
+- `POST /api/admin/login` valida usuario/contraseña y devuelve un JWT con `{ adminUsuario, rol: 'admin' }`, expira en 8h.
+- `middleware/adminAuth.js` reemplaza el viejo `checkAdminKey` en `admin.js` y en `POST /api/cotizaciones`: valida `Authorization: Bearer <token>` y exige `rol === 'admin'`.
+- Cada mutación admin (`toggle`, `rating`, carga de cotizaciones) graba `modificado_por = req.adminUsuario` automáticamente — sin pedir nombre a mano.
+- `billeteras` ahora tiene `actualizado_en` (antes solo tenía `creado_en`) + `modificado_por`. `cotizaciones` tiene `modificado_por` (queda quién cargó cada tasa).
+- El panel (`server/admin/index.html`) tiene pantalla de login antes de los tabs, guarda el JWT en `localStorage`, muestra "Conectado como: X" en el header con botón de cierre de sesión, y la tabla de Billeteras muestra columna "Modificado por" con fecha.
+- Para una BD ya creada (sin recrearla), correr `database/migracion_admin_auth.sql` — es aditivo (`CREATE TABLE IF NOT EXISTS` + `ALTER TABLE ADD COLUMN`), no borra datos.
 
 ### Flujo de autenticación (Firebase + backend JWT)
 
@@ -235,6 +260,23 @@ const { headers: extraHeaders, ...rest } = options;
 fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, ...rest });
 ```
 
+### Paginado real — historial de consultas (rúbrica 3.5)
+
+`GET /api/historial` acepta `?page=&limit=` y resuelve el recorte en la DB con `LIMIT ? OFFSET ?` (más un `SELECT COUNT(*)` para el total), en vez de traer todo y cortar en el cliente. Devuelve `{ resultados, page, limit, total, totalPages }`.
+
+- **`HistoryScreen`** — pide de a 10 y agrega un botón "Cargar más" como `ListFooterComponent` del `FlatList`, que pide la siguiente página y la anexa al array existente. El botón desaparece solo cuando `page >= totalPages`.
+- **`HomeScreen`** y **`ProfileScreen`** (que solo necesitan las últimas 3 consultas) piden `getHistorial(apiToken, 1, 3)` directo, sin traer de más y cortar con `.slice()`.
+- El endpoint `/api/cotizaciones/historial` (evolución de tasa por billetera en `WalletProfileScreen`) **no** está paginado — sigue con `LIMIT 30` fijo a propósito, para no duplicar la misma feature en dos pantallas.
+- Seeder de prueba: `server/scripts/seed-historial-usuario.js [email] [cantidad]` — agrega N consultas de prueba al historial de un usuario existente (busca el `usuario_id` por email, distribuye entre las billeteras activas, fechas escalonadas).
+
+### Filtro por 2 parámetros en la API — búsqueda de billeteras (rúbrica 3.4)
+
+`GET /api/billeteras` acepta `?nombre=&pais=` y resuelve el filtro en la DB con un `WHERE` dinámico (LIKE por nombre + JOIN/igualdad por `codigo_pais` contra `billetera_paises`, con `DISTINCT` para evitar duplicados por el JOIN), en vez de traer todo y filtrar en el cliente.
+
+- **`WalletsScreen`** — ya no filtra el array local con `.filter()`. Cada cambio en el buscador o en los chips de país (🌎 Todos/🇦🇷/🇧🇷/🇺🇾/🇲🇽/🇨🇴) dispara `getBilleteras({ nombre, pais })` con debounce de 300ms.
+- `src/services/api.js` — `getBilleteras(filtros)` arma el querystring (`nombre`, `pais`) a partir del objeto de filtros.
+- Verificado contra la DB real: filtro solo por nombre, solo por país, y combinado.
+
 ---
 
 ## Pantallas (23 implementadas)
@@ -274,7 +316,7 @@ fetch(url, { headers: { 'Content-Type': 'application/json', ...extraHeaders }, .
 ### Perfil
 - **ProfileScreen** — muestra nombre/email/inicial del usuario Firebase real. Carga últimas 3 consultas desde API con `useFocusEffect`. Link a historial completo.
 - **EditProfileScreen** — edición de nombre e info
-- **HistoryScreen** — historial de consultas desde API con `useFocusEffect`
+- **HistoryScreen** — historial de consultas desde API con `useFocusEffect`, paginado real de a 10 con botón "Cargar más"
 - **SettingsScreen** — toggles de notificaciones, idioma, tema
 - **FavoritesScreen** — favoritos reales del usuario desde API con `useFocusEffect`. Quitar favorito persiste en BD con confirmación. Estado vacío cuando no hay favoritos.
 
@@ -402,38 +444,15 @@ adb -s NUEVO_ID reverse tcp:3000 tcp:3000
 - [x] **Reseñas** — `POST /api/resenas` implementado. `WalletProfileScreen` muestra reseñas reales y permite crear nuevas con form inline (estrellas + comentario). Rating se recalcula automáticamente en BD.
 - [x] **Gráfico de historial de cotizaciones** — sección "Evolución de la tasa" en `WalletProfileScreen` con gráfico de barras puro (sin librerías). Consume `GET /api/cotizaciones/historial`.
 
-### Notificaciones
-- [ ] `PushNotificationScreen` es un mockup estático — las alertas no disparan notificaciones reales cuando la app está cerrada. El polling actual solo funciona con la app abierta.
-
 ### UX / navegación
 - [x] `WalletDetailScreen` eliminada del stack — removida de `AppNavigator.js` (import + `Stack.Screen`). El archivo queda en disco por si se necesita.
 - [x] `WalletCompareScreen` ya tenía dos entry points (ícono en header de `WalletsScreen` + ícono/chip "Comparar 2" en `ResultsScreen`). Fix: ahora recibe `route` y pre-selecciona `initialWallet1` / `initialWallet2` cuando viene desde `ResultsScreen`.
 
-### Diseño / Figma
-
-El archivo Figma tiene 3 páginas: **Pantallas**, **Componentes**, **Bases**.
-Link: `https://www.figma.com/design/Hmg85ALG6apYw9dMgdTDZX/TP-Integrador---Módulo-4---Piel-Visual`
-
-Cambios pendientes de reflejar en Figma:
-
-#### Página "Pantallas"
-- [x] **WalletProfileScreen** — actualizado: frame extendido a 1220px. Agregado: ☆ favorito en header, rating "★ 4.8 · 124 reseñas" en hero, sección "Evolución de la tasa" con gráfico de barras (8 puntos, última barra azul sólida, rango y fechas), sección "Opiniones" con 2 review cards reales (avatar, nombre, estrellas doradas, fecha, comentario) + link "+ Escribir reseña", form inline "Tu reseña" con selector 5 estrellas + input + botón Enviar.
-- [x] **OnboardingScreen** — actualizado: 3 frames (Slide 1 azul, Slide 2 verde, Slide 3 naranja). Layout: mitad superior con fondo suave + tarjeta cuadrada (borderRadius 40); mitad inferior con badge, título Extra Bold 30px, subtítulo gris 15px. Dots coloreados según slide activo, botón "COMENZAR" full-width en slide 3.
-- [x] **BottomNav** — actualizado en HomeScreen + frame "BottomNav-Component" con 2 estados (Home activo / Wallets activo). Pill: 48×36 borderRadius 18 fill #eff6ff, ícono activo azul #3b82f6, inactivo gris #adb5bd, sin labels.
-- [x] **ResultsScreen** — card ganadora actualizada: botón outline "Ver detalles" (→ WalletProfile) + botón azul "Ir a Mercado Pago →" (→ ExternalRedirectModal). Cards restantes mantienen "Ver mas >".
-- [x] **WalletCompareScreen** — verificado: diseño ya es correcto (pickers, tabla, banner ganador, botón). Los cambios (API activas + route params pre-selección) son lógica interna, sin impacto visual.
-
-#### Página "Componentes"
-- [x] `BottomNav` agregado como componente con 2 estados (Home-Active, Wallets-Active). Pill 48×36 r=18 fill #eff6ff.
-- [x] `ExternalRedirectModal` agregado: overlay oscuro + card con avatar, título, body, botones Cancelar / Continuar →.
-- [ ] `NumericKeyboard` — existe como frame en Pantallas/Extras (11-NumericKeyboardScreen), no como componente reutilizable en Componentes.
-
-#### Página "Bases"
-- [x] Design system completo agregado: 13 colores con swatches 56×56px (Primary → Divider), 6 niveles tipográficos (Display 30px Bold → Tiny 10px Regular) con nota descriptiva al lado, escala de espaciado 4px–48px alineados al fondo, 6 border radius con cajas de ejemplo (4 / 8 / 12 / 16 / 18 / 50%). Layout en 4 secciones verticales separadas por dividers, sin superposición.
-
-### Exposición en notebook
-- [ ] Instalar Node.js 22, MySQL 8, MySQL Workbench, Android Studio
-- [ ] Copiar proyecto, importar BD con los scripts SQL, configurar `.env`
-- [ ] Copiar `serviceAccountKey.json` en `server/` para habilitar Firebase Admin
-- [ ] Cambiar `API_BASE_URL` en `api.js` si se usa celular físico
-- [ ] Verificar que Metro + servidor corren bien antes de la expo
+### Gaps detectados contra la rúbrica (autoevaluación)
+- [x] Paginado real en historial de consultas — `GET /api/historial?page=&limit=` + botón "Cargar más" en `HistoryScreen` (rúbrica 3.5)
+- [x] Transacciones/rollback en operaciones multi-paso — `resenasService.crearResena()` envuelve el INSERT + UPDATE de `POST /api/resenas` en `beginTransaction`/`COMMIT`/`ROLLBACK` (rúbrica 4.3)
+- [x] Separar capa de negocio/datos en rutas críticas — `resenas` y `alertas` ahora tienen `routes/` (controller fino) → `services/` (validación + orquestación) → `repositories/` (SQL). Verificado end-to-end contra la DB real. Falta extender el patrón al resto de las rutas para el puntaje completo de 2.3 (rúbrica 2.3, quedan ~2 pts de los 7)
+- [x] Filtro por 2 parámetros resuelto en la API — `GET /api/billeteras?nombre=&pais=` con WHERE dinámico en SQL (LIKE por nombre + JOIN/igualdad por `codigo_pais`), reemplazando el filtro client-side de `WalletsScreen` (rúbrica 3.4)
+- [x] Rol de usuario real en BD — login del panel admin contra tabla `admin_usuarios` (`fabri`/`agus`) con JWT `rol: 'admin'`, reemplaza `X-Admin-Key` (rúbrica 5.2)
+- [x] Columna de auditoría `modificado_por` en `billeteras` (+ `actualizado_en`) y `cotizaciones`, seteada automáticamente desde el panel admin con el usuario logueado (rúbrica 1.5)
+- [ ] Confirmar con el profesor si "API .NET 10 / ADO.NET" (rúbrica 2.1 y 2.5) es un requisito duro o un ejemplo genérico de la planilla — Node.js/Express no se puede migrar a último momento

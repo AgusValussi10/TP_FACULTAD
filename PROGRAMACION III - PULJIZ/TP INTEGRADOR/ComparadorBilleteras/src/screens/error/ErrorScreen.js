@@ -10,6 +10,7 @@ const colors = {
   textMuted: '#adb5bd',
 };
 
+// Pantalla que se muestra cuando no hay conexión, con botón para reintentar volviendo atrás
 export default function ErrorScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>

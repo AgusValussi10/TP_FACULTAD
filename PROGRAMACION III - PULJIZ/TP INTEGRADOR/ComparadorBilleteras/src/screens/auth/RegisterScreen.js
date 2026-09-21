@@ -29,6 +29,7 @@ const colors = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Función para traducir los códigos de error de Firebase Auth a mensajes en español
 function getFirebaseError(code) {
   const map = {
     'auth/email-already-in-use': 'Este email ya está registrado',
@@ -41,6 +42,7 @@ function getFirebaseError(code) {
   return map[code] || 'Ocurrió un error. Intentá de nuevo';
 }
 
+// Componente reutilizable de input con icono, usado para cada campo del formulario de registro
 function InputField({ icon, placeholder, value, onChangeText, secureTextEntry, keyboardType, autoCapitalize, rightElement, onFocus, onBlur, focused }) {
   return (
     <View style={[styles.inputGroup, focused && styles.inputGroupFocused]}>
@@ -68,6 +70,7 @@ function InputField({ icon, placeholder, value, onChangeText, secureTextEntry, k
   );
 }
 
+// Pantalla de registro con validación de formulario, crea la cuenta en Firebase y envía email de verificación
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
 
@@ -82,6 +85,7 @@ export default function RegisterScreen({ navigation }) {
 
   const [focused, setFocused] = useState('');
 
+  // Función para validar nombre, email y contraseñas antes de enviar el registro
   const validate = () => {
     if (name.trim().length < 2) return 'Ingresá tu nombre completo (mínimo 2 caracteres)';
     if (!EMAIL_REGEX.test(email.trim())) return 'Ingresá un email con formato válido';
@@ -90,6 +94,7 @@ export default function RegisterScreen({ navigation }) {
     return null;
   };
 
+  // Función para registrar el usuario en Firebase y navegar a la pantalla de verificación de email
   const handleRegister = async () => {
     const validationError = validate();
     if (validationError) {
@@ -268,6 +273,7 @@ const styles = StyleSheet.create({
   },
   inputGroupFocused: { borderColor: colors.borderFocus, backgroundColor: colors.background },
   inputIcon: { marginRight: 10 },
+  // Fix: evita que el placeholder quede desalineado verticalmente en Android
   input: { flex: 1, fontSize: 16, color: colors.textPrimary, textAlignVertical: 'center', includeFontPadding: false },
   eyeBtn: { padding: 4, marginLeft: 4 },
   primaryBtn: {

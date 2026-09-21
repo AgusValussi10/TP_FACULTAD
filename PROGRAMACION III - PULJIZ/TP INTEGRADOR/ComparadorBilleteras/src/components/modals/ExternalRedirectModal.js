@@ -12,6 +12,7 @@ const colors = {
   textMuted: '#adb5bd',
 };
 
+// Componente modal que confirma con el usuario antes de abrir la app externa de una billetera
 export default function ExternalRedirectModal({ visible, walletName = 'Mercado Pago', onCancel, onConfirm }) {
   return (
     <Modal

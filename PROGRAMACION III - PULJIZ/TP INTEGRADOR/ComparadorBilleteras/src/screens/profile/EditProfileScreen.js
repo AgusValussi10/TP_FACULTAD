@@ -27,10 +27,12 @@ const colors = {
   divider: '#e0e0e0',
 };
 
+// Pantalla que permite editar el nombre y la foto de perfil del usuario (mockup, sin persistencia real todavía)
 export default function EditProfileScreen({ navigation }) {
   const [name, setName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
 
+  // Función para validar el nombre y confirmar el guardado (mockup, no llama a la API)
   const handleSave = () => {
     if (!name.trim()) {
       Alert.alert('Error', 'El nombre no puede estar vacío');
@@ -41,6 +43,7 @@ export default function EditProfileScreen({ navigation }) {
     ]);
   };
 
+  // Función placeholder para el cambio de foto de perfil (funcionalidad pendiente)
   const handleChangePhoto = () => {
     Alert.alert('Cambiar foto', 'Esta función estará disponible próximamente.');
   };

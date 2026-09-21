@@ -5,4 +5,4 @@ nixPkgs = ["php82", "php82Extensions.mysqli", "php82Extensions.mbstring", "php82
 cmds = ["php -r \"echo extension_loaded('mysqli') ? 'mysqli OK' : 'mysqli MISSING'; echo PHP_EOL;\""]
 
 [start]
-cmd = "for i in 1 2 3 4 5; do php init_db.php && break || sleep 3; done; exec php -S 0.0.0.0:$PORT"
+cmd = "bash start.sh"

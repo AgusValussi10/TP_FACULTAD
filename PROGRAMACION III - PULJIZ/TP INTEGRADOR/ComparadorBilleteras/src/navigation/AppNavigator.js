@@ -34,6 +34,7 @@ import ErrorScreen from '../screens/error/ErrorScreen';
 
 const Stack = createStackNavigator();
 
+// Componente raíz de navegación: arranca en Splash y registra todas las pantallas del stack (sin headers nativos)
 export default function AppNavigator() {
   return (
     <NavigationContainer>

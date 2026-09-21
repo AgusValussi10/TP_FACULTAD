@@ -30,10 +30,12 @@ const colors = {
 const CURRENCY_FLAG = { BRL: '🇧🇷', USD: '🇺🇸', EUR: '🇪🇺' };
 const CURRENCY_METHOD = { BRL: 'PIX', USD: 'USD', EUR: 'EUR' };
 
+// Función para formatear un monto como pesos argentinos con separador de miles
 function formatARS(amount) {
   return `$ ${Math.round(amount).toLocaleString('es-AR')} ARS`;
 }
 
+// Función para formatear una fecha ISO como texto relativo (hace X hs / días / semanas)
 function formatFecha(isoString) {
   const date = new Date(isoString);
   const now = new Date();
@@ -48,6 +50,7 @@ function formatFecha(isoString) {
   return `Hace ${Math.floor(diffD / 7)} semanas`;
 }
 
+// Componente que renderiza una fila individual del historial (monto, mejor billetera, fecha)
 function HistoryItem({ item, onRepeat }) {
   return (
     <TouchableOpacity style={styles.item} onPress={onRepeat} activeOpacity={0.7}>
@@ -71,6 +74,7 @@ function HistoryItem({ item, onRepeat }) {
   );
 }
 
+// Componente que muestra el estado vacío cuando el usuario todavía no hizo consultas
 function EmptyState() {
   return (
     <View style={styles.empty}>
@@ -83,34 +87,68 @@ function EmptyState() {
   );
 }
 
+// Función para mapear una fila cruda de la API al formato que usa la UI del historial
+function mapRow(r) {
+  return {
+    id: String(r.id),
+    amount: r.monto,
+    currency: r.moneda_destino,
+    country: r.moneda_destino === 'BRL' ? 'Brasil' : r.moneda_destino,
+    bestProvider: r.mejor_billetera ?? '—',
+    bestPrice: r.total_ars ?? 0,
+    date: formatFecha(r.consultado_en),
+  };
+}
+
+const PAGE_SIZE = 10;
+
+// Pantalla que muestra el historial completo de consultas del usuario, con paginado real (botón "Cargar más")
 export default function HistoryScreen({ navigation }) {
   const { apiToken } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
+  // Función para cargar la primera página del historial desde la API
   const load = useCallback(async () => {
     if (!apiToken) { setLoading(false); return; }
+    setLoading(true);
     try {
-      const rows = await getHistorial(apiToken);
-      const mapped = rows.map(r => ({
-        id: String(r.id),
-        amount: r.monto,
-        currency: r.moneda_destino,
-        country: r.moneda_destino === 'BRL' ? 'Brasil' : r.moneda_destino,
-        bestProvider: r.mejor_billetera ?? '—',
-        bestPrice: r.total_ars ?? 0,
-        date: formatFecha(r.consultado_en),
-      }));
-      setHistory(mapped);
+      const { resultados, totalPages: tp } = await getHistorial(apiToken, 1, PAGE_SIZE);
+      setHistory(resultados.map(mapRow));
+      setPage(1);
+      setTotalPages(tp);
     } catch {
       setHistory([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
   }, [apiToken]);
 
+  // Recarga el historial desde la primera página cada vez que la pantalla vuelve a estar en foco
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // Función para pedir la siguiente página y anexarla al listado existente (botón "Cargar más")
+  const loadMore = async () => {
+    if (loadingMore || page >= totalPages) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const { resultados, totalPages: tp } = await getHistorial(apiToken, nextPage, PAGE_SIZE);
+      setHistory(prev => [...prev, ...resultados.map(mapRow)]);
+      setPage(nextPage);
+      setTotalPages(tp);
+    } catch {
+      // el usuario puede reintentar tocando "Cargar más" de nuevo
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Función para repetir una consulta anterior, navegando a Results sin volver a guardar en el historial
   const handleRepeat = (item) => {
     navigation.navigate('Results', {
       amount: item.amount,
@@ -143,6 +181,25 @@ export default function HistoryScreen({ navigation }) {
           )}
           ListEmptyComponent={<EmptyState />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListFooterComponent={
+            page < totalPages ? (
+              <TouchableOpacity
+                style={styles.loadMoreBtn}
+                onPress={loadMore}
+                activeOpacity={0.75}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Text style={styles.loadMoreText}>Cargar más</Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.primary} />
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : null
+          }
           contentContainerStyle={
             history.length === 0 ? styles.emptyContainer : styles.listContent
           }
@@ -213,4 +270,18 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  loadMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  loadMoreText: { fontSize: 13, fontWeight: '600', color: colors.primary },
 });

@@ -30,8 +30,10 @@ export const GOOGLE_WEB_CLIENT_ID = '276300901779-k09s2dj857ds18efarm268bdj7rmau
 //    https://auth.expo.io/@TU_USUARIO_EXPO/ComparadorBilleteras
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Inicializa la app de Firebase con la config del proyecto
 const app = initializeApp(firebaseConfig);
 
+// Instancia de auth de Firebase, persistiendo la sesión en AsyncStorage (necesario en React Native)
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });

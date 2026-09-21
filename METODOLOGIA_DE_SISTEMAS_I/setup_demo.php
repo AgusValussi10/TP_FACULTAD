@@ -33,6 +33,7 @@ echo "<p style='color:green'><strong>Conexion OK</strong></p>";
 flush();
 
 $usuarios_demo = [
+    ['nombre' => 'Administrador',    'usuario' => 'admin',            'password' => 'admin',      'rol' => 'admin'],
     ['nombre' => 'Ana García',       'usuario' => 'ana.garcia',       'password' => 'alumno123',  'rol' => 'alumno'],
     ['nombre' => 'Carlos López',     'usuario' => 'carlos.lopez',     'password' => 'alumno456',  'rol' => 'alumno'],
     ['nombre' => 'María Rodríguez',  'usuario' => 'maria.rodriguez',  'password' => 'docente123', 'rol' => 'docente'],

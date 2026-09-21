@@ -46,10 +46,12 @@ const SLIDES = [
   },
 ];
 
+// Pantalla que muestra el carrusel de onboarding de 3 slides antes del login
 export default function OnboardingScreen({ navigation }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
 
+  // Función para avanzar al siguiente slide, o ir al login si ya estamos en el último
   const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
       const nextIndex = currentIndex + 1;
@@ -63,15 +65,18 @@ export default function OnboardingScreen({ navigation }) {
     }
   };
 
+  // Función para saltear el onboarding directo al login
   const handleSkip = () => {
     navigation.replace('Login');
   };
 
+  // Sincroniza el índice actual con el slide visible al terminar el swipe manual
   const onMomentumScrollEnd = (event) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     if (index !== currentIndex) setCurrentIndex(index);
   };
 
+  // Función que renderiza cada slide del carrusel (icono + badge + título + subtítulo)
   const renderSlide = ({ item }) => (
     <View style={styles.slide}>
       <View style={[styles.illustrationArea, { backgroundColor: item.bgColor }]}>

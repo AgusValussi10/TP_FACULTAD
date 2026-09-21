@@ -28,6 +28,19 @@ CREATE TABLE usuarios (
 );
 
 -- =============================================================
+--  TABLA: admin_usuarios
+--  Cuentas del panel admin. Fijas a propósito (sin endpoint de
+--  alta): solo las dos personas que operan el panel.
+-- =============================================================
+CREATE TABLE admin_usuarios (
+  id             INT           UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  usuario        VARCHAR(50)   NOT NULL UNIQUE,
+  password_hash  VARCHAR(255)  NOT NULL,
+  nombre_visible VARCHAR(100)  NOT NULL,
+  creado_en      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================================
 --  TABLA: billeteras  (MAESTRO)
 --  Catálogo de billeteras virtuales argentinas.
 -- =============================================================
@@ -41,7 +54,9 @@ CREATE TABLE billeteras (
   rating_promedio  DECIMAL(3,1)  NOT NULL DEFAULT 0.0,
   cantidad_resenas INT           UNSIGNED NOT NULL DEFAULT 0,
   activa           TINYINT(1)   NOT NULL DEFAULT 1,
-  creado_en        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+  creado_en        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  modificado_por   VARCHAR(50)   COMMENT 'usuario de admin_usuarios que hizo el último cambio'
 );
 
 -- =============================================================
@@ -126,6 +141,7 @@ CREATE TABLE cotizaciones (
   moneda_destino CHAR(3)        NOT NULL DEFAULT 'BRL',
   tasa           DECIMAL(12,4)  NOT NULL COMMENT 'ARS por unidad de moneda destino',
   registrado_en  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modificado_por VARCHAR(50)    COMMENT 'usuario de admin_usuarios que cargó esta cotización',
   CONSTRAINT fk_cotiz_billetera FOREIGN KEY (billetera_id)
     REFERENCES billeteras (id) ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX idx_cotiz_billetera_fecha (billetera_id, registrado_en DESC)
