@@ -1,0 +1,75 @@
+COMANDOS PARA PROBAR LA API
+===========================
+
+Levantá el servidor en una terminal:
+
+    node e-api-post.js
+
+Y usá OTRA terminal para estos comandos.
+
+
+LISTAR
+------
+
+    curl http://localhost:3000/alumnos
+
+
+CREAR (caso correcto)
+---------------------
+
+    curl -X POST http://localhost:3000/alumnos -H "content-type: application/json" -d "{\"legajo\":99999,\"nombre\":\"Nuevo Alumno\",\"nota\":7}"
+
+
+CREAR (casos que tienen que fallar)
+-----------------------------------
+
+Cuerpo que no es JSON:
+
+    curl -X POST http://localhost:3000/alumnos -H "content-type: application/json" -d "esto no es json"
+
+Faltan campos:
+
+    curl -X POST http://localhost:3000/alumnos -H "content-type: application/json" -d "{\"legajo\":88888}"
+
+Tipo incorrecto:
+
+    curl -X POST http://localhost:3000/alumnos -H "content-type: application/json" -d "{\"legajo\":\"88888\",\"nombre\":\"X\",\"nota\":5}"
+
+Nota fuera de rango:
+
+    curl -X POST http://localhost:3000/alumnos -H "content-type: application/json" -d "{\"legajo\":88888,\"nombre\":\"X\",\"nota\":50}"
+
+Legajo repetido (corré dos veces el "caso correcto"):
+
+    curl -X POST http://localhost:3000/alumnos -H "content-type: application/json" -d "{\"legajo\":99999,\"nombre\":\"Otro\",\"nota\":7}"
+
+Campo de más (fijate que NO se guarda "admin"):
+
+    curl -X POST http://localhost:3000/alumnos -H "content-type: application/json" -d "{\"legajo\":77777,\"nombre\":\"X\",\"nota\":5,\"admin\":true}"
+
+
+BORRAR
+------
+
+    curl -X DELETE http://localhost:3000/alumnos/99999
+
+
+VER LA RESPUESTA COMPLETA (con cabeceras y código de estado)
+------------------------------------------------------------
+
+Agregale -i a cualquier comando:
+
+    curl -i http://localhost:3000/alumnos
+
+
+SI NO TENÉS CURL
+----------------
+
+En Windows, PowerShell trae Invoke-RestMethod:
+
+    Invoke-RestMethod -Uri http://localhost:3000/alumnos
+
+    Invoke-RestMethod -Uri http://localhost:3000/alumnos -Method Post -ContentType "application/json" -Body '{"legajo":99999,"nombre":"Nuevo","nota":7}'
+
+También podés usar la extensión REST Client de VS Code, o cualquier
+programa como Postman o Insomnia.

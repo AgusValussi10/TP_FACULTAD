@@ -1,0 +1,14 @@
+{
+  "sensores": [
+    {
+      "id": 1,
+      "tipo": "temperatura",
+      "unidad": "Celsius"
+    },
+    {
+      "id": 2,
+      "tipo": "presion",
+      "unidad": "Pascal"
+    }
+  ]
+}

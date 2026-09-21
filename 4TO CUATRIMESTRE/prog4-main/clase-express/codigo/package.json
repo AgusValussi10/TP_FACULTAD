@@ -1,0 +1,15 @@
+{
+  "name": "clase-express",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Estructura de proyectos con Express — Programación IV, UTN FRRe",
+  "scripts": {
+    "test": "node --test 03-capas/pruebas.test.js",
+    "capas": "node 03-capas/servidor.js",
+    "mini": "node 01-mi-express/e-mi-express.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "zod": "^4.5.4"
+  }
+}
