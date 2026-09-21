@@ -55,10 +55,15 @@ echo '<h2>Creando usuarios...</h2><ul>';
 foreach ($usuarios_demo as $u) {
     $hash = password_hash($u['password'], PASSWORD_BCRYPT);
     $stmt->bind_param('ssss', $u['nombre'], $u['usuario'], $hash, $u['rol']);
-    if ($stmt->execute()) {
+    try {
+        $stmt->execute();
         echo "<li>OK: <strong>{$u['usuario']}</strong> ({$u['rol']}) — password: <code>{$u['password']}</code></li>";
-    } else {
-        echo "<li>Ya existe o error: {$u['usuario']}</li>";
+    } catch (mysqli_sql_exception $e) {
+        if ($e->getCode() === 1062) {
+            echo "<li style='color:orange'>Ya existe: <strong>{$u['usuario']}</strong> (omitido)</li>";
+        } else {
+            echo "<li style='color:red'>Error en {$u['usuario']}: " . htmlspecialchars($e->getMessage()) . "</li>";
+        }
     }
 }
 echo '</ul>';
