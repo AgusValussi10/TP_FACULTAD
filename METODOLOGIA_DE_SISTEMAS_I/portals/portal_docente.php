@@ -276,8 +276,8 @@ $conn->close();
       <div class="card-body">
         <a href="../gestion/asistencia.php" class="accion-btn" style="text-decoration:none;">📋 Cargar asistencia</a>
         <a href="../gestion/calificaciones.php" class="accion-btn" style="text-decoration:none;">✏️ Registrar calificaciones</a>
-        <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">📤 Enviar comunicado a padres</button>
-        <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">📁 Ver legajos de alumnos</button>
+        <a href="../gestion/planificacion.php" class="accion-btn" style="text-decoration:none;">📁 Planificación anual</a>
+        <a href="../gestion/recuperatorios.php" class="accion-btn" style="text-decoration:none;">🔄 Exámenes recuperatorios</a>
       </div>
     </div>
 

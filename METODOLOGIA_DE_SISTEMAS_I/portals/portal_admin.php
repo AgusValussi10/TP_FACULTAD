@@ -2071,5 +2071,51 @@ $conn->close();
   }
 </script>
 
+<?php
+// Incluir sección de gestión del sistema (Sprint 4) solo si existe.
+// Se inyecta aquí para no modificar el JS de polling del portal existente.
+?>
+<style>
+  .gestion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 1.5rem 3rem; }
+  .gestion-card {
+    background: #FFFFFF; border-radius: 14px; box-shadow: 0 4px 18px rgba(249,115,22,.10);
+    padding: 1.2rem 1.3rem; text-decoration: none; color: #374151;
+    border: 2px solid #E5E7EB; transition: border-color .2s, transform .15s;
+    display: flex; flex-direction: column; gap: .4rem;
+  }
+  .gestion-card:hover { border-color: #F97316; transform: translateY(-2px); }
+  .gestion-card .gc-icon { font-size: 1.7rem; }
+  .gestion-card strong { font-weight: 800; font-size: .92rem; display: block; }
+  .gestion-card span   { font-size: .78rem; color: #6B7280; }
+  .gestion-titulo {
+    font-size: .75rem; font-weight: 800; color: #6B7280; text-transform: uppercase;
+    letter-spacing: .08em; padding: 0 1.5rem; margin-top: 2rem;
+  }
+</style>
+
+<p class="gestion-titulo">Gestión del Sistema</p>
+<div class="gestion-grid">
+  <a href="../gestion/vacantes.php" class="gestion-card">
+    <span class="gc-icon">🏫</span>
+    <strong>Vacantes por Curso</strong>
+    <span>Ver y ajustar capacidad de cada curso</span>
+  </a>
+  <a href="../gestion/legajo.php" class="gestion-card">
+    <span class="gc-icon">📂</span>
+    <strong>Legajo de Alumno</strong>
+    <span>Consultar el legajo completo de un alumno</span>
+  </a>
+  <a href="../gestion/planificacion.php" class="gestion-card">
+    <span class="gc-icon">📁</span>
+    <strong>Planificaciones</strong>
+    <span>Ver planificaciones anuales por materia</span>
+  </a>
+  <a href="../gestion/recuperatorios.php" class="gestion-card">
+    <span class="gc-icon">🔄</span>
+    <strong>Recuperatorios</strong>
+    <span>Gestionar turnos de examen recuperatorio</span>
+  </a>
+</div>
+
 </body>
 </html>

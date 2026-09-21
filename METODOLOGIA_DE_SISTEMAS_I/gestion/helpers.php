@@ -4,6 +4,7 @@ require_once __DIR__ . '/../auth/session.php';
 // Valor asumido: el TP1 no define un tope oficial de faltas por materia.
 // Ajustar cuando el equipo confirme la regla de negocio real.
 const LIMITE_FALTAS = 15;
+const NOTA_APROBACION = 6;
 
 const UMBRAL_ALERTA_FALTAS = 2;
 const PLAZO_CARGA_NOTA_DIAS_HABILES = 10;

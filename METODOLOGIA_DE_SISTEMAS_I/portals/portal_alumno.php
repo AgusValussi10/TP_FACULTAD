@@ -193,6 +193,12 @@ $semaforo_clase = [
       font-size: .78rem; font-weight: 700;
     }
 
+    /* Boletín */
+    .boletin-periodo { font-size: .78rem; font-weight: 800; color: var(--azul); text-transform: uppercase; margin: .6rem 0 .3rem; letter-spacing: .04em; }
+    .boletin-prom-anual { margin-top: .8rem; padding: .5rem .8rem; border-radius: 10px; font-size: .88rem; font-weight: 800; }
+    .boletin-aprobada   { background: #d1fae5; color: #065F46; }
+    .boletin-reprobada  { background: #fee2e2; color: #991B1B; }
+
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -310,6 +316,14 @@ $semaforo_clase = [
       </div>
     </div>
 
+    <!-- BOLETÍN DE CALIFICACIONES (RFG07) -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-header"><span class="icon">📄</span><h2>Boletín de Calificaciones</h2></div>
+      <div class="card-body" id="boletin-body">
+        <p class="empty-msg">Cargando boletín…</p>
+      </div>
+    </div>
+
     <!-- COMUNICADOS -->
     <div class="card">
       <div class="card-header"><span class="icon">📢</span><h2>Comunicados</h2></div>
@@ -332,5 +346,58 @@ $semaforo_clase = [
   </div>
 </div>
 
+<script>
+(async function cargarBoletin() {
+  const body = document.getElementById('boletin-body');
+  try {
+    const res  = await fetch('../gestion/boletin_listar.php');
+    const data = await res.json();
+    if (!data.success || !data.materias.length) {
+      body.innerHTML = '<p class="empty-msg">Todavía no hay calificaciones suficientes para generar el boletín.</p>';
+      return;
+    }
+
+    let html = '<div style="overflow-x:auto;">';
+    data.materias.forEach(mat => {
+      html += `<h3 style="font-size:.9rem;font-weight:800;color:var(--azul);margin:.8rem 0 .3rem;">${escHtml(mat.materia)}</h3>`;
+      html += '<table><thead><tr><th>Evaluación</th><th>Nota</th><th>Fecha</th><th>Período</th></tr></thead><tbody>';
+      let hayFilas = false;
+      mat.periodos.forEach(p => {
+        p.calificaciones.forEach(c => {
+          hayFilas = true;
+          html += `<tr>
+            <td>${escHtml(c.evaluacion)}</td>
+            <td><strong>${c.nota}</strong></td>
+            <td>${c.fecha}</td>
+            <td>${escHtml(p.periodo)}</td>
+          </tr>`;
+        });
+        if (p.calificaciones.length > 0) {
+          html += `<tr style="background:#f9fafb;">
+            <td colspan="3" style="text-align:right;font-size:.8rem;color:#6b7280;">Promedio ${escHtml(p.periodo)}</td>
+            <td><strong>${p.promedio}</strong></td>
+          </tr>`;
+        }
+      });
+      if (!hayFilas) {
+        html += '<tr><td colspan="4" class="empty-msg" style="padding:.5rem 0;">Sin evaluaciones cargadas.</td></tr>';
+      }
+      html += '</tbody></table>';
+      if (mat.promedio_anual !== null) {
+        const cls = mat.aprobada ? 'boletin-aprobada' : 'boletin-reprobada';
+        html += `<div class="boletin-prom-anual ${cls}">Promedio anual: ${mat.promedio_anual} — ${mat.aprobada ? 'Aprobada ✅' : 'Reprobada ❌'}</div>`;
+      }
+    });
+    html += '</div>';
+    body.innerHTML = html;
+  } catch {
+    body.innerHTML = '<p class="empty-msg">Error al cargar el boletín.</p>';
+  }
+
+  function escHtml(str) {
+    const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
+  }
+})();
+</script>
 </body>
 </html>
