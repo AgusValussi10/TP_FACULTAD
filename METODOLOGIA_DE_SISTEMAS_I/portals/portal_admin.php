@@ -19,7 +19,7 @@ if ($res) {
 
 $solicitudes = [];
 $res2 = $conn->query(
-    "SELECT id, nombre_alumno, apellido_alumno, nivel_educativo, nombre_tutor, telefono, email, comentarios, estado,
+    "SELECT id, nombre_alumno, apellido_alumno, fecha_nacimiento, nivel_educativo, nombre_tutor, telefono, email, comentarios, estado,
             DATE_FORMAT(created_at,'%d/%m/%Y %H:%i') AS fecha
      FROM solicitudes_inscripcion
      ORDER BY FIELD(estado,'pendiente','contactado','admitido','rechazado'), created_at DESC"
@@ -427,7 +427,7 @@ $conn->close();
         </thead>
         <tbody>
           <?php foreach ($solicitudes as $solicitud): ?>
-          <tr id="row-<?= $solicitud['id'] ?>" class="row-<?= $solicitud['estado'] ?>" data-nombre="<?= htmlspecialchars($solicitud['nombre_alumno']) ?>" data-apellido="<?= htmlspecialchars($solicitud['apellido_alumno']) ?>">
+          <tr id="row-<?= $solicitud['id'] ?>" class="row-<?= $solicitud['estado'] ?>" data-nombre="<?= htmlspecialchars($solicitud['nombre_alumno']) ?>" data-apellido="<?= htmlspecialchars($solicitud['apellido_alumno']) ?>" data-nivel="<?= htmlspecialchars($solicitud['nivel_educativo']) ?>" data-nacimiento="<?= $solicitud['fecha_nacimiento'] ?>">
             <td><?= $solicitud['id'] ?></td>
             <td><strong><?= htmlspecialchars($solicitud['apellido_alumno'] . ', ' . $solicitud['nombre_alumno']) ?></strong></td>
             <td><?= htmlspecialchars($solicitud['nivel_educativo']) ?></td>
@@ -963,6 +963,13 @@ $conn->close();
       <label>Contraseña *</label>
       <input type="text" id="modal-password" placeholder="mínimo 4 caracteres" autocomplete="off">
     </div>
+    <p id="modal-requisito" style="font-weight:700;font-size:.85rem;margin-bottom:.6rem;"></p>
+    <div class="modal-field" id="modal-nivel-anterior-wrap">
+      <label style="display:flex;align-items:center;gap:.5rem;font-weight:700;">
+        <input type="checkbox" id="modal-nivel-anterior" style="width:auto;">
+        Confirmo que el alumno aprobó el nivel anterior (verificado por documentación)
+      </label>
+    </div>
     <p class="modal-error" id="modal-error"></p>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="document.getElementById('overlay-admitir').classList.remove('open')">Cancelar</button>
@@ -1035,6 +1042,17 @@ $conn->close();
 </div>
 
 <script>
+  // Debe coincidir con EDAD_MINIMA_INICIAL en gestion/helpers.php (RFG04).
+  const EDAD_MINIMA_INICIAL = 3;
+
+  function calcularEdad(fechaISO) {
+    const hoy = new Date(); const nac = new Date(fechaISO);
+    let edad = hoy.getFullYear() - nac.getFullYear();
+    const m = hoy.getMonth() - nac.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+    return edad;
+  }
+
   // ── Navegación por tabs ──────────────────────────────────────────────
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1062,13 +1080,41 @@ $conn->close();
     const row      = document.getElementById(`row-${id}`);
     const nombre   = row.dataset.nombre;
     const apellido = row.dataset.apellido;
+    const nivel      = row.dataset.nivel;
+    const nacimiento = row.dataset.nacimiento;
+
     document.getElementById('modal-id').value             = id;
     document.getElementById('modal-alumno-nombre').textContent = apellido + ', ' + nombre;
     document.getElementById('modal-nombre-completo').value = nombre + ' ' + apellido;
     document.getElementById('modal-usuario').value         = normalizar(apellido) + '.' + normalizar(nombre);
     document.getElementById('modal-password').value        = '';
     document.getElementById('modal-error').textContent     = '';
-    document.getElementById('btn-confirmar').disabled      = false;
+
+    const chkNivelAnterior = document.getElementById('modal-nivel-anterior');
+    const wrapNivelAnterior = document.getElementById('modal-nivel-anterior-wrap');
+    const requisitoEl = document.getElementById('modal-requisito');
+    const btnConfirmar = document.getElementById('btn-confirmar');
+
+    chkNivelAnterior.checked = false;
+    btnConfirmar.disabled = false;
+
+    if (nivel === 'Inicial') {
+      wrapNivelAnterior.style.display = 'none';
+      const edad = calcularEdad(nacimiento);
+      if (edad < EDAD_MINIMA_INICIAL) {
+        requisitoEl.textContent = `⚠️ No cumple la edad mínima para Nivel Inicial (tiene ${edad} años, se requieren ${EDAD_MINIMA_INICIAL}).`;
+        requisitoEl.style.color = '#DC2626';
+        btnConfirmar.disabled = true;
+      } else {
+        requisitoEl.textContent = `✔️ Cumple la edad mínima para Nivel Inicial (tiene ${edad} años).`;
+        requisitoEl.style.color = '#059669';
+      }
+    } else {
+      wrapNivelAnterior.style.display = '';
+      requisitoEl.textContent = 'Se requiere confirmar que el alumno aprobó el nivel anterior.';
+      requisitoEl.style.color = '#374151';
+    }
+
     document.getElementById('overlay-admitir').classList.add('open');
     document.getElementById('modal-password').focus();
   }
@@ -1086,9 +1132,16 @@ $conn->close();
     const errorEl  = document.getElementById('modal-error');
     const btn      = document.getElementById('btn-confirmar');
 
+    const wrapNivelAnterior = document.getElementById('modal-nivel-anterior-wrap');
+    const chkNivelAnterior  = document.getElementById('modal-nivel-anterior');
+
     errorEl.textContent = '';
     if (!usuario || !password) { errorEl.textContent = 'Completá usuario y contraseña.'; return; }
     if (password.length < 4)   { errorEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; return; }
+    if (wrapNivelAnterior.style.display !== 'none' && !chkNivelAnterior.checked) {
+      errorEl.textContent = 'Falta confirmar que el alumno aprobó el nivel anterior.';
+      return;
+    }
 
     btn.disabled = true;
     btn.textContent = 'Guardando...';
@@ -1099,6 +1152,7 @@ $conn->close();
       body.append('usuario',  usuario);
       body.append('password', password);
       body.append('nombre',   nombre);
+      body.append('nivel_anterior_confirmado', chkNivelAnterior.checked ? '1' : '0');
       const res  = await fetch('../inscripciones/admitir.php', { method: 'POST', body });
       const data = await res.json();
 

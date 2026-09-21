@@ -21,7 +21,7 @@ if ($usuario === '' || $password === '' || $rol_seleccionado === '') {
 // Mapear la opción del select a los roles válidos en la base de datos.
 // "Docentes / Personal / Autoridades" incluye también al administrador (rol oculto).
 $roles_map = [
-    'Docentes / Personal / Autoridades' => ['docente', 'admin'],
+    'Docentes / Personal / Autoridades' => ['docente', 'admin', 'enfermeria'],
     'Padres / Tutores'                  => ['padre'],
     'Alumnos'                           => ['alumno'],
 ];

@@ -22,6 +22,9 @@ $usuarios_demo = [
 
     // ADMINISTRADOR
     ['nombre' => 'Administrador',    'usuario' => 'admin',            'password' => 'admin',      'rol' => 'admin'],
+
+    // ENFERMERÍA
+    ['nombre' => 'Sandra Benítez',   'usuario' => 'sandra.benitez',   'password' => 'enfermeria123', 'rol' => 'enfermeria'],
 ];
 
 $stmt = $conn->prepare(

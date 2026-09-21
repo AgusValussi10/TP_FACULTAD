@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once '../database/db_config.php';
+require_once '../gestion/helpers.php';
 
 /**
  * Crea el usuario del alumno admitido, validando que el nombre de usuario no
@@ -69,6 +70,36 @@ if (strlen($password) < 4) {
     exit;
 }
 
+// RN03: validar requisitos académicos antes de admitir (RFG04).
+$sol = $conn->prepare("SELECT nivel_educativo, fecha_nacimiento FROM solicitudes_inscripcion WHERE id = ?");
+$sol->bind_param('i', $id);
+$sol->execute();
+$solicitud = $sol->get_result()->fetch_assoc();
+$sol->close();
+
+if (!$solicitud) {
+    echo json_encode(['success' => false, 'message' => 'La solicitud no existe.']);
+    $conn->close();
+    exit;
+}
+
+$edad = edad_desde_fecha_nacimiento($solicitud['fecha_nacimiento']);
+$nivel_anterior_confirmado = ($_POST['nivel_anterior_confirmado'] ?? '') === '1';
+
+if ($solicitud['nivel_educativo'] === 'Inicial') {
+    if ($edad < EDAD_MINIMA_INICIAL) {
+        echo json_encode(['success' => false, 'message' =>
+            "No cumple la edad mínima para Nivel Inicial (tiene {$edad} años, se requieren " . EDAD_MINIMA_INICIAL . ")."]);
+        $conn->close();
+        exit;
+    }
+} elseif (!$nivel_anterior_confirmado) {
+    echo json_encode(['success' => false, 'message' =>
+        'Falta confirmar que el alumno aprobó el nivel anterior antes de admitir.']);
+    $conn->close();
+    exit;
+}
+
 $resultadoUsuario = crearUsuarioAlumno($conn, $usuario, $password, $nombre);
 if ($resultadoUsuario['error']) {
     echo json_encode(['success' => false, 'message' => $resultadoUsuario['error']]);
@@ -77,6 +108,13 @@ if ($resultadoUsuario['error']) {
 }
 
 marcarSolicitudAdmitida($conn, $id);
+
+if ($solicitud['nivel_educativo'] !== 'Inicial' && $nivel_anterior_confirmado) {
+    $upd2 = $conn->prepare("UPDATE solicitudes_inscripcion SET nivel_anterior_aprobado = 1 WHERE id = ?");
+    $upd2->bind_param('i', $id);
+    $upd2->execute();
+    $upd2->close();
+}
 
 $conn->close();
 
