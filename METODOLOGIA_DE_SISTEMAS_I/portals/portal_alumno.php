@@ -5,6 +5,59 @@ if (($_SESSION['rol'] ?? '') !== 'alumno') {
     exit;
 }
 $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Alumno');
+
+require_once __DIR__ . '/../gestion/helpers.php';
+require_once __DIR__ . '/../database/db_config.php';
+
+$alumno_id = (int) $_SESSION['usuario_id'];
+
+// Calificaciones reales del alumno (RFG03/HU3).
+$calificaciones = [];
+$stmt = $conn->prepare(
+    "SELECT m.nombre AS materia, c.evaluacion, c.nota, DATE_FORMAT(c.fecha_evaluacion, '%d/%m/%Y') AS fecha
+     FROM calificaciones c
+     JOIN materias m ON m.id = c.materia_id
+     WHERE c.alumno_id = ?
+     ORDER BY c.fecha_evaluacion DESC, m.nombre"
+);
+$stmt->bind_param('i', $alumno_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $calificaciones[] = $row;
+}
+$stmt->close();
+
+// Faltas por materia con semáforo de alerta (RFG01/HU2). Mismo criterio que gestion/faltas_resumen.php.
+$faltas_materias = [];
+$stmt = $conn->prepare(
+    "SELECT m.id AS materia_id, m.nombre,
+            COUNT(a.id) AS total_registros,
+            SUM(a.estado = 'ausente') AS faltas
+     FROM alumno_curso ac
+     JOIN materias m ON m.curso_id = ac.curso_id
+     LEFT JOIN asistencias a ON a.alumno_id = ac.alumno_id AND a.materia_id = m.id
+     WHERE ac.alumno_id = ?
+     GROUP BY m.id, m.nombre
+     ORDER BY m.nombre"
+);
+$stmt->bind_param('i', $alumno_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $faltas = ((int) $row['total_registros'] > 0) ? (int) $row['faltas'] : null;
+    $faltas_materias[] = ['nombre' => $row['nombre']] + calcular_semaforo($faltas);
+}
+$stmt->close();
+$conn->close();
+
+$semaforo_clase = [
+    'sin_datos' => 'badge-gris',
+    'libre'     => 'badge-verde',
+    'normal'    => 'badge-verde',
+    'alerta'    => 'badge-amarillo',
+    'excedido'  => 'badge-rojo',
+];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -105,6 +158,8 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Alumno');
     .badge-verde  { background: #d4edda; color: #1a7c34; }
     .badge-amarillo { background: #fff3cd; color: #856404; }
     .badge-rojo   { background: #f8d7da; color: #842029; }
+    .badge-gris   { background: #E5E7EB; color: #6B7280; }
+    .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 1.5rem 0; }
 
     /* Lista de eventos */
     .evento-item {
@@ -189,17 +244,46 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Alumno');
     <div class="card">
       <div class="card-header"><span class="icon">📊</span><h2>Mis Calificaciones</h2></div>
       <div class="card-body">
-        <table>
-          <thead><tr><th>Materia</th><th>Nota</th><th>Estado</th></tr></thead>
-          <tbody>
-            <tr><td>Matemática</td><td><strong>8</strong></td><td><span class="badge badge-verde">Aprobado</span></td></tr>
-            <tr><td>Lengua</td><td><strong>9</strong></td><td><span class="badge badge-verde">Aprobado</span></td></tr>
-            <tr><td>Inglés</td><td><strong>10</strong></td><td><span class="badge badge-verde">Aprobado</span></td></tr>
-            <tr><td>Historia</td><td><strong>7</strong></td><td><span class="badge badge-verde">Aprobado</span></td></tr>
-            <tr><td>Cs. Naturales</td><td><strong>6</strong></td><td><span class="badge badge-amarillo">Regular</span></td></tr>
-            <tr><td>Tecnología</td><td><strong>9</strong></td><td><span class="badge badge-verde">Aprobado</span></td></tr>
-          </tbody>
-        </table>
+        <?php if (empty($calificaciones)): ?>
+          <p class="empty-msg">Todavía no tenés calificaciones cargadas.</p>
+        <?php else: ?>
+          <table>
+            <thead><tr><th>Materia</th><th>Evaluación</th><th>Nota</th><th>Fecha</th></tr></thead>
+            <tbody>
+              <?php foreach ($calificaciones as $cal): ?>
+              <tr>
+                <td><?= htmlspecialchars($cal['materia']) ?></td>
+                <td><?= htmlspecialchars($cal['evaluacion']) ?></td>
+                <td><strong><?= (int) $cal['nota'] ?></strong></td>
+                <td><?= $cal['fecha'] ?></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- FALTAS -->
+    <div class="card">
+      <div class="card-header"><span class="icon">🚦</span><h2>Mis Faltas</h2></div>
+      <div class="card-body">
+        <?php if (empty($faltas_materias)): ?>
+          <p class="empty-msg">No hay materias asociadas a tu curso todavía.</p>
+        <?php else: ?>
+          <table>
+            <thead><tr><th>Materia</th><th>Faltas</th><th>Estado</th></tr></thead>
+            <tbody>
+              <?php foreach ($faltas_materias as $f): ?>
+              <tr>
+                <td><?= htmlspecialchars($f['nombre']) ?></td>
+                <td><?= $f['faltas'] === null ? '—' : $f['faltas'] ?></td>
+                <td><span class="badge <?= $semaforo_clase[$f['estado']] ?>"><?= htmlspecialchars($f['label']) ?></span></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        <?php endif; ?>
       </div>
     </div>
 

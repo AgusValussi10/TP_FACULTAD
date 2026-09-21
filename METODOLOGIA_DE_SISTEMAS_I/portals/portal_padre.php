@@ -5,6 +5,49 @@ if (($_SESSION['rol'] ?? '') !== 'padre') {
     exit;
 }
 $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
+
+require_once '../database/db_config.php';
+require_once '../gestion/helpers.php';
+
+$padre_id = (int) $_SESSION['usuario_id'];
+
+// Hijos vinculados, con curso y nivel (RFG09/RFG10).
+$hijos = [];
+$stmt = $conn->prepare(
+    "SELECT u.id, u.nombre, c.nombre AS curso_nombre, c.nivel_educativo
+     FROM padre_alumno pa
+     JOIN usuarios u ON u.id = pa.alumno_id
+     LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id
+     LEFT JOIN cursos c ON c.id = ac.curso_id
+     WHERE pa.padre_id = ?
+     ORDER BY u.nombre"
+);
+$stmt->bind_param('i', $padre_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $hijos[] = $row;
+}
+$stmt->close();
+
+// Últimas notificaciones (RFG10), más recientes primero.
+$notificaciones = [];
+$stmt = $conn->prepare(
+    "SELECT tipo, mensaje, DATE_FORMAT(created_at, '%d/%m/%Y %H:%i') AS fecha
+     FROM notificaciones
+     WHERE padre_id = ?
+     ORDER BY created_at DESC
+     LIMIT 10"
+);
+$stmt->bind_param('i', $padre_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $notificaciones[] = $row;
+}
+$stmt->close();
+
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -157,6 +200,24 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
     .reunion-desc strong { display: block; font-weight: 800; font-size: .9rem; }
     .reunion-desc span   { color: #6b7280; font-size: .82rem; }
 
+    /* Accesos rápidos */
+    .accion-btn {
+      display: block; width: 100%;
+      background: var(--verde-bg); color: var(--azul);
+      border: 2px solid var(--borde); border-radius: 10px;
+      padding: .85rem 1rem; margin-bottom: .6rem;
+      font-size: .9rem; font-weight: 800; cursor: pointer;
+      text-align: left; font-family: inherit;
+      transition: background .2s, border-color .2s;
+      text-decoration: none;
+    }
+    .accion-btn:hover { background: var(--verde); color: var(--blanco); border-color: var(--verde); }
+    .accion-btn:last-child { margin-bottom: 0; }
+
+    /* Notificaciones */
+    .notificacion { border-left-color: var(--azul); }
+    .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 1.2rem 0; }
+
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -187,15 +248,52 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
 
     <!-- DATOS DEL HIJO -->
     <div class="card" style="grid-column: 1 / -1;">
-      <div class="card-header"><span class="icon">👦</span><h2>Información del Alumno</h2></div>
+      <div class="card-header"><span class="icon">👦</span><h2>Información del Alumno<?= count($hijos) > 1 ? 'es' : '' ?></h2></div>
       <div class="card-body">
-        <div class="hijo-card">
-          <div class="hijo-avatar">JP</div>
-          <div class="hijo-datos">
-            <strong>Juan Pérez</strong>
-            <span>3° Año A · Nivel Secundario · Turno Mañana</span>
+        <?php if (empty($hijos)): ?>
+          <p class="empty-msg">No hay alumnos vinculados a tu cuenta.</p>
+        <?php else: ?>
+          <?php foreach ($hijos as $hijo):
+            $partes = preg_split('/\s+/', trim($hijo['nombre']));
+            $iniciales = strtoupper(mb_substr($partes[0] ?? '', 0, 1) . mb_substr($partes[count($partes) - 1] ?? '', 0, 1));
+          ?>
+          <div class="hijo-card">
+            <div class="hijo-avatar"><?= htmlspecialchars($iniciales) ?></div>
+            <div class="hijo-datos">
+              <strong><?= htmlspecialchars($hijo['nombre']) ?></strong>
+              <span>
+                <?= $hijo['curso_nombre'] ? htmlspecialchars($hijo['curso_nombre']) : 'Sin curso asignado' ?>
+                <?= $hijo['nivel_educativo'] ? ' · Nivel ' . htmlspecialchars($hijo['nivel_educativo']) : '' ?>
+              </span>
+            </div>
           </div>
-        </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- SERVICIOS -->
+    <div class="card">
+      <div class="card-header"><span class="icon">🍽️</span><h2>Servicios</h2></div>
+      <div class="card-body">
+        <a href="../gestion/servicios.php" class="accion-btn">🍽️ Reservar comedor / transporte</a>
+      </div>
+    </div>
+
+    <!-- NOTIFICACIONES -->
+    <div class="card">
+      <div class="card-header"><span class="icon">🔔</span><h2>Notificaciones</h2></div>
+      <div class="card-body">
+        <?php if (empty($notificaciones)): ?>
+          <p class="empty-msg">Sin notificaciones por el momento.</p>
+        <?php else: ?>
+          <?php foreach ($notificaciones as $n): ?>
+            <div class="comunicado notificacion">
+              <strong><?= htmlspecialchars(ucfirst($n['tipo'])) ?> · <?= $n['fecha'] ?></strong>
+              <?= htmlspecialchars($n['mensaje']) ?>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </div>
     </div>
 
