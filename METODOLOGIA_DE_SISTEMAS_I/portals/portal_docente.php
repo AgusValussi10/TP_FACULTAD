@@ -274,8 +274,8 @@ $conn->close();
     <div class="card">
       <div class="card-header"><span class="icon">⚡</span><h2>Acciones Rápidas</h2></div>
       <div class="card-body">
-        <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">📋 Cargar asistencia</button>
-        <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">✏️ Registrar calificaciones</button>
+        <a href="../gestion/asistencia.php" class="accion-btn" style="text-decoration:none;">📋 Cargar asistencia</a>
+        <a href="../gestion/calificaciones.php" class="accion-btn" style="text-decoration:none;">✏️ Registrar calificaciones</a>
         <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">📤 Enviar comunicado a padres</button>
         <button class="accion-btn" onclick="alert('Función disponible al inicio de actividades en 2027.')">📁 Ver legajos de alumnos</button>
       </div>
