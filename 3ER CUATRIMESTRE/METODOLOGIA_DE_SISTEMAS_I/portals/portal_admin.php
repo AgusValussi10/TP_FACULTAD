@@ -2158,6 +2158,16 @@ $conn->close();
     <strong>Recuperatorios</strong>
     <span>Gestionar turnos de examen recuperatorio</span>
   </a>
+  <a href="../gestion/cuotas.php" class="gestion-card">
+    <span class="gc-icon">💳</span>
+    <strong>Cuotas y Pagos</strong>
+    <span>Generar cuotas, registrar pagos y ver mora</span>
+  </a>
+  <a href="../gestion/materias.php" class="gestion-card">
+    <span class="gc-icon">📖</span>
+    <strong>Asignar Materias</strong>
+    <span>Crear materias y asignarles un docente</span>
+  </a>
 </div>
 
 </body>

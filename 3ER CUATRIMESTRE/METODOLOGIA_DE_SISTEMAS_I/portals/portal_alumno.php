@@ -49,6 +49,15 @@ while ($row = $res->fetch_assoc()) {
     $faltas_materias[] = ['nombre' => $row['nombre']] + calcular_semaforo($faltas);
 }
 $stmt->close();
+
+// Situación económica (RFG13/RN12).
+$stmt = $conn->prepare("SELECT condicion FROM alumno_curso WHERE alumno_id = ?");
+$stmt->bind_param('i', $alumno_id);
+$stmt->execute();
+$fila_condicion = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$pendiente_regularizacion = ($fila_condicion['condicion'] ?? 'regular') === 'pendiente_regularizacion';
+
 $conn->close();
 
 $semaforo_clase = [
@@ -160,6 +169,11 @@ $semaforo_clase = [
     .badge-rojo   { background: #f8d7da; color: #842029; }
     .badge-gris   { background: #E5E7EB; color: #6B7280; }
     .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 1.5rem 0; }
+    .aviso-mora {
+      max-width: 1100px; margin: 1.2rem auto 0; padding: .9rem 1.2rem;
+      background: #FEE2E2; color: #991B1B; border-radius: 12px;
+      font-weight: 700; font-size: .88rem;
+    }
 
     /* Lista de eventos */
     .evento-item {
@@ -223,6 +237,10 @@ $semaforo_clase = [
   <p>Bienvenido/a a tu portal de alumno.</p>
   <span class="rol-badge">Portal Alumno</span>
 </div>
+
+<?php if ($pendiente_regularizacion): ?>
+<div class="aviso-mora">⚠️ Hay cuotas atrasadas hace más de <?= DIAS_LIMITE_REGULARIZACION ?> días. Situación: pendiente de regularización.</div>
+<?php endif; ?>
 
 <div class="container">
   <div class="grid">

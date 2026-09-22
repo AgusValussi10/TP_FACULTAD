@@ -146,18 +146,17 @@ $conn->close();
     <div class="card-body">
       <div class="form-row">
         <label>Alumno
-          <select id="sel-alumno">
-            <option value="">Elegí un alumno…</option>
+          <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí para buscar…" autocomplete="off" style="min-width:280px;">
+          <datalist id="dl-alumnos">
             <?php foreach ($alumnos as $a): ?>
-            <option value="<?= $a['id'] ?>">
-              <?= htmlspecialchars($a['nombre']) ?>
-              <?= $a['curso'] ? ' — ' . htmlspecialchars($a['curso']) : '' ?>
-            </option>
+            <option value="<?= htmlspecialchars($a['nombre']) ?><?= $a['curso'] ? ' — ' . htmlspecialchars($a['curso']) : '' ?>">
             <?php endforeach; ?>
-          </select>
+          </datalist>
+          <input type="hidden" id="sel-alumno">
         </label>
         <button type="button" class="btn" id="btn-ver">Ver legajo</button>
       </div>
+      <p class="empty-msg" id="alumno-no-encontrado" style="display:none;padding:0;text-align:left;">No se encontró ningún alumno con ese nombre.</p>
     </div>
   </div>
 
@@ -165,13 +164,30 @@ $conn->close();
 </div>
 
 <script>
-  const selAlumno = document.getElementById('sel-alumno');
-  const btnVer    = document.getElementById('btn-ver');
-  const contenido = document.getElementById('legajo-contenido');
+  const ALUMNOS = <?= json_encode(array_map(fn($a) => [
+      'id'     => $a['id'],
+      'texto'  => $a['nombre'] . ($a['curso'] ? ' — ' . $a['curso'] : ''),
+  ], $alumnos)) ?>;
+
+  const selAlumno     = document.getElementById('sel-alumno');
+  const buscarAlumno  = document.getElementById('sel-alumno-buscar');
+  const noEncontrado  = document.getElementById('alumno-no-encontrado');
+  const btnVer        = document.getElementById('btn-ver');
+  const contenido     = document.getElementById('legajo-contenido');
+
+  function resolverAlumno() {
+    const texto = buscarAlumno.value.trim();
+    const match = ALUMNOS.find(a => a.texto === texto);
+    selAlumno.value = match ? match.id : '';
+    noEncontrado.style.display = (texto && !match) ? '' : 'none';
+    return match;
+  }
+  buscarAlumno.addEventListener('input', resolverAlumno);
 
   btnVer.addEventListener('click', async () => {
+    resolverAlumno();
     const alumno_id = selAlumno.value;
-    if (!alumno_id) return;
+    if (!alumno_id) { noEncontrado.style.display = buscarAlumno.value.trim() ? '' : 'none'; return; }
     contenido.innerHTML = '<div class="card"><div class="card-body"><p class="empty-msg">Cargando legajo…</p></div></div>';
     contenido.style.display = '';
 
@@ -188,6 +204,24 @@ $conn->close();
       const cursoStr  = d.curso ? `${d.curso.curso} · Nivel ${d.curso.nivel_educativo}` : 'Sin curso asignado';
       const estadoAlumno = d.alumno.activo ? '<span class="badge badge-verde">Activo</span>' : '<span class="badge badge-rojo">Suspendido</span>';
 
+      const condicion = d.curso ? d.curso.condicion : 'regular';
+      const badgeCondicion = condicion === 'pendiente_regularizacion'
+        ? '<span class="badge badge-rojo">Pendiente de regularización</span>'
+        : '<span class="badge badge-verde">Regular</span>';
+      const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      const cuotasHtml = (!d.cuotas_pendientes || !d.cuotas_pendientes.length)
+        ? '<p class="empty-msg">Sin cuotas pendientes.</p>'
+        : `<table><thead><tr><th>Concepto</th><th>Período</th><th>Importe</th><th>Vencimiento</th><th>Días de atraso</th></tr></thead><tbody>` +
+          d.cuotas_pendientes.map(c => `
+            <tr>
+              <td>${c.concepto === 'matricula' ? 'Matrícula' : 'Cuota'}</td>
+              <td>${MESES[c.mes - 1]} ${c.anio}</td>
+              <td>$${Number(c.importe).toFixed(2)}</td>
+              <td>${c.fecha_vencimiento}</td>
+              <td>${c.dias_atraso > 0 ? `<span class="badge badge-rojo">${c.dias_atraso} días</span>` : '—'}</td>
+            </tr>
+          `).join('') + '</tbody></table>';
+
       let html = `
         <div class="card">
           <div class="card-header"><span class="icon">👤</span><h2>Datos Personales</h2></div>
@@ -200,6 +234,14 @@ $conn->close();
               </div>
               <div style="margin-left:auto;">${estadoAlumno}</div>
             </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="icon">💳</span><h2>Situación Económica</h2></div>
+          <div class="card-body">
+            <div style="margin-bottom:1rem;">${badgeCondicion}</div>
+            ${cuotasHtml}
           </div>
         </div>
 

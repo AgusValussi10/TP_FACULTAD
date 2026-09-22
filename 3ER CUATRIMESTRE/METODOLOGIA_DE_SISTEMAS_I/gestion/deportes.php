@@ -1,17 +1,17 @@
 <?php
 require_once '../auth/session.php';
-if (($_SESSION['rol'] ?? '') !== 'enfermeria') {
+if (($_SESSION['rol'] ?? '') !== 'padre') {
     header('Location: /');
     exit;
 }
-$nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
+$nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registrar Atención – Educar para Transformar</title>
+  <title>Instalaciones Deportivas – Educar para Transformar</title>
   <link rel="icon" href="../assets/logo.avif">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Merriweather:wght@700&display=swap" rel="stylesheet">
   <style>
@@ -85,14 +85,25 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
     .volver { display: inline-block; margin-bottom: 1rem; color: var(--azul); font-weight: 700; font-size: .85rem; text-decoration: none; }
     .volver:hover { text-decoration: underline; }
 
-    .campo { margin-bottom: 1rem; }
-    .campo label { display: block; font-size: .82rem; font-weight: 800; color: var(--azul); margin-bottom: .35rem; }
-    .campo select, .campo input, .campo textarea {
-      width: 100%; padding: .6rem .8rem; border: 2px solid var(--borde); border-radius: 8px;
-      font-family: inherit; font-size: .9rem;
+    .form-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; margin-bottom: 1.2rem; }
+    .form-row label { display: flex; flex-direction: column; gap: .3rem; font-size: .82rem; font-weight: 800; color: var(--azul); }
+    .form-row select {
+      padding: .55rem .7rem; border: 2px solid var(--borde); border-radius: 8px;
+      font-family: inherit; font-size: .9rem; min-width: 200px;
     }
-    .campo select:focus, .campo input:focus, .campo textarea:focus { outline: none; border-color: var(--verde); }
-    .fila-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .deportes-opciones { display: flex; flex-direction: column; gap: .8rem; margin-bottom: 1.2rem; }
+    .deporte-item {
+      display: flex; align-items: center; gap: .8rem;
+      padding: .9rem 1rem; border: 2px solid var(--borde); border-radius: 12px;
+    }
+    .deporte-item.sin-cupo { opacity: .6; }
+    .deporte-item input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; }
+    .deporte-item strong { display: block; font-size: .92rem; }
+    .deporte-item span { font-size: .8rem; color: #6B7280; }
+    .deporte-cupo { margin-left: auto; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+    .deporte-cupo.hay-lugar { color: #059669; }
+    .deporte-cupo.sin-lugar { color: #DC2626; }
 
     .btn {
       background: var(--verde); color: var(--blanco); border: none; border-radius: 10px;
@@ -103,8 +114,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
     .btn:disabled { opacity: .6; cursor: not-allowed; }
 
     .msg { margin: .6rem 0; font-weight: 700; font-size: .88rem; min-height: 1.2em; }
-
-    @media (max-width: 500px) { .fila-2 { grid-template-columns: 1fr; } }
+    .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 1.5rem 0; }
   </style>
 </head>
 <body>
@@ -118,43 +128,33 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
     </div>
   </a>
   <div class="user-info">
-    <span class="user-badge">⚕️ Enfermería</span>
+    <span class="user-badge">👨‍👩‍👧 Familia</span>
     <a href="../auth/logout.php" class="btn-logout">Cerrar sesión</a>
   </div>
 </header>
 
 <div class="welcome">
-  <h1>Registrar Atención</h1>
+  <h1>Instalaciones Deportivas</h1>
   <p>Bienvenido/a, <?= $nombre ?></p>
-  <span class="rol-badge">Portal Enfermería</span>
+  <span class="rol-badge">Portal Familias</span>
 </div>
 
 <div class="container">
-  <a href="../portals/portal_enfermeria.php" class="volver">&larr; Volver al portal</a>
+  <a href="../portals/portal_padre.php" class="volver">&larr; Volver al portal</a>
   <div class="card">
-    <div class="card-header"><span class="icon">🩺</span><h2>Atención de enfermería</h2></div>
+    <div class="card-header"><span class="icon">🏅</span><h2>Deportes</h2></div>
     <div class="card-body">
-      <div class="campo">
-        <label>Alumno/a *</label>
-        <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí para buscar…" autocomplete="off">
-        <datalist id="dl-alumnos"></datalist>
-        <input type="hidden" id="sel-alumno">
+      <div class="form-row">
+        <label>Alumno/a
+          <select id="sel-alumno"></select>
+        </label>
       </div>
-      <div class="fila-2">
-        <div class="campo">
-          <label>Motivo *</label>
-          <input type="text" id="motivo" placeholder="ej: Dolor de cabeza" maxlength="200">
-        </div>
-        <div class="campo">
-          <label>Hora *</label>
-          <input type="time" id="hora">
-        </div>
+
+      <div class="deportes-opciones" id="deportes-opciones">
+        <p class="empty-msg">Cargando…</p>
       </div>
-      <div class="campo">
-        <label>Observaciones</label>
-        <textarea id="observaciones" rows="3" placeholder="Detalles adicionales, tratamiento aplicado, etc."></textarea>
-      </div>
-      <button type="button" class="btn" id="btn-guardar">💾 Registrar atención</button>
+
+      <button type="button" class="btn" id="btn-guardar">💾 Confirmar inscripciones</button>
       <div class="msg" id="msg"></div>
     </div>
   </div>
@@ -162,73 +162,89 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
 
 <script>
   const selAlumno = document.getElementById('sel-alumno');
-  const buscarAlumno = document.getElementById('sel-alumno-buscar');
-  const dlAlumnos = document.getElementById('dl-alumnos');
-  let alumnosCache = [];
-  const inpMotivo = document.getElementById('motivo');
-  const inpHora   = document.getElementById('hora');
-  const inpObs    = document.getElementById('observaciones');
+  const deportesOpciones = document.getElementById('deportes-opciones');
   const btnGuardar = document.getElementById('btn-guardar');
   const msg = document.getElementById('msg');
-
-  function pad(n) { return String(n).padStart(2, '0'); }
-  const ahora = new Date();
-  inpHora.value = `${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
 
   function setMsg(texto, color) {
     msg.textContent = texto;
     msg.style.color = color || 'var(--gris-texto)';
   }
 
-  (async function cargarAlumnos() {
-    try {
-      const res  = await fetch('enfermeria_alumnos.php');
-      const data = await res.json();
-      if (!data.success) { setMsg(data.message || 'Error al cargar alumnos.', '#DC2626'); return; }
-      alumnosCache = data.alumnos;
-      dlAlumnos.innerHTML = alumnosCache.map(a => `<option value="${esc(a.nombre)}">`).join('');
-    } catch {
-      setMsg('Error de conexión al cargar alumnos.', '#DC2626');
+  function renderDeportes(deportes) {
+    if (!deportes.length) {
+      deportesOpciones.innerHTML = '<p class="empty-msg">No hay deportes disponibles.</p>';
+      return;
     }
-  })();
+    deportesOpciones.innerHTML = deportes.map(d => {
+      const sinCupo = d.disponibles <= 0 && !d.ya_inscripto;
+      const disabled = d.ya_inscripto || sinCupo ? 'disabled' : '';
+      const checked = d.ya_inscripto ? 'checked' : '';
+      const cupoCls = d.disponibles <= 0 ? 'sin-lugar' : 'hay-lugar';
+      return `
+        <label class="deporte-item ${sinCupo ? 'sin-cupo' : ''}">
+          <input type="checkbox" value="${d.id}" ${checked} ${disabled}>
+          <div>
+            <strong>${esc(d.nombre)}</strong>
+            <span>${esc(d.horario)}</span>
+          </div>
+          <span class="deporte-cupo ${cupoCls}">${d.disponibles} de ${d.cupo_maximo} lugares</span>
+        </label>
+      `;
+    }).join('');
+  }
 
-  function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+  async function cargarEstado() {
+    const params = new URLSearchParams();
+    if (selAlumno.value) params.set('alumno_id', selAlumno.value);
 
-  buscarAlumno.addEventListener('input', () => {
-    const texto = buscarAlumno.value.trim();
-    const match = alumnosCache.find(a => a.nombre === texto);
-    selAlumno.value = match ? match.id : '';
-  });
+    setMsg('Cargando...');
+    try {
+      const res  = await fetch('deportes_listar.php?' + params.toString());
+      const data = await res.json();
+      if (!data.success) { setMsg(data.message || 'Error al cargar.', '#DC2626'); return; }
+
+      if (!selAlumno.options.length) {
+        data.alumnos.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.id;
+          opt.textContent = a.nombre;
+          selAlumno.appendChild(opt);
+        });
+      }
+      selAlumno.value = data.alumno_id;
+
+      renderDeportes(data.deportes);
+      setMsg('');
+    } catch {
+      setMsg('Error de conexión al cargar.', '#DC2626');
+    }
+  }
+
+  selAlumno.addEventListener('change', cargarEstado);
 
   btnGuardar.addEventListener('click', async () => {
-    const alumno_id = selAlumno.value;
-    const motivo = inpMotivo.value.trim();
-    const hora = inpHora.value;
+    const seleccionados = [...deportesOpciones.querySelectorAll('input[type="checkbox"]:checked:not(:disabled)')]
+      .map(chk => chk.value);
 
-    if (!alumno_id || !motivo || !hora) { setMsg('Completá alumno, motivo y hora.', '#DC2626'); return; }
+    if (seleccionados.length === 0) { setMsg('Marcá al menos un deporte.', '#DC2626'); return; }
 
     btnGuardar.disabled = true;
     setMsg('Guardando...');
 
     const body = new FormData();
-    body.append('alumno_id', alumno_id);
-    body.append('motivo', motivo);
-    body.append('hora', hora);
-    body.append('observaciones', inpObs.value.trim());
+    body.append('alumno_id', selAlumno.value);
+    seleccionados.forEach(id => body.append('deportes[]', id));
 
     try {
-      const res  = await fetch('enfermeria_guardar.php', { method: 'POST', body });
+      const res  = await fetch('deportes_guardar.php', { method: 'POST', body });
       const data = await res.json();
       if (data.success) {
-        if (data.sin_contacto) {
-          setMsg('⚠️ Atención registrada, pero no hay un padre/tutor vinculado. Avisar a administración.', '#D97706');
-        } else {
-          setMsg('✅ Atención registrada. Se notificó al padre/tutor.', '#059669');
-        }
-        selAlumno.value = '';
-        buscarAlumno.value = '';
-        inpMotivo.value = '';
-        inpObs.value = '';
+        let texto = '';
+        if (data.inscriptos.length) texto += `✅ Inscripto en: ${data.inscriptos.join(', ')}. `;
+        if (data.sin_cupo.length) texto += `⚠️ Sin cupo disponible en: ${data.sin_cupo.join(', ')}.`;
+        setMsg(texto || 'No hubo cambios.', data.sin_cupo.length && !data.inscriptos.length ? '#D97706' : '#059669');
+        cargarEstado();
       } else {
         setMsg(data.message || 'Error al guardar.', '#DC2626');
       }
@@ -238,6 +254,10 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
       btnGuardar.disabled = false;
     }
   });
+
+  function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  cargarEstado();
 </script>
 
 </body>

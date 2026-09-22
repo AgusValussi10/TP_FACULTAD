@@ -16,6 +16,15 @@ const EDAD_MINIMA_INICIAL = 3;
 // al mes del servicio. Ajustar si el equipo define otro plazo.
 const DIA_LIMITE_RESERVA_SERVICIOS = 25;
 
+// Asunción: RN11 dice "dentro de los primeros 10 días de cada mes"; se
+// toma el día 10 como vencimiento. El % de recargo no está fijado en el
+// TP1, se asume 10%. Ajustar si el equipo confirma otro valor.
+const DIA_VENCIMIENTO_CUOTA = 10;
+const PORCENTAJE_RECARGO_MORA = 10;
+
+// Asunción: RN12 fija el plazo en 60 días, no especifica más detalle.
+const DIAS_LIMITE_REGULARIZACION = 60;
+
 /**
  * Corta la ejecución con 403 + JSON si el rol de sesión no está permitido.
  * @param string|string[] $roles
@@ -148,4 +157,36 @@ function crear_notificacion(mysqli $conn, ?int $padre_id, int $alumno_id, string
     $stmt->bind_param('iiss', $padre_id, $alumno_id, $tipo, $mensaje);
     $stmt->execute();
     $stmt->close();
+}
+
+function fecha_vencimiento_cuota(int $mes, int $anio): string
+{
+    return sprintf('%04d-%02d-%02d', $anio, $mes, DIA_VENCIMIENTO_CUOTA);
+}
+
+function calcular_recargo(float $importe, string $fecha_vencimiento, ?string $fecha_pago = null): float
+{
+    $limite = new DateTime($fecha_vencimiento);
+    $pago   = new DateTime($fecha_pago ?? 'today');
+    return $pago > $limite ? round($importe * PORCENTAJE_RECARGO_MORA / 100, 2) : 0.0;
+}
+
+/** RFG13/RN12: recalcula y persiste la condición de regularización de un alumno. */
+function actualizar_condicion_regularizacion(mysqli $conn, int $alumno_id): void
+{
+    $limite = (new DateTime('today'))->modify('-' . DIAS_LIMITE_REGULARIZACION . ' days')->format('Y-m-d');
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS vencidas FROM cuotas
+         WHERE alumno_id = ? AND estado = 'pendiente' AND fecha_vencimiento < ?"
+    );
+    $stmt->bind_param('is', $alumno_id, $limite);
+    $stmt->execute();
+    $vencidas = (int)($stmt->get_result()->fetch_assoc()['vencidas'] ?? 0);
+    $stmt->close();
+
+    $condicion = $vencidas > 0 ? 'pendiente_regularizacion' : 'regular';
+    $upd = $conn->prepare("UPDATE alumno_curso SET condicion = ? WHERE alumno_id = ?");
+    $upd->bind_param('si', $condicion, $alumno_id);
+    $upd->execute();
+    $upd->close();
 }
