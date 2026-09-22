@@ -35,11 +35,15 @@ $stmt->execute();
 $res = $stmt->get_result();
 
 $alumnos = [];
+$ya_cargada = false;
 while ($row = $res->fetch_assoc()) {
+    if ($row['estado'] !== null) {
+        $ya_cargada = true;
+    }
     $alumnos[] = $row;
 }
 
-echo json_encode(['success' => true, 'materia' => $materia, 'alumnos' => $alumnos]);
+echo json_encode(['success' => true, 'materia' => $materia, 'alumnos' => $alumnos, 'ya_cargada' => $ya_cargada]);
 
 $stmt->close();
 $conn->close();

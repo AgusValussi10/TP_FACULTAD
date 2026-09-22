@@ -172,6 +172,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
   const ESTADO_LABEL  = { presente: 'Presente', ausente: 'Ausente', tarde: 'Tarde' };
 
   let materiaActual = null;
+  let yaCargada = false;
 
   function setMsg(texto, color) {
     msg.textContent = texto;
@@ -209,6 +210,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
       if (!data.success) { setMsg(data.message || 'Error al cargar el listado.', '#DC2626'); return; }
 
       materiaActual = materia_id;
+      yaCargada = !!data.ya_cargada;
       tbody.innerHTML = '';
       data.alumnos.forEach(a => {
         const tr = document.createElement('tr');
@@ -230,7 +232,11 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
 
       tabla.style.display = '';
       btnGuardar.style.display = '';
-      setMsg('');
+      if (yaCargada) {
+        setMsg('⚠️ Ya existe asistencia cargada para esta fecha. Guardar sobreescribirá los datos existentes.', '#D97706');
+      } else {
+        setMsg('');
+      }
     } catch {
       setMsg('Error de conexión al cargar el listado.', '#DC2626');
     }
@@ -245,6 +251,10 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
 
     if (Object.keys(estados).length === 0) { setMsg('Marcá al menos un estado.', '#DC2626'); return; }
 
+    if (yaCargada && !confirm('Ya existe asistencia cargada para esta fecha. ¿Querés sobreescribirla?')) {
+      return;
+    }
+
     btnGuardar.disabled = true;
     setMsg('Guardando...');
 
@@ -257,7 +267,9 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
       const res  = await fetch('asistencia_guardar.php', { method: 'POST', body });
       const data = await res.json();
       if (data.success) {
-        setMsg(`✅ Asistencia guardada (${data.guardados} alumno${data.guardados === 1 ? '' : 's'}).`, '#059669');
+        const accion = yaCargada ? 'actualizada' : 'guardada';
+        setMsg(`✅ Asistencia ${accion} (${data.guardados} alumno${data.guardados === 1 ? '' : 's'}).`, '#059669');
+        yaCargada = true;
       } else {
         setMsg(data.message || 'Error al guardar.', '#DC2626');
       }
