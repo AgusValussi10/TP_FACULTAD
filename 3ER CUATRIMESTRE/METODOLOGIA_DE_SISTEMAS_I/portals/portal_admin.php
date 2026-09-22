@@ -84,22 +84,6 @@ if ($res7) while ($r = $res7->fetch_assoc()) $noticias[] = $r;
 $not_stats = ['total'=>0,'borrador'=>0,'publicada'=>0,'archivada'=>0];
 foreach ($noticias as $noticia) { $not_stats[$noticia['estado']]++; $not_stats['total']++; }
 
-$alumnos_lista = [];
-$res_al = $conn->query(
-    "SELECT u.id, u.nombre, u.usuario, u.activo,
-            c.nombre AS curso, ac.curso_id
-     FROM usuarios u
-     LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id
-     LEFT JOIN cursos c ON c.id = ac.curso_id
-     WHERE u.rol = 'alumno'
-     ORDER BY u.activo DESC, u.nombre"
-);
-if ($res_al) while ($r = $res_al->fetch_assoc()) $alumnos_lista[] = $r;
-
-$cursos_lista = [];
-$res_cur = $conn->query("SELECT id, nombre FROM cursos ORDER BY nombre");
-if ($res_cur) while ($r = $res_cur->fetch_assoc()) $cursos_lista[] = $r;
-
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -380,31 +364,6 @@ $conn->close();
     .ar-btn:hover { background: rgba(249,115,22,.3); border-color: #F97316; color: #fff; }
     .ar-btn .ar-icon { font-size: 1rem; }
 
-    /* ── Modal alumnos ── */
-    .modal-al-box {
-      background:#fff; border-radius:20px; padding:2rem;
-      width:100%; max-width:480px;
-      box-shadow:0 20px 60px rgba(0,0,0,.25); animation:popIn .2s ease;
-    }
-    .modal-al-box h3 { font-size:1.1rem; font-weight:900; margin-bottom:1.1rem; }
-    .modal-al-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
-    .modal-al-grid .span2 { grid-column:1/-1; }
-    .modal-al-grid label { display:block; font-size:.82rem; font-weight:700; margin-bottom:.25rem; color:#374151; }
-    .modal-al-grid input,
-    .modal-al-grid select { width:100%; padding:.6rem .8rem; border:2px solid #E5E7EB; border-radius:10px; font-size:.88rem; font-family:inherit; transition:border-color .2s; }
-    .modal-al-grid input:focus,
-    .modal-al-grid select:focus { outline:none; border-color:#F97316; }
-    .modal-al-error { color:#DC2626; font-size:.83rem; font-weight:700; min-height:1.2rem; margin-top:.5rem; }
-
-    /* ── Tabla alumnos ── */
-    .al-activo   { background:#D1FAE5; color:#065F46; }
-    .al-inactivo { background:#FEE2E2; color:#991B1B; }
-    .btn-editar  { background:#DBEAFE; color:#1E40AF; }
-    .btn-suspender { background:#FEF3C7; color:#92400E; }
-    .btn-reactivar { background:#D1FAE5; color:#065F46; }
-    .btn-eliminar  { background:#FEE2E2; color:#991B1B; }
-    .al-busqueda { padding:.55rem .9rem; border:2px solid #E5E7EB; border-radius:10px; font-family:inherit; font-size:.9rem; width:100%; max-width:320px; margin-bottom:1rem; }
-    .al-busqueda:focus { outline:none; border-color:#F97316; }
   </style>
 </head>
 <body>
@@ -433,6 +392,7 @@ $conn->close();
 <div class="accesos-rapidos">
   <p class="ar-titulo">Gestión del Sistema</p>
   <div class="ar-grid">
+    <a href="../gestion/alumnos.php"       class="ar-btn"><span class="ar-icon">👩‍🎓</span> Gestión de Alumnos</a>
     <a href="../gestion/legajo.php"        class="ar-btn"><span class="ar-icon">📂</span> Legajo de Alumno</a>
     <a href="../gestion/vacantes.php"      class="ar-btn"><span class="ar-icon">🏫</span> Vacantes por Curso</a>
     <a href="../gestion/materias.php"      class="ar-btn"><span class="ar-icon">📖</span> Materias y Docentes</a>
@@ -450,7 +410,6 @@ $conn->close();
   <button class="tab-btn" data-tab="propuestas">💼 Propuestas de Trabajo</button>
   <button class="tab-btn" data-tab="consultas">📩 Consultas</button>
   <button class="tab-btn" data-tab="noticias">📰 Noticias</button>
-  <button class="tab-btn" data-tab="alumnos">👩‍🎓 Alumnos</button>
 </nav>
 
 <div class="container">
@@ -1024,71 +983,6 @@ $conn->close();
     </div>
 
   </div><!-- /panel-noticias -->
-
-  <!-- ══ TAB: ALUMNOS ══ -->
-  <div class="tab-panel" id="panel-alumnos">
-    <div class="card" style="margin-top:2rem;">
-      <div class="card-header" style="justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:.7rem;">
-          <span class="icon">👩‍🎓</span>
-          <h2>Gestión de Alumnos</h2>
-        </div>
-        <button class="btn-agregar" onclick="abrirModalAlumno(null)">+ Nuevo alumno</button>
-      </div>
-      <div class="card-body">
-        <input type="text" class="al-busqueda" id="al-busqueda" placeholder="Buscar por nombre o usuario…" oninput="filtrarAlumnos()">
-        <?php if (empty($alumnos_lista)): ?>
-          <p class="empty-msg">No hay alumnos registrados aún.</p>
-        <?php else: ?>
-        <div style="overflow-x:auto;">
-        <table id="tabla-alumnos">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-              <th>Usuario</th>
-              <th>Curso</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($alumnos_lista as $al): ?>
-            <tr id="al-row-<?= $al['id'] ?>"
-                data-nombre="<?= strtolower(htmlspecialchars($al['nombre'])) ?>"
-                data-usuario="<?= strtolower(htmlspecialchars($al['usuario'])) ?>">
-              <td><?= $al['id'] ?></td>
-              <td><strong><?= htmlspecialchars($al['nombre']) ?></strong></td>
-              <td><?= htmlspecialchars($al['usuario']) ?></td>
-              <td><?= $al['curso'] ? htmlspecialchars($al['curso']) : '<span style="color:#9CA3AF">—</span>' ?></td>
-              <td id="al-estado-<?= $al['id'] ?>">
-                <span class="estado-badge <?= $al['activo'] ? 'al-activo' : 'al-inactivo' ?>">
-                  <?= $al['activo'] ? 'Activo' : 'Suspendido' ?>
-                </span>
-              </td>
-              <td>
-                <div class="acciones" id="al-acc-<?= $al['id'] ?>">
-                  <button class="btn-accion btn-editar"
-                    onclick='abrirModalAlumno(<?= json_encode(['id'=>$al['id'],'nombre'=>$al['nombre'],'usuario'=>$al['usuario'],'curso_id'=>$al['curso_id']]) ?>)'>
-                    Editar
-                  </button>
-                  <?php if ($al['activo']): ?>
-                  <button class="btn-accion btn-suspender" onclick="accionAlumno(<?= $al['id'] ?>,'suspender')">Suspender</button>
-                  <?php else: ?>
-                  <button class="btn-accion btn-reactivar" onclick="accionAlumno(<?= $al['id'] ?>,'reactivar')">Reactivar</button>
-                  <?php endif; ?>
-                  <button class="btn-accion btn-eliminar" onclick="accionAlumno(<?= $al['id'] ?>,'eliminar')">Eliminar</button>
-                </div>
-              </td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-        </div>
-        <?php endif; ?>
-      </div>
-    </div>
-  </div><!-- /panel-alumnos -->
 
 </div>
 
@@ -2261,149 +2155,6 @@ $conn->close();
   }
 </script>
 
-<!-- Modal crear/editar alumno -->
-<div class="overlay" id="overlay-alumno" onclick="cerrarModalAlumno(event)">
-  <div class="modal-al-box" onclick="event.stopPropagation()">
-    <h3 id="modal-al-titulo">Nuevo alumno</h3>
-    <input type="hidden" id="al-id">
-    <div class="modal-al-grid">
-      <div class="span2 modal-field">
-        <label>Nombre completo</label>
-        <input type="text" id="al-nombre" placeholder="Ej: García, Ana Laura">
-      </div>
-      <div class="modal-field">
-        <label>Usuario (para login)</label>
-        <input type="text" id="al-usuario" placeholder="ana.garcia">
-      </div>
-      <div class="modal-field">
-        <label id="al-pass-label">Contraseña</label>
-        <input type="password" id="al-password" placeholder="Mínimo 4 caracteres">
-      </div>
-      <div class="span2 modal-field">
-        <label>Curso</label>
-        <select id="al-curso">
-          <option value="0">— Sin asignar —</option>
-          <?php foreach ($cursos_lista as $c): ?>
-          <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nombre']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-    </div>
-    <div class="modal-al-error" id="al-error"></div>
-    <div class="modal-btns">
-      <button class="btn-cancelar" onclick="document.getElementById('overlay-alumno').classList.remove('open')">Cancelar</button>
-      <button class="btn-confirmar" id="al-btn-guardar" onclick="guardarAlumno()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  // ── Alumnos CRUD ─────────────────────────────────────────────────────────
-
-  function filtrarAlumnos() {
-    const q = (document.getElementById('al-busqueda').value || '').toLowerCase().trim();
-    document.querySelectorAll('#tabla-alumnos tbody tr').forEach(tr => {
-      const ok = !q || tr.dataset.nombre.includes(q) || tr.dataset.usuario.includes(q);
-      tr.style.display = ok ? '' : 'none';
-    });
-  }
-
-  function abrirModalAlumno(alumno) {
-    const esNuevo = !alumno;
-    document.getElementById('modal-al-titulo').textContent = esNuevo ? 'Nuevo alumno' : 'Editar alumno';
-    document.getElementById('al-id').value       = esNuevo ? '' : alumno.id;
-    document.getElementById('al-nombre').value   = esNuevo ? '' : alumno.nombre;
-    document.getElementById('al-usuario').value  = esNuevo ? '' : alumno.usuario;
-    document.getElementById('al-password').value = '';
-    document.getElementById('al-pass-label').textContent = esNuevo ? 'Contraseña' : 'Nueva contraseña (dejar vacío para no cambiar)';
-    document.getElementById('al-curso').value    = esNuevo ? '0' : (alumno.curso_id ?? '0');
-    document.getElementById('al-error').textContent = '';
-    document.getElementById('overlay-alumno').classList.add('open');
-  }
-
-  function cerrarModalAlumno(e) {
-    if (e.target === document.getElementById('overlay-alumno'))
-      document.getElementById('overlay-alumno').classList.remove('open');
-  }
-
-  async function guardarAlumno() {
-    const id       = document.getElementById('al-id').value;
-    const nombre   = document.getElementById('al-nombre').value.trim();
-    const usuario  = document.getElementById('al-usuario').value.trim();
-    const password = document.getElementById('al-password').value.trim();
-    const curso_id = document.getElementById('al-curso').value;
-    const errorEl  = document.getElementById('al-error');
-    errorEl.textContent = '';
-
-    if (!nombre) { errorEl.textContent = 'El nombre es obligatorio.'; return; }
-    if (!usuario) { errorEl.textContent = 'El usuario es obligatorio.'; return; }
-    if (!id && !password) { errorEl.textContent = 'La contraseña es obligatoria para crear un alumno.'; return; }
-    if (password && password.length < 4) { errorEl.textContent = 'La contraseña debe tener al menos 4 caracteres.'; return; }
-
-    const btn = document.getElementById('al-btn-guardar');
-    btn.disabled = true;
-
-    const fd = new FormData();
-    fd.append('id', id);
-    fd.append('nombre', nombre);
-    fd.append('usuario', usuario);
-    fd.append('password', password);
-    fd.append('curso_id', curso_id);
-
-    try {
-      const res  = await fetch('../gestion/alumno_guardar.php', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!data.success) { errorEl.textContent = data.message; btn.disabled = false; return; }
-
-      document.getElementById('overlay-alumno').classList.remove('open');
-      // Recargar tabla completa para reflejar cambios
-      location.reload();
-    } catch {
-      errorEl.textContent = 'Error de conexión.';
-      btn.disabled = false;
-    }
-  }
-
-  async function accionAlumno(id, accion) {
-    const msgs = { suspender: '¿Suspender este alumno?', reactivar: '¿Reactivar este alumno?', eliminar: '¿Eliminar este alumno permanentemente? Esta acción no se puede deshacer.' };
-    if (!confirm(msgs[accion])) return;
-
-    const fd = new FormData();
-    fd.append('id', id);
-    fd.append('accion', accion);
-
-    try {
-      const res  = await fetch('../gestion/alumno_eliminar.php', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!data.success) { alert(data.message); return; }
-
-      if (accion === 'eliminar') {
-        const row = document.getElementById(`al-row-${id}`);
-        if (row) row.remove();
-      } else {
-        // Actualizar estado en la fila sin recargar
-        const estadoEl = document.getElementById(`al-estado-${id}`);
-        const accEl    = document.getElementById(`al-acc-${id}`);
-        if (estadoEl) {
-          const activo = accion === 'reactivar';
-          estadoEl.innerHTML = `<span class="estado-badge ${activo ? 'al-activo' : 'al-inactivo'}">${activo ? 'Activo' : 'Suspendido'}</span>`;
-          // Actualizar botón de acción
-          const tr = document.getElementById(`al-row-${id}`);
-          if (tr) {
-            const btnToggle = accEl.querySelector('.btn-suspender, .btn-reactivar');
-            if (btnToggle) {
-              btnToggle.className = `btn-accion ${activo ? 'btn-suspender' : 'btn-reactivar'}`;
-              btnToggle.textContent = activo ? 'Suspender' : 'Reactivar';
-              btnToggle.onclick = () => accionAlumno(id, activo ? 'suspender' : 'reactivar');
-            }
-          }
-        }
-      }
-    } catch {
-      alert('Error de conexión.');
-    }
-  }
-</script>
 
 </body>
 </html>
