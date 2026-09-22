@@ -194,9 +194,18 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
 
   function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
+  function normalizar(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
   buscarAlumno.addEventListener('input', () => {
-    const texto = buscarAlumno.value.trim();
-    const match = alumnosCache.find(a => a.nombre === texto);
+    const texto = normalizar(buscarAlumno.value);
+    if (!texto) { selAlumno.value = ''; return; }
+    let match = alumnosCache.find(a => normalizar(a.nombre) === texto);
+    if (!match) {
+      const candidatos = alumnosCache.filter(a => normalizar(a.nombre).includes(texto));
+      if (candidatos.length === 1) match = candidatos[0];
+    }
     selAlumno.value = match ? match.id : '';
   });
 

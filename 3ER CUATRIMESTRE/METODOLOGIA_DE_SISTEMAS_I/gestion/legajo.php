@@ -1,15 +1,37 @@
 <?php
 require_once '../auth/session.php';
-if (($_SESSION['rol'] ?? '') !== 'admin') {
+$rol_sesion = $_SESSION['rol'] ?? '';
+if (!in_array($rol_sesion, ['admin', 'docente'], true)) {
     header('Location: /');
     exit;
 }
-$nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
+$es_docente = $rol_sesion === 'docente';
+$nombre = htmlspecialchars($_SESSION['nombre'] ?? ($es_docente ? 'Docente' : 'Administrador'));
+$volver_url = $es_docente ? '../portals/portal_docente.php' : '../portals/portal_admin.php';
 
+require_once '../gestion/helpers.php';
 require_once '../database/db_config.php';
 $alumnos = [];
-$res = $conn->query("SELECT u.id, u.nombre, c.nombre AS curso FROM usuarios u LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id LEFT JOIN cursos c ON c.id = ac.curso_id WHERE u.rol = 'alumno' AND u.activo = 1 ORDER BY u.nombre");
-if ($res) while ($r = $res->fetch_assoc()) $alumnos[] = $r;
+if ($es_docente) {
+    // Un docente solo puede buscar legajos de alumnos en cursos donde dicta alguna materia.
+    $stmt = $conn->prepare(
+        "SELECT DISTINCT u.id, u.nombre, c.nombre AS curso
+         FROM usuarios u
+         JOIN alumno_curso ac ON ac.alumno_id = u.id
+         JOIN cursos c ON c.id = ac.curso_id
+         JOIN materias m ON m.curso_id = c.id
+         WHERE u.rol = 'alumno' AND u.activo = 1 AND m.docente_id = ?
+         ORDER BY u.nombre"
+    );
+    $docente_id = (int) $_SESSION['usuario_id'];
+    $stmt->bind_param('i', $docente_id);
+    $stmt->execute();
+    $alumnos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+} else {
+    $res = $conn->query("SELECT u.id, u.nombre, c.nombre AS curso FROM usuarios u LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id LEFT JOIN cursos c ON c.id = ac.curso_id WHERE u.rol = 'alumno' AND u.activo = 1 ORDER BY u.nombre");
+    if ($res) while ($r = $res->fetch_assoc()) $alumnos[] = $r;
+}
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -127,7 +149,7 @@ $conn->close();
     </div>
   </a>
   <div class="user-info">
-    <span class="user-badge">🔑 Admin</span>
+    <span class="user-badge"><?= $es_docente ? '🎓 Docente' : '🔑 Admin' ?></span>
     <a href="../auth/logout.php" class="btn-logout">Cerrar sesión</a>
   </div>
 </header>
@@ -135,18 +157,21 @@ $conn->close();
 <div class="welcome">
   <h1>Legajo de Alumno</h1>
   <p>Bienvenido/a, <?= $nombre ?></p>
-  <span class="rol-badge">Panel Administración</span>
+  <span class="rol-badge"><?= $es_docente ? 'Portal Docente' : 'Panel Administración' ?></span>
 </div>
 
 <div class="container">
-  <a href="../portals/portal_admin.php" class="volver">&larr; Volver al panel</a>
+  <a href="<?= $volver_url ?>" class="volver">&larr; Volver al portal</a>
 
   <div class="card">
     <div class="card-header"><span class="icon">📂</span><h2>Seleccionar Alumno</h2></div>
     <div class="card-body">
+      <?php if (empty($alumnos)): ?>
+        <p class="empty-msg"><?= $es_docente ? 'Todavía no tenés alumnos a cargo (pedile al admin que te asigne una materia).' : 'No hay alumnos activos registrados.' ?></p>
+      <?php else: ?>
       <div class="form-row">
         <label>Alumno
-          <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí para buscar…" autocomplete="off" style="min-width:280px;">
+          <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí nombre o curso…" autocomplete="off" style="min-width:280px;">
           <datalist id="dl-alumnos">
             <?php foreach ($alumnos as $a): ?>
             <option value="<?= htmlspecialchars($a['nombre']) ?><?= $a['curso'] ? ' — ' . htmlspecialchars($a['curso']) : '' ?>">
@@ -156,7 +181,8 @@ $conn->close();
         </label>
         <button type="button" class="btn" id="btn-ver">Ver legajo</button>
       </div>
-      <p class="empty-msg" id="alumno-no-encontrado" style="display:none;padding:0;text-align:left;">No se encontró ningún alumno con ese nombre.</p>
+      <p class="empty-msg" id="alumno-no-encontrado" style="display:none;padding:0;text-align:left;">No se encontró ningún alumno con ese nombre. Elegí una opción de la lista o escribí el nombre completo.</p>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -164,8 +190,12 @@ $conn->close();
 </div>
 
 <script>
+  const contenido = document.getElementById('legajo-contenido');
+
+  <?php if (!empty($alumnos)): ?>
   const ALUMNOS = <?= json_encode(array_map(fn($a) => [
       'id'     => $a['id'],
+      'nombre' => $a['nombre'],
       'texto'  => $a['nombre'] . ($a['curso'] ? ' — ' . $a['curso'] : ''),
   ], $alumnos)) ?>;
 
@@ -173,13 +203,23 @@ $conn->close();
   const buscarAlumno  = document.getElementById('sel-alumno-buscar');
   const noEncontrado  = document.getElementById('alumno-no-encontrado');
   const btnVer        = document.getElementById('btn-ver');
-  const contenido     = document.getElementById('legajo-contenido');
+
+  // Normaliza acentos/mayúsculas para que la búsqueda sea tolerante.
+  function normalizar(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
 
   function resolverAlumno() {
-    const texto = buscarAlumno.value.trim();
-    const match = ALUMNOS.find(a => a.texto === texto);
+    const texto = normalizar(buscarAlumno.value);
+    if (!texto) { selAlumno.value = ''; noEncontrado.style.display = 'none'; return null; }
+
+    let match = ALUMNOS.find(a => normalizar(a.texto) === texto || normalizar(a.nombre) === texto);
+    if (!match) {
+      const candidatos = ALUMNOS.filter(a => normalizar(a.nombre).includes(texto));
+      if (candidatos.length === 1) match = candidatos[0];
+    }
     selAlumno.value = match ? match.id : '';
-    noEncontrado.style.display = (texto && !match) ? '' : 'none';
+    noEncontrado.style.display = match ? 'none' : '';
     return match;
   }
   buscarAlumno.addEventListener('input', resolverAlumno);
@@ -187,7 +227,7 @@ $conn->close();
   btnVer.addEventListener('click', async () => {
     resolverAlumno();
     const alumno_id = selAlumno.value;
-    if (!alumno_id) { noEncontrado.style.display = buscarAlumno.value.trim() ? '' : 'none'; return; }
+    if (!alumno_id) { noEncontrado.style.display = ''; return; }
     contenido.innerHTML = '<div class="card"><div class="card-body"><p class="empty-msg">Cargando legajo…</p></div></div>';
     contenido.style.display = '';
 
@@ -292,6 +332,7 @@ $conn->close();
       contenido.innerHTML = '<div class="card"><div class="card-body"><p class="empty-msg">Error al cargar el legajo.</p></div></div>';
     }
   });
+  <?php endif; ?>
 
   function tablaSimple(filas, cabeceras, campos) {
     if (!filas || !filas.length) return '<p class="empty-msg">Sin registros.</p>';

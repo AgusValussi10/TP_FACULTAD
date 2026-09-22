@@ -2,13 +2,21 @@
 require_once __DIR__ . '/helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
-requerir_rol('admin');
+requerir_rol(['admin', 'docente']);
 
 require_once __DIR__ . '/../database/db_config.php';
 
 $alumno_id = (int) ($_GET['alumno_id'] ?? 0);
 if ($alumno_id <= 0) {
     echo json_encode(['success' => false, 'message' => 'Parámetro alumno_id requerido.']);
+    exit;
+}
+
+// Un docente solo puede ver el legajo de alumnos en cursos donde dicta alguna materia.
+if (($_SESSION['rol'] ?? '') === 'docente' && !alumno_pertenece_a_docente($conn, $alumno_id, (int) $_SESSION['usuario_id'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'No tenés acceso al legajo de ese alumno.']);
+    $conn->close();
     exit;
 }
 

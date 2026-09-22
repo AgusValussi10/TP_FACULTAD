@@ -106,6 +106,22 @@ function materia_valida_para_docente(mysqli $conn, int $materia_id, int $docente
     return $materia;
 }
 
+/** true si el alumno cursa alguna materia dictada por el docente (para acotar el legajo). */
+function alumno_pertenece_a_docente(mysqli $conn, int $alumno_id, int $docente_id): bool
+{
+    $stmt = $conn->prepare(
+        "SELECT 1 FROM alumno_curso ac
+         JOIN materias m ON m.curso_id = ac.curso_id
+         WHERE ac.alumno_id = ? AND m.docente_id = ?
+         LIMIT 1"
+    );
+    $stmt->bind_param('ii', $alumno_id, $docente_id);
+    $stmt->execute();
+    $ok = $stmt->get_result()->num_rows > 0;
+    $stmt->close();
+    return $ok;
+}
+
 /** Edad en años cumplidos a partir de una fecha de nacimiento. */
 function edad_desde_fecha_nacimiento(string $fecha_nacimiento): int
 {
