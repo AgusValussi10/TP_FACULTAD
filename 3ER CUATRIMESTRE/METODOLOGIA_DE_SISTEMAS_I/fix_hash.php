@@ -8,9 +8,9 @@ echo "<pre>Registro actual:\n";
 print_r($row);
 echo "</pre>";
 
-// Actualizar hash
+// Actualizar hash y rol
 $hash = password_hash('enfermeria123', PASSWORD_BCRYPT);
-$stmt = $conn->prepare("UPDATE usuarios SET password_hash = ? WHERE usuario = 'sandra.benitez'");
+$stmt = $conn->prepare("UPDATE usuarios SET password_hash = ?, rol = 'enfermeria' WHERE usuario = 'sandra.benitez'");
 $stmt->bind_param('s', $hash);
 $stmt->execute();
 echo "Filas afectadas: " . $stmt->affected_rows . "<br>";
