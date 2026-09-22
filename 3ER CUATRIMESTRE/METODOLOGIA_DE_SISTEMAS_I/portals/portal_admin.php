@@ -399,7 +399,6 @@ $conn->close();
     <a href="../gestion/planificacion.php" class="ar-btn"><span class="ar-icon">📁</span> Planificaciones</a>
     <a href="../gestion/recuperatorios.php" class="ar-btn"><span class="ar-icon">🔄</span> Recuperatorios</a>
     <a href="../gestion/cuotas.php"        class="ar-btn"><span class="ar-icon">💳</span> Cuotas y Pagos</a>
-    <a href="../gestion/deportes.php"      class="ar-btn"><span class="ar-icon">⚽</span> Deportes</a>
   </div>
 </div>
 
