@@ -8,6 +8,47 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
 
 require_once '../database/db_config.php';
 
+$docente_id = (int) $_SESSION['usuario_id'];
+
+// Materias asignadas al docente (RFG: gestión de materias por admin).
+$materias_docente = [];
+$stmt = $conn->prepare(
+    "SELECT m.id, m.nombre, c.nombre AS curso_nombre, COUNT(ac.alumno_id) AS alumnos
+     FROM materias m
+     JOIN cursos c ON c.id = m.curso_id
+     LEFT JOIN alumno_curso ac ON ac.curso_id = c.id
+     WHERE m.docente_id = ?
+     GROUP BY m.id, m.nombre, c.nombre
+     ORDER BY c.nombre, m.nombre"
+);
+$stmt->bind_param('i', $docente_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $materias_docente[] = $row;
+}
+$stmt->close();
+
+// Últimas calificaciones cargadas por el docente, con materia y alumno.
+$ultimas_calificaciones = [];
+$stmt = $conn->prepare(
+    "SELECT u.nombre AS alumno_nombre, m.nombre AS materia_nombre, c.evaluacion, c.nota,
+            DATE_FORMAT(c.fecha_evaluacion,'%d/%m/%Y') AS fecha
+     FROM calificaciones c
+     JOIN materias m ON m.id = c.materia_id
+     JOIN usuarios u ON u.id = c.alumno_id
+     WHERE m.docente_id = ?
+     ORDER BY c.fecha_evaluacion DESC, c.id DESC
+     LIMIT 10"
+);
+$stmt->bind_param('i', $docente_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $ultimas_calificaciones[] = $row;
+}
+$stmt->close();
+
 $solicitudes = [];
 $pendientes  = 0;
 $result = $conn->query(
@@ -207,22 +248,16 @@ $conn->close();
     <div class="card">
       <div class="card-header"><span class="icon">📖</span><h2>Mis Materias</h2></div>
       <div class="card-body">
-        <div class="materia-item">
-          <div class="materia-info"><strong>Matemática</strong><span>3°A – 3°B</span></div>
-          <span class="materia-count">42 alumnos</span>
-        </div>
-        <div class="materia-item">
-          <div class="materia-info"><strong>Álgebra y Geometría</strong><span>2°A</span></div>
-          <span class="materia-count">21 alumnos</span>
-        </div>
-        <div class="materia-item">
-          <div class="materia-info"><strong>Estadística</strong><span>4°A – Optativa</span></div>
-          <span class="materia-count">18 alumnos</span>
-        </div>
-        <div class="materia-item">
-          <div class="materia-info"><strong>Tutoría</strong><span>3°A – Jefatura de curso</span></div>
-          <span class="materia-count">22 alumnos</span>
-        </div>
+        <?php if (empty($materias_docente)): ?>
+          <p class="empty-msg">Todavía no tenés materias asignadas. Pedile al administrador que te asigne una desde "Asignar Materias".</p>
+        <?php else: ?>
+          <?php foreach ($materias_docente as $m): ?>
+          <div class="materia-item">
+            <div class="materia-info"><strong><?= htmlspecialchars($m['nombre']) ?></strong><span><?= htmlspecialchars($m['curso_nombre']) ?></span></div>
+            <span class="materia-count"><?= (int) $m['alumnos'] ?> alumno<?= (int) $m['alumnos'] === 1 ? '' : 's' ?></span>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -255,18 +290,26 @@ $conn->close();
 
     <!-- CALIFICACIONES -->
     <div class="card">
-      <div class="card-header"><span class="icon">📝</span><h2>Últimas Calificaciones – 3°A</h2></div>
-      <div class="card-body">
+      <div class="card-header"><span class="icon">📝</span><h2>Últimas Calificaciones</h2></div>
+      <div class="card-body" style="overflow-x:auto;">
+        <?php if (empty($ultimas_calificaciones)): ?>
+          <p class="empty-msg">Todavía no cargaste calificaciones.</p>
+        <?php else: ?>
         <table>
-          <thead><tr><th>Alumno</th><th>Evaluación</th><th>Nota</th></tr></thead>
+          <thead><tr><th>Alumno</th><th>Materia</th><th>Evaluación</th><th>Nota</th><th>Fecha</th></tr></thead>
           <tbody>
-            <tr><td>García, Ana</td><td>TP N°3</td><td><strong>9</strong></td></tr>
-            <tr><td>López, Carlos</td><td>TP N°3</td><td><strong>7</strong></td></tr>
-            <tr><td>Romero, Valentina</td><td>TP N°3</td><td><strong>10</strong></td></tr>
-            <tr><td>Díaz, Mateo</td><td>TP N°3</td><td><strong>6</strong></td></tr>
-            <tr><td>Suárez, Sofía</td><td>TP N°3</td><td><strong>8</strong></td></tr>
+            <?php foreach ($ultimas_calificaciones as $cal): ?>
+            <tr>
+              <td><?= htmlspecialchars($cal['alumno_nombre']) ?></td>
+              <td><?= htmlspecialchars($cal['materia_nombre']) ?></td>
+              <td><?= htmlspecialchars($cal['evaluacion']) ?></td>
+              <td><strong><?= (int) $cal['nota'] ?></strong></td>
+              <td><?= $cal['fecha'] ?></td>
+            </tr>
+            <?php endforeach; ?>
           </tbody>
         </table>
+        <?php endif; ?>
       </div>
     </div>
 

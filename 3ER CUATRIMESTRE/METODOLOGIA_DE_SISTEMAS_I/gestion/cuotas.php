@@ -152,7 +152,9 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
     <div class="card-body">
       <div class="form-row">
         <label>Alumno
-          <select id="sel-alumno"><option value="">Elegí un alumno…</option></select>
+          <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí para buscar…" autocomplete="off" style="min-width:220px;">
+          <datalist id="dl-alumnos"></datalist>
+          <input type="hidden" id="sel-alumno">
         </label>
         <label>Concepto
           <select id="sel-concepto">
@@ -213,6 +215,8 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
   selMes.value = new Date().getMonth() + 1;
 
   const selAlumno   = document.getElementById('sel-alumno');
+  const buscarAlumno = document.getElementById('sel-alumno-buscar');
+  const dlAlumnos   = document.getElementById('dl-alumnos');
   const tbodyResumen= document.getElementById('tbody-resumen');
   const tbodyCuotas = document.getElementById('tbody-cuotas');
   const cardCuotas  = document.getElementById('card-cuotas');
@@ -263,15 +267,27 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
         `).join('');
       }
 
-      selAlumno.innerHTML = '<option value="">Elegí un alumno…</option>' +
-        alumnosCache.map(a => `<option value="${a.id}">${esc(a.nombre)}</option>`).join('');
+      dlAlumnos.innerHTML = alumnosCache.map(a => `<option value="${esc(a.nombre)}">`).join('');
     } catch {
       tbodyResumen.innerHTML = '<tr><td colspan="5" class="empty-msg">Error de conexión.</td></tr>';
     }
   }
 
+  function resolverAlumnoBuscado() {
+    const texto = buscarAlumno.value.trim();
+    const match = alumnosCache.find(a => a.nombre === texto);
+    selAlumno.value = match ? match.id : '';
+    return match;
+  }
+  buscarAlumno.addEventListener('input', () => {
+    const match = resolverAlumnoBuscado();
+    cargarCuotas(match ? match.id : '');
+  });
+
   function verCuotas(alumnoId) {
     selAlumno.value = alumnoId;
+    const alumno = alumnosCache.find(a => String(a.id) === String(alumnoId));
+    buscarAlumno.value = alumno ? alumno.nombre : '';
     cargarCuotas(alumnoId);
   }
 
@@ -372,9 +388,8 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
     }
   }
 
-  selAlumno.addEventListener('change', () => cargarCuotas(selAlumno.value));
-
   btnGenerar.addEventListener('click', async () => {
+    resolverAlumnoBuscado();
     const alumno_id = selAlumno.value;
     const importe   = document.getElementById('inp-importe').value;
 

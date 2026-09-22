@@ -136,7 +136,9 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
     <div class="card-body">
       <div class="campo">
         <label>Alumno/a *</label>
-        <select id="sel-alumno"><option value="">Elegí un alumno…</option></select>
+        <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí para buscar…" autocomplete="off">
+        <datalist id="dl-alumnos"></datalist>
+        <input type="hidden" id="sel-alumno">
       </div>
       <div class="fila-2">
         <div class="campo">
@@ -160,6 +162,9 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
 
 <script>
   const selAlumno = document.getElementById('sel-alumno');
+  const buscarAlumno = document.getElementById('sel-alumno-buscar');
+  const dlAlumnos = document.getElementById('dl-alumnos');
+  let alumnosCache = [];
   const inpMotivo = document.getElementById('motivo');
   const inpHora   = document.getElementById('hora');
   const inpObs    = document.getElementById('observaciones');
@@ -180,16 +185,20 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
       const res  = await fetch('enfermeria_alumnos.php');
       const data = await res.json();
       if (!data.success) { setMsg(data.message || 'Error al cargar alumnos.', '#DC2626'); return; }
-      data.alumnos.forEach(a => {
-        const opt = document.createElement('option');
-        opt.value = a.id;
-        opt.textContent = a.nombre;
-        selAlumno.appendChild(opt);
-      });
+      alumnosCache = data.alumnos;
+      dlAlumnos.innerHTML = alumnosCache.map(a => `<option value="${esc(a.nombre)}">`).join('');
     } catch {
       setMsg('Error de conexión al cargar alumnos.', '#DC2626');
     }
   })();
+
+  function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  buscarAlumno.addEventListener('input', () => {
+    const texto = buscarAlumno.value.trim();
+    const match = alumnosCache.find(a => a.nombre === texto);
+    selAlumno.value = match ? match.id : '';
+  });
 
   btnGuardar.addEventListener('click', async () => {
     const alumno_id = selAlumno.value;
@@ -217,6 +226,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Enfermería');
           setMsg('✅ Atención registrada. Se notificó al padre/tutor.', '#059669');
         }
         selAlumno.value = '';
+        buscarAlumno.value = '';
         inpMotivo.value = '';
         inpObs.value = '';
       } else {
