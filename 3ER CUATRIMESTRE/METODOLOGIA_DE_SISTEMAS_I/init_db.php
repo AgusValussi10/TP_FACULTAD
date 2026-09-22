@@ -23,5 +23,34 @@ if ($conn->errno) {
     exit(1);
 }
 
+// Columnas agregadas en sprints posteriores. Los schema_sprintN.sql usan
+// "ADD COLUMN IF NOT EXISTS", que es sintaxis de MariaDB y falla en MySQL,
+// así que se verifican acá contra information_schema (idempotente).
+$columnas = [
+    ['solicitudes_inscripcion', 'nivel_anterior_aprobado', "TINYINT(1) NULL DEFAULT NULL AFTER comentarios"],
+    ['cursos',                  'capacidad',               "TINYINT UNSIGNED NOT NULL DEFAULT 30"],
+];
+foreach ($columnas as [$tabla, $columna, $definicion]) {
+    $stmt = $conn->prepare(
+        "SELECT
+            (SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?) AS tabla,
+            (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?) AS columna"
+    );
+    $stmt->bind_param('sss', $tabla, $tabla, $columna);
+    $stmt->execute();
+    $existe = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($existe['tabla'] && !$existe['columna']) {
+        if (!$conn->query("ALTER TABLE `$tabla` ADD COLUMN `$columna` $definicion")) {
+            fwrite(STDERR, "Error agregando $tabla.$columna: " . $conn->error . PHP_EOL);
+            exit(1);
+        }
+        echo "Columna agregada: $tabla.$columna" . PHP_EOL;
+    }
+}
+
 echo "DB schema OK" . PHP_EOL;
 $conn->close();
