@@ -50,6 +50,23 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 
+// Recuperatorios pendientes del alumno; los que no tienen fecha van al final.
+$recuperatorios = [];
+$stmt = $conn->prepare(
+    "SELECT m.nombre AS materia, r.periodo, r.fecha, r.turno
+     FROM recuperatorios r
+     JOIN materias m ON m.id = r.materia_id
+     WHERE r.alumno_id = ? AND r.estado = 'pendiente'
+     ORDER BY r.fecha IS NULL, r.fecha, m.nombre"
+);
+$stmt->bind_param('i', $alumno_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $recuperatorios[] = $row;
+}
+$stmt->close();
+
 // Situación económica (RFG13/RN12).
 $stmt = $conn->prepare("SELECT condicion FROM alumno_curso WHERE alumno_id = ?");
 $stmt->bind_param('i', $alumno_id);
@@ -59,6 +76,9 @@ $stmt->close();
 $pendiente_regularizacion = ($fila_condicion['condicion'] ?? 'regular') === 'pendiente_regularizacion';
 
 $conn->close();
+
+$meses_cortos = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+$hoy = date('Y-m-d');
 
 $semaforo_clase = [
     'sin_datos' => 'badge-gris',
@@ -284,6 +304,34 @@ $semaforo_clase = [
               <?php endforeach; ?>
             </tbody>
           </table>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- RECUPERATORIOS PENDIENTES -->
+    <div class="card">
+      <div class="card-header"><span class="icon">📝</span><h2>Recuperatorios Pendientes</h2></div>
+      <div class="card-body">
+        <?php if (empty($recuperatorios)): ?>
+          <p class="empty-msg">No tenés recuperatorios pendientes. 🎉</p>
+        <?php else: ?>
+          <?php foreach ($recuperatorios as $r): ?>
+          <div class="evento-item">
+            <?php if ($r['fecha']): ?>
+              <div class="evento-fecha"><?= (int) substr($r['fecha'], 8, 2) ?><br><?= $meses_cortos[(int) substr($r['fecha'], 5, 2) - 1] ?></div>
+            <?php else: ?>
+              <div class="evento-fecha">A<br>CONF.</div>
+            <?php endif; ?>
+            <div class="evento-desc">
+              <strong><?= htmlspecialchars($r['materia']) ?></strong>
+              <span>
+                <?= htmlspecialchars($r['periodo']) ?>
+                <?php if ($r['turno']): ?> · Turno <?= htmlspecialchars($r['turno']) ?><?php endif; ?>
+                <?php if (!$r['fecha']): ?> · Fecha a confirmar<?php elseif ($r['fecha'] === $hoy): ?> · <mark class="badge badge-amarillo">Hoy</mark><?php elseif ($r['fecha'] < $hoy): ?> · <mark class="badge badge-gris">Esperando resultado</mark><?php endif; ?>
+              </span>
+            </div>
+          </div>
+          <?php endforeach; ?>
         <?php endif; ?>
       </div>
     </div>
