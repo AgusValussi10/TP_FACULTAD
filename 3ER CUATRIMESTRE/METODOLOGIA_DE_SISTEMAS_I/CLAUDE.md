@@ -66,13 +66,17 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── recuperatorios.php             ← UI gestión de recuperatorios (docente)
 │   ├── recuperatorio_guardar.php      ← POST → guardar recuperatorio
 │   ├── recuperatorio_listar.php       ← GET → JSON recuperatorios
-│   ├── legajo.php                     ← UI legajo completo del alumno (admin)
+│   ├── legajo.php                     ← UI legajo completo del alumno (admin/docente)
 │   ├── legajo_listar.php              ← GET → JSON datos de legajo
 │   ├── boletin_listar.php             ← GET → JSON boletín de calificaciones
 │   ├── vacantes.php                   ← UI gestión de vacantes (admin)
 │   ├── vacantes_actualizar.php        ← POST → actualizar puesto vacante
 │   ├── vacantes_listar.php            ← GET → JSON puestos vacantes
-│   └── roles_listar.php               ← GET → JSON roles disponibles
+│   ├── roles_listar.php               ← GET → JSON roles disponibles
+│   ├── alumnos.php                    ← UI ABM de alumnos (admin) — alta/baja/modificación
+│   ├── alumnos_listar.php             ← GET → JSON lista de alumnos con curso
+│   ├── alumno_guardar.php             ← POST → crear o actualizar alumno
+│   └── alumno_eliminar.php            ← POST → suspender/reactivar/eliminar alumno
 ├── noticias/
 │   ├── listar.php              ← GET público → JSON de noticias publicadas
 │   ├── polling.php             ← GET → JSON para refresh dinámico
@@ -637,29 +641,47 @@ Footer bg:           #1e293b
 
 ## Estado actual del proyecto
 
-### Sprints completados (21/09/2026)
+### Sprints (21/09/2026)
 
 | Sprint | RFs | Estado | Responsable |
 |---|---|---|---|
 | Sprint 1 | RFG01/02/03 | ✅ Completo | Fabrizio |
-| Sprint 2 | RFG04/09/10 | ✅ Completo | Fabrizio |
-| Sprint 3 | RFG05/06/07 | ✅ Completo | Agustín |
-| Sprint 4 | RFG08/15/16 | ✅ Completo | Agustín |
-| Sprint 5 | RFG11/12/13 | 🔄 Pendiente | Fabrizio |
-
-Sprint 5 cubre: reserva de instalaciones deportivas (RFG11), pagos/matrícula/mora (RFG12), condición pendiente de regularización (RFG13).
+| Sprint 2 | RFG04/09/10 | ⚠️ Parcial (ver bugs) | Fabrizio |
+| Sprint 3 | RFG05/06/07 | ⚠️ Parcial (ver bugs) | Agustín |
+| Sprint 4 | RFG08/15/16 | ⚠️ Parcial (ver bugs) | Agustín |
+| Sprint 5 | RFG11/12/13 | ❌ Pendiente | Fabrizio |
+| Sprint 6 | RFG17/18/19 | ❌ Pendiente | — |
 
 ### Estado por portal
 
-- **Portal admin:** funcional completo — inscripciones (con validación de vacantes y asignación a curso), noticias, opiniones, consultas, empleo, legajo, vacantes
+- **Portal admin:** inscripciones (con validación de vacantes y asignación a curso), noticias, opiniones, consultas, empleo, legajo, vacantes, ABM de alumnos (`gestion/alumnos.php`). Accesos rápidos al sistema visibles arriba del portal (barra oscura antes de las pestañas).
 - **Portal docente:** asistencia, calificaciones, planificación anual, recuperatorios — todos conectados a BD
 - **Portal alumno:** boletín de calificaciones por trimestre, asistencia, recuperatorios — conectados a BD
-- **Portal padre:** boletín, asistencia, servicios (comedor/transporte), notificaciones — conectados a BD
+- **Portal padre:** boletín, asistencia, servicios (comedor/transporte), notificaciones — conectados a BD. Falta: consulta sobre calificación (RF07)
 - **Portal enfermería:** registro de atenciones conectado a BD
 - **Landing pública:** completamente funcional
 - **Recuperación de contraseña:** modal presente en UI pero sin implementar
 
+### Bugs y pendientes conocidos
+
+| # | Descripción | RF/HU relacionado | Prioridad |
+|---|---|---|---|
+| 1 | Validar requisitos de inscripción desde el portal (HU6) — falta validación en backend | HU6 | Alta |
+| 2 | RF04 incompleto — falta implementación completa de validación de edad/nivel al admitir | RFG04 | Alta |
+| 3 | Materias duplicadas en seed: "Matemática 2B" y "Lengua y Literatura 2B" aparecen dos veces | Seed/BD | Media |
+| 4 | RF07 incompleto — el padre no puede consultar/preguntar sobre una calificación desde su portal | RFG07 | Alta |
+| 5 | Vacantes por curso (`gestion/vacantes.php`): al modificar la capacidad no se refresca la página automáticamente, lo que puede mostrar datos inconsistentes | RFG08 | Media |
+| 6 | RF11 no implementado — reserva de instalaciones deportivas | RFG11 | Pendiente Sprint 5 |
+| 7 | RF12 no implementado — pagos, matrícula y mora | RFG12 | Pendiente Sprint 5 |
+| 8 | RF13 no implementado — condición pendiente de regularización | RFG13 | Pendiente Sprint 5 |
+| 9 | RF16 incompleto — legajo del alumno no muestra situación económica (depende de Sprint 5/RF12) | RFG16 | Bloqueado por RF12 |
+| 10 | RF17/18/19 no implementados | RFG17/18/19 | Pendiente Sprint 6 |
+
 ### Notas técnicas importantes
+
+**Portal admin — pestañas vs. gestión del sistema:** Las pestañas del portal (Inscripciones, Opiniones, Propuestas, Consultas, Noticias) gestionan contenido de la landing page. La barra oscura sobre las pestañas contiene accesos rápidos al sistema (ABM alumnos, legajo, vacantes, materias, etc.). No mezclar.
+
+**Legajo (`gestion/legajo.php` + `legajo_listar.php`):** Las referencias a `cuotas` (tabla) y `alumno_curso.condicion` (columna) son de Sprint 5 y fueron eliminadas temporalmente. El legajo muestra calificaciones, asistencia, recuperatorios, sanciones, enfermería y servicios. Se reintegrará situación económica cuando se implemente RF12.
 
 **Boletín (`gestion/boletin_listar.php`):** agrupa calificaciones por trimestre usando el mes de `fecha_evaluacion` — meses 3–5 = 1er Trim, 6–8 = 2do Trim, 9–12 = 3er Trim. No hay columna `periodo` en `calificaciones`.
 
