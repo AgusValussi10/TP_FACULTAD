@@ -1202,6 +1202,9 @@ $conn->close();
       if (data.success) {
         document.getElementById('overlay-admitir').classList.remove('open');
 
+        // Se ocupó una vacante: forzar a releer los cursos en la próxima admisión.
+        cursosCache = null;
+
         // Actualizar fila
         document.getElementById(`estado-${id}`).innerHTML =
           `<span class="estado-badge estado-admitido">Admitido</span>`;
