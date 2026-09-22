@@ -13,6 +13,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// En PHP 8.1+ mysqli lanza excepciones ante errores de SQL; sin esto PHP
+// responde HTML y el front solo ve "No se pudo conectar con el servidor".
+set_exception_handler(function (Throwable $e) {
+    global $conn;
+    if ($conn instanceof mysqli) {
+        try { $conn->rollback(); } catch (Throwable $ignorado) {}
+    }
+    error_log('admitir.php: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error al admitir: ' . $e->getMessage()]);
+});
+
 require_once '../database/db_config.php';
 require_once '../gestion/helpers.php';
 
