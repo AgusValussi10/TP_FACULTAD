@@ -8,6 +8,10 @@ echo "<pre>Registro actual:\n";
 print_r($row);
 echo "</pre>";
 
+// Agregar 'enfermeria' al ENUM si no existe
+$conn->query("ALTER TABLE usuarios MODIFY rol ENUM('alumno','docente','padre','admin','enfermeria') NOT NULL DEFAULT 'alumno'");
+echo "ENUM actualizado<br>";
+
 // Actualizar hash y rol
 $hash = password_hash('enfermeria123', PASSWORD_BCRYPT);
 $stmt = $conn->prepare("UPDATE usuarios SET password_hash = ?, rol = 'enfermeria' WHERE usuario = 'sandra.benitez'");
