@@ -273,9 +273,18 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
     }
   }
 
+  function normalizar(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
   function resolverAlumnoBuscado() {
-    const texto = buscarAlumno.value.trim();
-    const match = alumnosCache.find(a => a.nombre === texto);
+    const texto = normalizar(buscarAlumno.value);
+    if (!texto) { selAlumno.value = ''; return null; }
+    let match = alumnosCache.find(a => normalizar(a.nombre) === texto);
+    if (!match) {
+      const candidatos = alumnosCache.filter(a => normalizar(a.nombre).includes(texto));
+      if (candidatos.length === 1) match = candidatos[0];
+    }
     selAlumno.value = match ? match.id : '';
     return match;
   }

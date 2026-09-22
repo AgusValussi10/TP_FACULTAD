@@ -321,6 +321,7 @@ $conn->close();
         <a href="../gestion/calificaciones.php" class="accion-btn" style="text-decoration:none;">✏️ Registrar calificaciones</a>
         <a href="../gestion/planificacion.php" class="accion-btn" style="text-decoration:none;">📁 Planificación anual</a>
         <a href="../gestion/recuperatorios.php" class="accion-btn" style="text-decoration:none;">🔄 Exámenes recuperatorios</a>
+        <a href="../gestion/legajo.php" class="accion-btn" style="text-decoration:none;">📂 Ver legajo de alumno</a>
       </div>
     </div>
 
