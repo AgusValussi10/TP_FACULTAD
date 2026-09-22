@@ -2,6 +2,7 @@
 require_once __DIR__ . '/helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
+errores_como_json();
 requerir_rol('padre');
 
 require_once __DIR__ . '/../database/db_config.php';

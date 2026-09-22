@@ -40,6 +40,19 @@ function requerir_rol($roles): void
     }
 }
 
+/**
+ * En PHP 8.1+ mysqli lanza excepciones; sin esto PHP responde HTML y el front
+ * solo muestra "Error de conexión". Llamar al inicio de endpoints JSON.
+ */
+function errores_como_json(): void
+{
+    set_exception_handler(function (Throwable $e) {
+        error_log(basename($_SERVER['SCRIPT_NAME'] ?? '') . ': ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error del servidor: ' . $e->getMessage()]);
+    });
+}
+
 /** Cuenta días hábiles (lunes a viernes) estrictamente entre dos fechas, sin contar $desde. */
 function dias_habiles_entre(string $desde, string $hasta): int
 {

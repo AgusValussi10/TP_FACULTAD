@@ -23,12 +23,65 @@ if ($conn->errno) {
     exit(1);
 }
 
+// Sprint 5 (RFG11/RFG12): mismas tablas que database/schema_sprint5.sql, que no
+// se puede correr tal cual en producción (hace "USE educar_db" y la base de
+// Render tiene otro nombre).
+$conn->set_charset('utf8');
+$tablasSprint5 = [
+    "CREATE TABLE IF NOT EXISTS deportes (
+        id          INT AUTO_INCREMENT PRIMARY KEY,
+        nombre      VARCHAR(60) NOT NULL,
+        horario     VARCHAR(100) NOT NULL,
+        cupo_maximo TINYINT UNSIGNED NOT NULL DEFAULT 20,
+        UNIQUE KEY uq_deporte (nombre)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    "CREATE TABLE IF NOT EXISTS inscripciones_deportivas (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        alumno_id  INT NOT NULL,
+        deporte_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_inscripcion_deporte (alumno_id, deporte_id),
+        FOREIGN KEY (alumno_id)  REFERENCES usuarios(id) ON DELETE CASCADE,
+        FOREIGN KEY (deporte_id) REFERENCES deportes(id)  ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    "CREATE TABLE IF NOT EXISTS cuotas (
+        id                INT AUTO_INCREMENT PRIMARY KEY,
+        alumno_id         INT NOT NULL,
+        concepto          ENUM('matricula','cuota') NOT NULL DEFAULT 'cuota',
+        mes               TINYINT UNSIGNED NOT NULL,
+        anio              SMALLINT UNSIGNED NOT NULL,
+        importe           DECIMAL(10,2) NOT NULL,
+        recargo           DECIMAL(10,2) NOT NULL DEFAULT 0,
+        fecha_vencimiento DATE NOT NULL,
+        estado            ENUM('pendiente','pagada') NOT NULL DEFAULT 'pendiente',
+        fecha_pago        DATE NULL,
+        created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_cuota (alumno_id, concepto, mes, anio),
+        FOREIGN KEY (alumno_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    // Catálogo de deportes (los mismos 6 de la página pública, index.html).
+    "INSERT IGNORE INTO deportes (nombre, horario, cupo_maximo) VALUES
+        ('Atletismo',       'Lunes y Miércoles 16:00–17:30',            20),
+        ('Natación',        'Martes y Jueves 15:00–16:00',              16),
+        ('Fútbol',          'Lunes, Miércoles y Viernes 17:00–18:30',   22),
+        ('Artes Marciales', 'Martes y Jueves 17:00–18:00',              18),
+        ('Vóleibol',        'Miércoles y Viernes 16:00–17:30',          18),
+        ('Danza',           'Lunes y Jueves 15:30–16:30',               20)",
+];
+foreach ($tablasSprint5 as $sql) {
+    if (!$conn->query($sql)) {
+        fwrite(STDERR, "Error en tablas de Sprint 5: " . $conn->error . PHP_EOL);
+        exit(1);
+    }
+}
+
 // Columnas agregadas en sprints posteriores. Los schema_sprintN.sql usan
 // "ADD COLUMN IF NOT EXISTS", que es sintaxis de MariaDB y falla en MySQL,
 // así que se verifican acá contra information_schema (idempotente).
 $columnas = [
     ['solicitudes_inscripcion', 'nivel_anterior_aprobado', "TINYINT(1) NULL DEFAULT NULL AFTER comentarios"],
     ['cursos',                  'capacidad',               "TINYINT UNSIGNED NOT NULL DEFAULT 30"],
+    ['alumno_curso',            'condicion',               "ENUM('regular','pendiente_regularizacion') NOT NULL DEFAULT 'regular'"],
 ];
 foreach ($columnas as [$tabla, $columna, $definicion]) {
     $stmt = $conn->prepare(
