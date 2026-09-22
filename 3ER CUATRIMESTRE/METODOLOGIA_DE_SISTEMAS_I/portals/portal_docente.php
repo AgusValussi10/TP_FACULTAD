@@ -153,6 +153,10 @@ $conn->close();
     td { padding: .55rem .7rem; border-bottom: 1px solid #F3F4F6; }
     tr:last-child td { border-bottom: none; }
 
+    .table-scroll { max-height: 360px; overflow-y: auto; overflow-x: auto; }
+    .table-scroll table { border-collapse: separate; border-spacing: 0; }
+    .table-scroll thead th { position: sticky; top: 0; z-index: 1; }
+
     .materia-item {
       display: flex; align-items: center; justify-content: space-between;
       padding: .75rem 0; border-bottom: 1px solid #F3F4F6;
@@ -291,10 +295,11 @@ $conn->close();
     <!-- CALIFICACIONES -->
     <div class="card">
       <div class="card-header"><span class="icon">📝</span><h2>Últimas Calificaciones</h2></div>
-      <div class="card-body" style="overflow-x:auto;">
+      <div class="card-body">
         <?php if (empty($ultimas_calificaciones)): ?>
           <p class="empty-msg">Todavía no cargaste calificaciones.</p>
         <?php else: ?>
+        <div class="table-scroll">
         <table>
           <thead><tr><th>Alumno</th><th>Materia</th><th>Evaluación</th><th>Nota</th><th>Fecha</th></tr></thead>
           <tbody>
@@ -309,6 +314,7 @@ $conn->close();
             <?php endforeach; ?>
           </tbody>
         </table>
+        </div>
         <?php endif; ?>
       </div>
     </div>
@@ -335,10 +341,11 @@ $conn->close();
           <?php endif; ?>
         </h2>
       </div>
-      <div class="card-body" style="overflow-x:auto;">
+      <div class="card-body">
         <?php if (empty($solicitudes)): ?>
           <p class="empty-msg">No hay solicitudes registradas aún.</p>
         <?php else: ?>
+          <div class="table-scroll">
           <table>
             <thead>
               <tr>
@@ -365,6 +372,7 @@ $conn->close();
               <?php endforeach; ?>
             </tbody>
           </table>
+          </div>
         <?php endif; ?>
       </div>
     </div>
