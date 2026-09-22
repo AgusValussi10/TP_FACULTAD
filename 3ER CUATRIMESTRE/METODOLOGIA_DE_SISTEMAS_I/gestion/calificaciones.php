@@ -108,6 +108,12 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
       width: 70px; padding: .4rem .5rem; border: 2px solid var(--borde); border-radius: 8px;
       font-family: inherit; font-size: .9rem; text-align: center;
     }
+    .recup-input {
+      padding: .4rem .5rem; border: 2px solid #FCA5A5; border-radius: 8px;
+      font-family: inherit; font-size: .88rem; background: #FEF2F2;
+    }
+    .recup-input.falta { border-color: #DC2626; }
+    .recup-label { display: block; font-size: .72rem; font-weight: 800; color: #DC2626; margin-bottom: .2rem; }
 
     .msg { margin: .6rem 0; font-weight: 700; font-size: .88rem; min-height: 1.2em; }
     .hint { font-size: .78rem; color: #6B7280; margin-top: -.4rem; margin-bottom: 1rem; }
@@ -152,10 +158,10 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
         </label>
         <button type="button" class="btn" id="btn-cargar">Cargar listado</button>
       </div>
-      <p class="hint">Las notas se pueden cargar o corregir hasta 10 días hábiles después de la fecha de evaluación.</p>
+      <p class="hint">Las notas se pueden cargar o corregir hasta 10 días hábiles después de la fecha de evaluación. Si la nota es menor a 6, hay que fijar la fecha del recuperatorio.</p>
       <div class="msg" id="msg"></div>
       <table id="tabla-notas" style="display:none;">
-        <thead><tr><th>Alumno</th><th>Nota</th></tr></thead>
+        <thead><tr><th>Alumno</th><th>Nota</th><th>Recuperatorio</th></tr></thead>
         <tbody id="tbody-notas"></tbody>
       </table>
       <button type="button" class="btn" id="btn-guardar" style="display:none; margin-top:1rem;">💾 Guardar calificaciones</button>
@@ -179,6 +185,35 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
 
   let materiaActual    = null;
   let evaluacionActual = null;
+
+  // Debe coincidir con NOTA_APROBACION en gestion/helpers.php.
+  const NOTA_APROBACION = 6;
+
+  function esDesaprobada(valor) {
+    return valor !== '' && Number(valor) >= 0 && Number(valor) < NOTA_APROBACION;
+  }
+
+  // El recuperatorio tiene que ser posterior a la fecha de evaluación.
+  function diaSiguiente(fechaISO) {
+    const d = new Date(fechaISO + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Muestra el campo de fecha de recuperatorio solo si la nota está desaprobada.
+  function actualizarRecuperatorio(tr) {
+    const nota  = tr.querySelector('input.nota-input').value;
+    const wrap  = tr.querySelector('.recup-wrap');
+    const input = tr.querySelector('input.recup-input');
+    const mostrar = esDesaprobada(nota);
+    wrap.style.display = mostrar ? '' : 'none';
+    input.min = diaSiguiente(selFecha.value);
+    if (!mostrar) input.classList.remove('falta');
+  }
+
+  selFecha.addEventListener('change', () => {
+    tbody.querySelectorAll('tr').forEach(actualizarRecuperatorio);
+  });
 
   function setMsg(texto, color) {
     msg.textContent = texto;
@@ -238,9 +273,28 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
         if (a.nota !== null) input.value = a.nota;
         tdNota.appendChild(input);
 
+        const tdRecup = document.createElement('td');
+        const wrap = document.createElement('div');
+        wrap.className = 'recup-wrap';
+        const lbl = document.createElement('span');
+        lbl.className = 'recup-label';
+        lbl.textContent = 'Fecha de recuperatorio';
+        const inputRecup = document.createElement('input');
+        inputRecup.type = 'date';
+        inputRecup.className = 'recup-input';
+        if (a.fecha_recuperatorio) inputRecup.value = a.fecha_recuperatorio;
+        inputRecup.addEventListener('input', () => inputRecup.classList.remove('falta'));
+        wrap.appendChild(lbl);
+        wrap.appendChild(inputRecup);
+        tdRecup.appendChild(wrap);
+
+        input.addEventListener('input', () => actualizarRecuperatorio(tr));
+
         tr.appendChild(tdNombre);
         tr.appendChild(tdNota);
+        tr.appendChild(tdRecup);
         tbody.appendChild(tr);
+        actualizarRecuperatorio(tr);
       });
 
       tabla.style.display = '';
@@ -253,12 +307,30 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
 
   btnGuardar.addEventListener('click', async () => {
     const notas = {};
+    const recuperatorios = {};
+    let faltanFechas = 0;
+    const minRecup = diaSiguiente(selFecha.value);
     tbody.querySelectorAll('tr').forEach(tr => {
       const input = tr.querySelector('input.nota-input');
-      if (input.value !== '') notas[tr.dataset.alumnoId] = Number(input.value);
+      if (input.value === '') return;
+      notas[tr.dataset.alumnoId] = Number(input.value);
+
+      if (esDesaprobada(input.value)) {
+        const inputRecup = tr.querySelector('input.recup-input');
+        if (inputRecup.value === '' || inputRecup.value < minRecup) {
+          inputRecup.classList.add('falta');
+          faltanFechas++;
+        } else {
+          recuperatorios[tr.dataset.alumnoId] = inputRecup.value;
+        }
+      }
     });
 
     if (Object.keys(notas).length === 0) { setMsg('Ingresá al menos una nota.', '#DC2626'); return; }
+    if (faltanFechas > 0) {
+      setMsg(`Fijá la fecha de recuperatorio (posterior a la evaluación) para ${faltanFechas} alumno${faltanFechas === 1 ? '' : 's'} desaprobado${faltanFechas === 1 ? '' : 's'}.`, '#DC2626');
+      return;
+    }
 
     btnGuardar.disabled = true;
     setMsg('Guardando...');
@@ -268,12 +340,14 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
     body.append('evaluacion', evaluacionActual);
     body.append('fecha_evaluacion', selFecha.value);
     body.append('notas', JSON.stringify(notas));
+    body.append('recuperatorios', JSON.stringify(recuperatorios));
 
     try {
       const res  = await fetch('calificaciones_guardar.php', { method: 'POST', body });
       const data = await res.json();
       if (data.success) {
         let texto = `✅ Calificaciones guardadas (${data.guardados}).`;
+        if (data.recuperatorios > 0) texto += ` ${data.recuperatorios} recuperatorio${data.recuperatorios === 1 ? '' : 's'} fijado${data.recuperatorios === 1 ? '' : 's'} (${data.periodo}).`;
         if (data.omitidos > 0) texto += ` ${data.omitidos} nota${data.omitidos === 1 ? '' : 's'} fuera de rango (0-10) omitida${data.omitidos === 1 ? '' : 's'}.`;
         setMsg(texto, '#059669');
       } else {

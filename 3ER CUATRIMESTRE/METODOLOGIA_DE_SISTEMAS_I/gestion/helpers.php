@@ -61,6 +61,19 @@ function dias_habiles_entre(string $desde, string $hasta): int
 }
 
 /**
+ * Trimestre (valor del ENUM recuperatorios.periodo) al que pertenece una fecha.
+ * Asunción: ciclo lectivo argentino, 1er trimestre hasta mayo, 2do de junio a
+ * agosto y 3ro de septiembre en adelante. Ajustar si el equipo define otro corte.
+ */
+function periodo_desde_fecha(string $fecha): string
+{
+    $mes = (int) date('n', strtotime($fecha));
+    if ($mes <= 5) return '1er Trimestre';
+    if ($mes <= 8) return '2do Trimestre';
+    return '3er Trimestre';
+}
+
+/**
  * Calcula el semáforo de faltas para un alumno en una materia.
  * @param int|null $faltas null cuando todavía no hay ningún registro de asistencia cargado.
  */

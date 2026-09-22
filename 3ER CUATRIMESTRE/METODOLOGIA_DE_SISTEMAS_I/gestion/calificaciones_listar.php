@@ -23,7 +23,7 @@ if (!$materia) {
 }
 
 $stmt = $conn->prepare(
-    "SELECT u.id AS alumno_id, u.nombre, c.nota
+    "SELECT u.id AS alumno_id, u.nombre, c.nota, c.fecha_evaluacion
      FROM alumno_curso ac
      JOIN usuarios u ON u.id = ac.alumno_id
      LEFT JOIN calificaciones c ON c.alumno_id = u.id AND c.materia_id = ? AND c.evaluacion = ?
@@ -34,8 +34,25 @@ $stmt->bind_param('isi', $materia_id, $evaluacion, $materia['curso_id']);
 $stmt->execute();
 $res = $stmt->get_result();
 
+// Recuperatorios ya fijados en la materia, por alumno y período.
+$recups = [];
+$stmtR = $conn->prepare("SELECT alumno_id, periodo, fecha FROM recuperatorios WHERE materia_id = ?");
+$stmtR->bind_param('i', $materia_id);
+$stmtR->execute();
+$resR = $stmtR->get_result();
+while ($r = $resR->fetch_assoc()) {
+    $recups[(int) $r['alumno_id']][$r['periodo']] = $r['fecha'];
+}
+$stmtR->close();
+
 $alumnos = [];
 while ($row = $res->fetch_assoc()) {
+    $row['fecha_recuperatorio'] = null;
+    if ($row['nota'] !== null && (int) $row['nota'] < NOTA_APROBACION && $row['fecha_evaluacion']) {
+        $periodo = periodo_desde_fecha($row['fecha_evaluacion']);
+        $row['fecha_recuperatorio'] = $recups[(int) $row['alumno_id']][$periodo] ?? null;
+    }
+    unset($row['fecha_evaluacion']);
     $alumnos[] = $row;
 }
 

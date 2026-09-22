@@ -56,6 +56,53 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 
+// Fechas de recuperatorio por alumno: obligatorias para toda nota desaprobada.
+$recuperatorios = json_decode($_POST['recuperatorios'] ?? '{}', true);
+if (!is_array($recuperatorios)) {
+    $recuperatorios = [];
+}
+
+$validas   = [];
+$omitidos  = 0;
+$sin_fecha = 0;
+foreach ($notas as $alumno_id => $nota) {
+    $alumno_id = (int) $alumno_id;
+    if (!isset($alumnos_curso[$alumno_id])) {
+        continue;
+    }
+
+    if (!is_numeric($nota)) {
+        $omitidos++;
+        continue;
+    }
+    $notaInt = (int) $nota;
+    if ($notaInt != $nota || $notaInt < 0 || $notaInt > 10) {
+        $omitidos++;
+        continue;
+    }
+
+    $fecha_recup = null;
+    if ($notaInt < NOTA_APROBACION) {
+        $fecha_recup = trim((string) ($recuperatorios[$alumno_id] ?? ''));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_recup) || $fecha_recup <= $fecha_evaluacion) {
+            $sin_fecha++;
+            continue;
+        }
+    }
+    $validas[] = [$alumno_id, $notaInt, $fecha_recup];
+}
+
+if ($sin_fecha > 0) {
+    echo json_encode([
+        'success' => false,
+        'message' => "Falta una fecha de recuperatorio válida (posterior a la evaluación) para {$sin_fecha} "
+                   . ($sin_fecha === 1 ? 'alumno desaprobado.' : 'alumnos desaprobados.'),
+    ]);
+    exit;
+}
+
+$periodo = periodo_desde_fecha($fecha_evaluacion);
+
 $conn->begin_transaction();
 try {
     $stmt = $conn->prepare(
@@ -63,33 +110,39 @@ try {
          VALUES (?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE nota = VALUES(nota), fecha_evaluacion = VALUES(fecha_evaluacion)"
     );
+    // Si ya había un recuperatorio en el período y cambia la fecha, vuelve a
+    // quedar pendiente (estado se asigna antes que fecha para comparar la vieja).
+    $stmtRecup = $conn->prepare(
+        "INSERT INTO recuperatorios (alumno_id, materia_id, periodo, fecha, estado)
+         VALUES (?, ?, ?, ?, 'pendiente')
+         ON DUPLICATE KEY UPDATE estado = IF(fecha <=> VALUES(fecha), estado, 'pendiente'),
+                                 fecha  = VALUES(fecha)"
+    );
 
-    $guardados = 0;
-    $omitidos  = 0;
-    foreach ($notas as $alumno_id => $nota) {
-        $alumno_id = (int) $alumno_id;
-        if (!isset($alumnos_curso[$alumno_id])) {
-            continue;
-        }
-
-        if (!is_numeric($nota)) {
-            $omitidos++;
-            continue;
-        }
-        $notaInt = (int) $nota;
-        if ($notaInt != $nota || $notaInt < 0 || $notaInt > 10) {
-            $omitidos++;
-            continue;
-        }
-
+    $guardados      = 0;
+    $recup_fijados  = 0;
+    foreach ($validas as [$alumno_id, $notaInt, $fecha_recup]) {
         $stmt->bind_param('iisis', $alumno_id, $materia_id, $evaluacion, $notaInt, $fecha_evaluacion);
         $stmt->execute();
         $guardados++;
+
+        if ($fecha_recup !== null) {
+            $stmtRecup->bind_param('iiss', $alumno_id, $materia_id, $periodo, $fecha_recup);
+            $stmtRecup->execute();
+            $recup_fijados++;
+        }
     }
     $stmt->close();
+    $stmtRecup->close();
 
     $conn->commit();
-    echo json_encode(['success' => true, 'guardados' => $guardados, 'omitidos' => $omitidos]);
+    echo json_encode([
+        'success'        => true,
+        'guardados'      => $guardados,
+        'omitidos'       => $omitidos,
+        'recuperatorios' => $recup_fijados,
+        'periodo'        => $periodo,
+    ]);
 } catch (Throwable $e) {
     $conn->rollback();
     echo json_encode(['success' => false, 'message' => 'Error al guardar las calificaciones.']);
