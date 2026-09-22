@@ -101,32 +101,49 @@ if ($solicitud['nivel_educativo'] === 'Inicial') {
     exit;
 }
 
+/** Corta la admisión deshaciendo todo lo hecho dentro de la transacción. */
+function abortarAdmision(mysqli $conn, string $mensaje): void
+{
+    $conn->rollback();
+    $conn->close();
+    echo json_encode(['success' => false, 'message' => $mensaje]);
+    exit;
+}
+
+// Todo en una transacción: si la inscripción en el curso falla, no queda
+// un usuario creado ni la solicitud marcada como admitida.
+$conn->begin_transaction();
+
 // RFG08: validar disponibilidad de vacantes si se indica un curso de destino.
+// FOR UPDATE bloquea la fila del curso hasta el commit, así dos admisiones
+// simultáneas no pueden ocupar la misma última vacante.
+$vacantesRestantes = null;
 if ($curso_id > 0) {
-    $vac = $conn->prepare(
-        "SELECT c.capacidad, COUNT(ac.alumno_id) AS inscriptos
-         FROM cursos c LEFT JOIN alumno_curso ac ON ac.curso_id = c.id
-         WHERE c.id = ? GROUP BY c.capacidad"
-    );
-    $vac->bind_param('i', $curso_id);
-    $vac->execute();
-    $rowVac = $vac->get_result()->fetch_assoc();
-    $vac->close();
-    if ($rowVac) {
-        $disponibles = (int)$rowVac['capacidad'] - (int)$rowVac['inscriptos'];
-        if ($disponibles <= 0) {
-            echo json_encode(['success' => false, 'message' => 'El curso seleccionado no tiene vacantes disponibles.']);
-            $conn->close();
-            exit;
-        }
+    $cur = $conn->prepare("SELECT capacidad FROM cursos WHERE id = ? FOR UPDATE");
+    $cur->bind_param('i', $curso_id);
+    $cur->execute();
+    $rowCurso = $cur->get_result()->fetch_assoc();
+    $cur->close();
+    if (!$rowCurso) {
+        abortarAdmision($conn, 'El curso seleccionado no existe.');
     }
+
+    $cnt = $conn->prepare("SELECT COUNT(*) AS inscriptos FROM alumno_curso WHERE curso_id = ?");
+    $cnt->bind_param('i', $curso_id);
+    $cnt->execute();
+    $inscriptos = (int)$cnt->get_result()->fetch_assoc()['inscriptos'];
+    $cnt->close();
+
+    $disponibles = (int)$rowCurso['capacidad'] - $inscriptos;
+    if ($disponibles <= 0) {
+        abortarAdmision($conn, 'El curso seleccionado no tiene vacantes disponibles.');
+    }
+    $vacantesRestantes = $disponibles - 1;
 }
 
 $resultadoUsuario = crearUsuarioAlumno($conn, $usuario, $password, $nombre);
 if ($resultadoUsuario['error']) {
-    echo json_encode(['success' => false, 'message' => $resultadoUsuario['error']]);
-    $conn->close();
-    exit;
+    abortarAdmision($conn, $resultadoUsuario['error']);
 }
 
 $nuevoAlumnoId = $conn->insert_id;
@@ -141,13 +158,23 @@ if ($solicitud['nivel_educativo'] !== 'Inicial' && $nivel_anterior_confirmado) {
 }
 
 // RFG08: inscribir al alumno en el curso indicado (si se especificó uno).
-if ($curso_id > 0 && $nuevoAlumnoId) {
-    $ins = $conn->prepare("INSERT IGNORE INTO alumno_curso (alumno_id, curso_id) VALUES (?, ?)");
+// Al sumarse a alumno_curso, la vacante queda descontada automáticamente
+// (vacantes = capacidad - inscriptos).
+if ($curso_id > 0) {
+    $ins = $conn->prepare("INSERT INTO alumno_curso (alumno_id, curso_id) VALUES (?, ?)");
     $ins->bind_param('ii', $nuevoAlumnoId, $curso_id);
-    $ins->execute();
+    $ok = $ins->execute();
     $ins->close();
+    if (!$ok) {
+        abortarAdmision($conn, 'No se pudo inscribir al alumno en el curso.');
+    }
 }
 
+$conn->commit();
 $conn->close();
 
-echo json_encode(['success' => true, 'usuario' => $usuario]);
+echo json_encode([
+    'success'            => true,
+    'usuario'            => $usuario,
+    'vacantes_restantes' => $vacantesRestantes,
+]);
