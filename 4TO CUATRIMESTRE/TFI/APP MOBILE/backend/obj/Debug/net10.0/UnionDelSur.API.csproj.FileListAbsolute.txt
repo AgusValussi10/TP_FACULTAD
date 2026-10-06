@@ -1,0 +1,51 @@
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\appsettings.Development.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\appsettings.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\UnionDelSur.API.staticwebassets.endpoints.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\UnionDelSur.API.exe
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\UnionDelSur.API.deps.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\UnionDelSur.API.runtimeconfig.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\UnionDelSur.API.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\UnionDelSur.API.pdb
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\BCrypt-Net-Next.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Dapper.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.Bcl.Cryptography.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\MySqlConnector.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.csproj.AssemblyReference.cache
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\rpswa.dswa.cache.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.AssemblyInfoInputs.cache
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.AssemblyInfo.cs
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.csproj.CoreCompileInputs.cache
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.sourcelink.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\rjimswa.dswa.cache.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\scopedcss\bundle\UnionDelSur.API.styles.css
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\staticwebassets.build.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\staticwebassets.build.json.cache
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\staticwebassets.development.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\staticwebassets.build.endpoints.json
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\swae.build.ex.cache
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDel.2878D0F8.Up2Date
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\refint\UnionDelSur.API.dll
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.pdb
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\UnionDelSur.API.genruntimeconfig.cache
+C:\Users\Agustin\Escritorio\TP_FACULTAD\4TO CUATRIMESTRE\TFI\APP MOBILE\backend\obj\Debug\net10.0\ref\UnionDelSur.API.dll
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\appsettings.Development.json
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\appsettings.json
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\UnionDelSur.API.staticwebassets.endpoints.json
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\UnionDelSur.API.exe
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\UnionDelSur.API.deps.json
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\UnionDelSur.API.runtimeconfig.json
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\UnionDelSur.API.dll
+C:\Users\Agustin\AppData\Local\Temp\claude\chk\UnionDelSur.API.pdb

@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "dgSpecHash": "c+wem7FaC9o=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Agustin\\Escritorio\\TP_FACULTAD\\4TO CUATRIMESTRE\\TFI\\APP MOBILE\\backend\\UnionDelSur.API.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Agustin\\.nuget\\packages\\bcrypt.net-next\\4.2.0\\bcrypt.net-next.4.2.0.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\dapper\\2.1.89\\dapper.2.1.89.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\10.0.12\\microsoft.aspnetcore.authentication.jwtbearer.10.0.12.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.bcl.cryptography\\10.0.2\\microsoft.bcl.cryptography.10.0.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.identitymodel.abstractions\\8.19.2\\microsoft.identitymodel.abstractions.8.19.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.identitymodel.jsonwebtokens\\8.19.2\\microsoft.identitymodel.jsonwebtokens.8.19.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.identitymodel.logging\\8.19.2\\microsoft.identitymodel.logging.8.19.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.identitymodel.protocols\\8.19.2\\microsoft.identitymodel.protocols.8.19.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.identitymodel.protocols.openidconnect\\8.19.2\\microsoft.identitymodel.protocols.openidconnect.8.19.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\microsoft.identitymodel.tokens\\8.19.2\\microsoft.identitymodel.tokens.8.19.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\mysqlconnector\\2.6.2\\mysqlconnector.2.6.2.nupkg.sha512",
+    "C:\\Users\\Agustin\\.nuget\\packages\\system.identitymodel.tokens.jwt\\8.19.2\\system.identitymodel.tokens.jwt.8.19.2.nupkg.sha512"
+  ],
+  "logs": []
+}
