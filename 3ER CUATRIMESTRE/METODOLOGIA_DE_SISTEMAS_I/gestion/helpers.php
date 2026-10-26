@@ -55,6 +55,12 @@ function requerir_rol($roles): void
         echo json_encode(['success' => false, 'message' => 'Acceso denegado.']);
         exit;
     }
+    // Los endpoints de gestión solo LEEN la sesión (la escriben login.php y
+    // recuperar.php, que no pasan por acá). Liberarla ya evita que dos pedidos
+    // del mismo usuario en paralelo (p. ej. boletín + consultas en el portal
+    // del padre) queden en fila esperando el bloqueo del archivo de sesión.
+    // $_SESSION sigue disponible para leer después del cierre.
+    session_write_close();
 }
 
 /**

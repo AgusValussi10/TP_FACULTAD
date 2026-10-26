@@ -2,3 +2,5 @@
 *.pdf
 node_modules/
 CLAUDE.md
+reporte-tests.xml
+artefacto.txt
