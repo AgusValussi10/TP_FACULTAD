@@ -18,7 +18,10 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 .
 ├── index.html                  ← Landing page pública (toda la UI en un solo archivo)
 ├── index.php                   ← Enrutador: inyecta banner de sesión activa sobre index.html
-├── assets/                     ← Imágenes optimizadas en formato AVIF
+├── lib/
+│   ├── fpdf/                   ← FPDF 1.86 (librería PDF sin dependencias, vendorizada; solo fuentes Helvetica)
+│   └── recibo.php              ← render_recibo(): dibuja el recibo de pago en PDF (no toca BD ni sesión)
+├── assets/                     ← Imágenes optimizadas en formato AVIF (+ logo.png para los PDF: FPDF no lee AVIF)
 │   ├── edificio.avif
 │   ├── piscina.avif
 │   ├── gimnasio.avif
@@ -35,9 +38,11 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── schema_sprint2.sql      ← Sprint 2: padre_alumno, reservas_servicios, atenciones_enfermeria, notificaciones; agrega rol 'enfermeria'
 │   ├── schema_sprint3.sql      ← Sprint 3: planificaciones, recuperatorios
 │   ├── schema_sprint4.sql      ← Sprint 4: sanciones; agrega columna capacidad a cursos
+│   ├── schema_sprint5.sql      ← Sprint 5: deportes, inscripciones_deportivas, cuotas; agrega alumno_curso.condicion
 │   ├── setup_demo.php          ← Usuarios base de demo (admin, 2 alumnos, 2 docentes, 2 padres, enfermeria)
 │   ├── seed_datos.php          ← Seed masivo: 13 usuarios nuevos + todos los datos de demostración (secciones 1–18)
 │   └── seed_parte2.php         ← Continuación del seed desde sección 11 (útil si seed_datos falla a mitad)
+├── init_db.php                 ← Corre en el deploy (Render): crea tablas públicas, Sprint 5, consultas_notas (si existe calificaciones), agrega columnas faltantes y elimina materias duplicadas
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -67,7 +72,17 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── recuperatorio_guardar.php      ← POST → guardar recuperatorio
 │   ├── recuperatorio_listar.php       ← GET → JSON recuperatorios
 │   ├── legajo.php                     ← UI legajo completo del alumno (admin/docente)
-│   ├── legajo_listar.php              ← GET → JSON datos de legajo
+│   ├── legajo_listar.php              ← GET → JSON datos de legajo (situación económica solo para admin)
+│   ├── consulta_nota_guardar.php      ← POST padre → consulta sobre una calificación (RFG07)
+│   ├── consulta_nota_listar.php       ← GET padre (sus consultas) / docente (las de sus materias) → JSON
+│   ├── consulta_nota_responder.php    ← POST docente → responder consulta y notificar al padre
+│   ├── consultas_notas.php            ← UI docente: ver y responder consultas sobre notas
+│   ├── cuotas.php                     ← UI cuotas y pagos (admin) — RFG12
+│   ├── cuotas_generar.php / cuotas_listar.php / cuotas_pagar.php / cuotas_recalcular.php
+│   ├── recibo_pdf.php                 ← GET admin ?cuota_id= → recibo de pago en PDF (solo cuotas pagadas)
+│   ├── deportes.php                   ← UI inscripción a instalaciones deportivas — RFG11
+│   ├── deportes_guardar.php / deportes_listar.php
+│   ├── materias.php / materias_crear.php / materias_asignar.php / materias_listar.php ← ABM de materias y asignación de docentes
 │   ├── boletin_listar.php             ← GET → JSON boletín de calificaciones
 │   ├── vacantes.php                   ← UI gestión de vacantes (admin)
 │   ├── vacantes_actualizar.php        ← POST → actualizar puesto vacante
@@ -340,6 +355,24 @@ Datos de conexión:
 | estado | ENUM | 'pendiente', 'aprobado', 'desaprobado' |
 | — | UNIQUE | (alumno_id, materia_id, periodo) |
 
+**`consultas_notas`** — `schema_sprint3.sql` (RFG07)
+| Campo | Tipo | Notas |
+|---|---|---|
+| id | INT PK AUTO | |
+| calificacion_id | INT FK | → calificaciones(id) ON DELETE CASCADE |
+| padre_id | INT FK | → usuarios(id) |
+| alumno_id | INT FK | → usuarios(id) |
+| mensaje | TEXT | Consulta del padre (10–1000 chars) |
+| respuesta | TEXT NULL | Respuesta del docente |
+| estado | ENUM | 'pendiente', 'respondida' |
+| respondida_at | TIMESTAMP NULL | |
+
+**`deportes`**, **`inscripciones_deportivas`**, **`cuotas`** — `schema_sprint5.sql`
+- `deportes`: nombre UNIQUE, horario, cupo_maximo (6 deportes de seed).
+- `inscripciones_deportivas`: UNIQUE (alumno_id, deporte_id).
+- `cuotas`: alumno_id, concepto ('matricula'/'cuota'), mes, anio, importe, recargo, fecha_vencimiento, estado ('pendiente'/'pagada'), fecha_pago, metodo_pago (ENUM efectivo/transferencia/tarjeta_debito/tarjeta_credito/otro, NULL en pagos anteriores al recibo), referencia_pago (opcional, 60 chars), registrado_por (admin que cobró) — UNIQUE (alumno_id, concepto, mes, anio).
+- `alumno_curso.condicion`: ENUM 'regular' / 'pendiente_regularizacion' (RFG13).
+
 **`sanciones`** — `schema_sprint4.sql`
 | Campo | Tipo | Notas |
 |---|---|---|
@@ -422,6 +455,8 @@ Destruye la sesión completa y redirige a `/`.
 - **Noticias:** crear, editar, cambiar estado (borrador/publicada/archivada), eliminar
 - **Puestos vacantes:** crear nuevos puestos, activar/desactivar puestos
 - **Postulaciones:** ver todas, cambiar estado (pendiente/revisado/seleccionado/rechazado), eliminar
+- **Sistema (barra de accesos rápidos):** ABM de alumnos, legajo (con situación económica), vacantes por curso, materias, cuotas y pagos
+- **Recibos:** al registrar un pago elige la forma de pago (obligatoria) y una referencia opcional; puede descargar el recibo en PDF al instante y reimprimirlo después desde la lista de cuotas
 
 **No puede (por diseño del TP):**
 - Gestionar usuarios directamente desde el portal (no hay CRUD de usuarios en la UI)
@@ -439,6 +474,7 @@ Destruye la sesión completa y redirige a `/`.
 - Cargar y editar calificaciones por materia (`gestion/calificaciones.php`)
 - Gestionar planificación anual por materia (`gestion/planificacion.php`)
 - Gestionar exámenes recuperatorios por materia (`gestion/recuperatorios.php`)
+- Ver y responder consultas de padres sobre notas de sus materias (`gestion/consultas_notas.php`)
 
 **No puede:**
 - Cambiar estados de solicitudes ni contenido del sitio
@@ -457,6 +493,7 @@ Destruye la sesión completa y redirige a `/`.
 - Ver sus calificaciones por materia desde BD (`gestion/boletin_listar.php`)
 - Ver su asistencia desde BD (`gestion/asistencia_listar.php`)
 - Ver sus recuperatorios pendientes (`gestion/recuperatorio_listar.php`)
+- Ver aviso de "pendiente de regularización" si tiene cuotas vencidas más de 60 días
 
 **No puede:**
 - Ver información de otros alumnos
@@ -477,6 +514,9 @@ Destruye la sesión completa y redirige a `/`.
 - Ver comunicados institucionales
 - Reservar comedor/transporte mensual (`gestion/servicios.php`)
 - Ver notificaciones de enfermería
+- Consultar una calificación al docente y ver la respuesta (RFG07, botón "Consultar" en el boletín)
+- Inscribir al hijo en instalaciones deportivas (`gestion/deportes.php`)
+- Ver aviso de pendiente de regularización por cuotas vencidas
 
 **No puede:**
 - Modificar ningún dato
@@ -641,23 +681,25 @@ Footer bg:           #1e293b
 
 ## Estado actual del proyecto
 
-### Sprints (21/09/2026)
+### Sprints (26/10/2026)
 
 | Sprint | RFs | Estado | Responsable |
 |---|---|---|---|
 | Sprint 1 | RFG01/02/03 | ✅ Completo | Fabrizio |
-| Sprint 2 | RFG04/09/10 | ⚠️ Parcial (ver bugs) | Fabrizio |
-| Sprint 3 | RFG05/06/07 | ⚠️ Parcial (ver bugs) | Agustín |
-| Sprint 4 | RFG08/15/16 | ⚠️ Parcial (ver bugs) | Agustín |
-| Sprint 5 | RFG11/12/13 | ❌ Pendiente | Fabrizio |
+| Sprint 2 | RFG04/09/10 | ✅ Completo (validación RF04 implementada en `admitir.php`) | Fabrizio |
+| Sprint 3 | RFG05/06/07 | ✅ Completo (RF07: consultas padre → docente) | Agustín |
+| Sprint 4 | RFG08/15/16 | ✅ Completo (legajo con situación económica) | Agustín |
+| Sprint 5 | RFG11/12/13 | 🟡 Implementado (deportes, cuotas/mora, regularización) — falta validar en producción | Fabrizio |
 | Sprint 6 | RFG17/18/19 | ❌ Pendiente | — |
+
+> Verificación (26/10/2026): se probó en local con PHP 8.2 + MariaDB de XAMPP (`php.exe` dentro de `xampp/php`, fuera del PATH) los flujos de pago/recibo, consultas sobre notas, legajo e `init_db.php`. No se probó en Render ni con los datos del seed.
 
 ### Estado por portal
 
-- **Portal admin:** inscripciones (con validación de vacantes y asignación a curso), noticias, opiniones, consultas, empleo, legajo, vacantes, ABM de alumnos (`gestion/alumnos.php`). Accesos rápidos al sistema visibles arriba del portal (barra oscura antes de las pestañas).
-- **Portal docente:** asistencia, calificaciones, planificación anual, recuperatorios — todos conectados a BD
-- **Portal alumno:** boletín de calificaciones por trimestre, asistencia, recuperatorios — conectados a BD
-- **Portal padre:** boletín, asistencia, servicios (comedor/transporte), notificaciones — conectados a BD. Falta: consulta sobre calificación (RF07)
+- **Portal admin:** inscripciones (con validación de edad/nivel anterior y de vacantes, y asignación a curso), noticias, opiniones, consultas, empleo, legajo (con situación económica), vacantes, ABM de alumnos (`gestion/alumnos.php`), cuotas y pagos, materias. Accesos rápidos al sistema visibles arriba del portal (barra oscura antes de las pestañas).
+- **Portal docente:** asistencia, calificaciones, planificación anual, recuperatorios, consultas sobre notas — todos conectados a BD
+- **Portal alumno:** boletín por trimestre, asistencia, recuperatorios, aviso de regularización — conectados a BD
+- **Portal padre:** boletín con consulta al docente (RF07), asistencia, servicios (comedor/transporte), deportes, notificaciones, aviso de regularización — conectados a BD
 - **Portal enfermería:** registro de atenciones conectado a BD
 - **Landing pública:** completamente funcional
 - **Recuperación de contraseña:** modal presente en UI pero sin implementar
@@ -666,22 +708,23 @@ Footer bg:           #1e293b
 
 | # | Descripción | RF/HU relacionado | Prioridad |
 |---|---|---|---|
-| 1 | Validar requisitos de inscripción desde el portal (HU6) — falta validación en backend | HU6 | Alta |
-| 2 | RF04 incompleto — falta implementación completa de validación de edad/nivel al admitir | RFG04 | Alta |
-| 3 | Materias duplicadas en seed: "Matemática 2B" y "Lengua y Literatura 2B" aparecen dos veces | Seed/BD | Media |
-| 4 | RF07 incompleto — el padre no puede consultar/preguntar sobre una calificación desde su portal | RFG07 | Alta |
-| 5 | Vacantes por curso (`gestion/vacantes.php`): al modificar la capacidad no se refresca la página automáticamente, lo que puede mostrar datos inconsistentes | RFG08 | Media |
-| 6 | RF11 no implementado — reserva de instalaciones deportivas | RFG11 | Pendiente Sprint 5 |
-| 7 | RF12 no implementado — pagos, matrícula y mora | RFG12 | Pendiente Sprint 5 |
-| 8 | RF13 no implementado — condición pendiente de regularización | RFG13 | Pendiente Sprint 5 |
-| 9 | RF16 incompleto — legajo del alumno no muestra situación económica (depende de Sprint 5/RF12) | RFG16 | Bloqueado por RF12 |
-| 10 | RF17/18/19 no implementados | RFG17/18/19 | Pendiente Sprint 6 |
+| 1 | Sprint 6 (RFG17/18/19) sin implementar | RFG17/18/19 | Pendiente |
+| 2 | Recuperación de contraseña: modal sin backend | — | Media |
+| 3 | Validar en producción los cambios nuevos: tabla `consultas_notas` (se crea en `init_db.php` solo si ya existe `calificaciones`; si no, correr `schema_sprint3.sql`) y legajo con cuotas | RFG07/RFG16 | Alta |
+| 4 | Constantes asumidas sin confirmar con el equipo: `EDAD_MINIMA_INICIAL`, `LIMITE_FALTAS`, `PORCENTAJE_RECARGO_MORA` (10%), `DIAS_LIMITE_REGULARIZACION` (60), `DIA_LIMITE_RESERVA_SERVICIOS` (25) | varios | Media |
+| 5 | `seed_datos.php` no es idempotente con materias (la clave única `uq_materia_curso` y la limpieza las aplica `init_db.php`) | Seed/BD | Baja |
 
 ### Notas técnicas importantes
 
 **Portal admin — pestañas vs. gestión del sistema:** Las pestañas del portal (Inscripciones, Opiniones, Propuestas, Consultas, Noticias) gestionan contenido de la landing page. La barra oscura sobre las pestañas contiene accesos rápidos al sistema (ABM alumnos, legajo, vacantes, materias, etc.). No mezclar.
 
-**Legajo (`gestion/legajo.php` + `legajo_listar.php`):** Las referencias a `cuotas` (tabla) y `alumno_curso.condicion` (columna) son de Sprint 5 y fueron eliminadas temporalmente. El legajo muestra calificaciones, asistencia, recuperatorios, sanciones, enfermería y servicios. Se reintegrará situación económica cuando se implemente RF12.
+**Legajo (`gestion/legajo.php` + `legajo_listar.php`):** muestra calificaciones, asistencia, recuperatorios, sanciones, enfermería, servicios y, desde Sprint 5, la situación económica (cuotas, recargos, deuda total) y la condición de regularización. La situación económica solo se envía al rol `admin` (para el docente `cuotas` y `deuda_total` son `null` y la sección no se muestra).
+
+**Recibo de pago (PDF):** `cuotas_pagar.php` exige `metodo_pago` (válido según `METODOS_PAGO` en `helpers.php`) y guarda referencia y `registrado_por`. `recibo_pdf.php` arma los datos (alumno, curso, tutores vía `padre_alumno`, concepto, período, importe, recargo, fechas, forma de pago, quién cobró) y `lib/recibo.php` los dibuja con el logo (`assets/logo.png`). N° de recibo = `R-` + id de cuota con 6 dígitos (un pago por cuota). Los datos de la institución (nombre, CUIT, domicilio, teléfono) salen de las constantes `INSTITUCION_*` de `helpers.php`. Es un comprobante interno, no factura. FPDF trabaja en Windows-1252, por eso `pdf_txt()` convierte desde UTF-8; usar `mb_strtoupper` y no `strtoupper` para pasar a mayúsculas con tildes. Hoy solo el admin puede emitirlo; el padre no tiene acceso.
+
+**Consultas sobre notas (RFG07):** `boletin_listar.php` devuelve el `id` de cada calificación; el padre consulta con `consulta_nota_guardar.php` (una sola consulta pendiente por calificación), el docente responde con `consulta_nota_responder.php` y se crea una notificación (`tipo = 'consulta_nota'`) para el padre.
+
+**`init_db.php` y deploy:** corre en cada deploy. `consultas_notas` tiene FK a `calificaciones` (que crean los schemas manuales, no `init_db`), por eso se crea únicamente si esa tabla existe; así el arranque no falla con `exit(1)`.
 
 **Boletín (`gestion/boletin_listar.php`):** agrupa calificaciones por trimestre usando el mes de `fecha_evaluacion` — meses 3–5 = 1er Trim, 6–8 = 2do Trim, 9–12 = 3er Trim. No hay columna `periodo` en `calificaciones`.
 
@@ -731,3 +774,5 @@ Footer bg:           #1e293b
 7. `database/schema_sprint4.sql`
 8. `database/seed_datos.php` (seed masivo via navegador — secciones 1–18)
    - Si falla en la sección 11: correr `database/seed_parte2.php` para continuar desde ahí
+9. `database/schema_sprint5.sql` (deportes, cuotas, condición) — en producción lo cubre `init_db.php`
+10. La tabla `consultas_notas` está al final de `schema_sprint3.sql`; si ese schema ya se corrió antes, ejecutar solo ese bloque (o dejar que `init_db.php` la cree)
