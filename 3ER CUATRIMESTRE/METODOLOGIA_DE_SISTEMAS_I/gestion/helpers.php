@@ -22,6 +22,23 @@ const DIA_LIMITE_RESERVA_SERVICIOS = 25;
 const DIA_VENCIMIENTO_CUOTA = 10;
 const PORCENTAJE_RECARGO_MORA = 10;
 
+// Formas de pago aceptadas al registrar un cobro (clave del ENUM => texto en el recibo).
+const METODOS_PAGO = [
+    'efectivo'        => 'Efectivo',
+    'transferencia'   => 'Transferencia bancaria',
+    'tarjeta_debito'  => 'Tarjeta de débito',
+    'tarjeta_credito' => 'Tarjeta de crédito',
+    'otro'            => 'Otro',
+];
+
+// Datos de la institución que figuran en el recibo.
+const INSTITUCION_NOMBRE    = 'Educar para Transformar';
+const INSTITUCION_SUBTITULO = 'Centro Educativo';
+const INSTITUCION_LOCALIDAD = 'Resistencia, Chaco, Argentina';
+const INSTITUCION_CUIT      = '30-71678181-2';
+const INSTITUCION_DOMICILIO = 'Av. Italia 2100';
+const INSTITUCION_TELEFONO  = '3625 - 010102';
+
 // Asunción: RN12 fija el plazo en 60 días, no especifica más detalle.
 const DIAS_LIMITE_REGULARIZACION = 60;
 

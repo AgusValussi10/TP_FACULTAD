@@ -51,6 +51,13 @@ CREATE TABLE IF NOT EXISTS cuotas (
 ALTER TABLE alumno_curso
   ADD COLUMN condicion ENUM('regular','pendiente_regularizacion') NOT NULL DEFAULT 'regular';
 
+-- Recibo de pago (PDF): forma de pago, referencia opcional y quién registró el cobro.
+-- Las cuotas pagadas antes de este cambio quedan con metodo_pago NULL.
+ALTER TABLE cuotas
+  ADD COLUMN metodo_pago ENUM('efectivo','transferencia','tarjeta_debito','tarjeta_credito','otro') NULL DEFAULT NULL,
+  ADD COLUMN referencia_pago VARCHAR(60) NULL DEFAULT NULL,
+  ADD COLUMN registrado_por INT NULL DEFAULT NULL;
+
 -- Seed: catálogo de deportes (los mismos 6 ya listados en la página pública, index.html)
 INSERT IGNORE INTO deportes (nombre, horario, cupo_maximo) VALUES
 ('Atletismo', 'Lunes y Miércoles 16:00–17:30', 20),

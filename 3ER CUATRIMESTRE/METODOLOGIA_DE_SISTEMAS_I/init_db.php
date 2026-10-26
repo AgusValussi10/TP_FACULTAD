@@ -82,6 +82,10 @@ $columnas = [
     ['solicitudes_inscripcion', 'nivel_anterior_aprobado', "TINYINT(1) NULL DEFAULT NULL AFTER comentarios"],
     ['cursos',                  'capacidad',               "TINYINT UNSIGNED NOT NULL DEFAULT 30"],
     ['alumno_curso',            'condicion',               "ENUM('regular','pendiente_regularizacion') NOT NULL DEFAULT 'regular'"],
+    // Recibo de pago: forma de pago, referencia opcional y quién registró el cobro.
+    ['cuotas',                  'metodo_pago',             "ENUM('efectivo','transferencia','tarjeta_debito','tarjeta_credito','otro') NULL DEFAULT NULL"],
+    ['cuotas',                  'referencia_pago',         "VARCHAR(60) NULL DEFAULT NULL"],
+    ['cuotas',                  'registrado_por',          "INT NULL DEFAULT NULL"],
 ];
 foreach ($columnas as [$tabla, $columna, $definicion]) {
     $stmt = $conn->prepare(
@@ -114,6 +118,33 @@ function tabla_existe(mysqli $conn, string $tabla): bool
     $existe = (bool) $stmt->get_result()->fetch_row();
     $stmt->close();
     return $existe;
+}
+
+// RFG07 (Sprint 3): consultas del padre sobre una calificación. Tiene FK a
+// calificaciones, que crea schema_gestion.sql (no init_db), así que solo se
+// crea si esa tabla ya existe; si no, se omite sin romper el arranque.
+if (tabla_existe($conn, 'calificaciones') && !tabla_existe($conn, 'consultas_notas')) {
+    $ok = $conn->query(
+        "CREATE TABLE consultas_notas (
+            id              INT AUTO_INCREMENT PRIMARY KEY,
+            calificacion_id INT NOT NULL,
+            padre_id        INT NOT NULL,
+            alumno_id       INT NOT NULL,
+            mensaje         TEXT NOT NULL,
+            respuesta       TEXT NULL,
+            estado          ENUM('pendiente','respondida') NOT NULL DEFAULT 'pendiente',
+            created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            respondida_at   TIMESTAMP NULL DEFAULT NULL,
+            FOREIGN KEY (calificacion_id) REFERENCES calificaciones(id) ON DELETE CASCADE,
+            FOREIGN KEY (padre_id)        REFERENCES usuarios(id)       ON DELETE CASCADE,
+            FOREIGN KEY (alumno_id)       REFERENCES usuarios(id)       ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+    );
+    if (!$ok) {
+        fwrite(STDERR, "Error creando consultas_notas: " . $conn->error . PHP_EOL);
+        exit(1);
+    }
+    echo "Tabla creada: consultas_notas" . PHP_EOL;
 }
 
 // Materias duplicadas: "materias" no tenía clave única, así que el

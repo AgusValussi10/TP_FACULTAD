@@ -1,5 +1,6 @@
 <?php
 require_once '../auth/session.php';
+require_once __DIR__ . '/helpers.php';
 if (($_SESSION['rol'] ?? '') !== 'admin') {
     header('Location: /');
     exit;
@@ -106,7 +107,12 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
     .badge-amarillo { background: #fef3c7; color: #92400E; }
     .msg { margin: .6rem 0; font-weight: 700; font-size: .88rem; min-height: 1.2em; }
     .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 1.5rem 0; }
-    .pago-inline { display: flex; align-items: center; gap: .4rem; }
+    .pago-inline { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+    .pago-inline select, .pago-inline input[type="text"] { padding: .35rem .5rem; border: 2px solid var(--borde); border-radius: 8px; font-family: inherit; font-size: .82rem; }
+    .pago-inline input[type="text"] { width: 150px; }
+    a.btn-sm { display: inline-block; text-decoration: none; }
+    .aviso-pago { margin-bottom: 1rem; padding: .7rem 1rem; border-radius: 10px; background: #d1fae5; color: #065F46; font-weight: 700; font-size: .9rem; }
+    .aviso-pago a { color: #065F46; text-decoration: underline; }
     .pago-inline input[type="date"] { padding: .35rem .5rem; border: 2px solid var(--borde); border-radius: 8px; font-family: inherit; font-size: .82rem; }
   </style>
 </head>
@@ -180,6 +186,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
   <div class="card" id="card-cuotas" style="display:none;">
     <div class="card-header"><span class="icon">💳</span><h2>Cuotas de <span id="cuotas-alumno-nombre"></span></h2></div>
     <div class="card-body">
+      <div id="aviso-pago"></div>
       <table>
         <thead>
           <tr><th>Concepto</th><th>Período</th><th>Importe</th><th>Recargo</th><th>Estado</th><th>Fecha de pago</th><th>Acción</th></tr>
@@ -194,6 +201,9 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
   // Debe coincidir con PORCENTAJE_RECARGO_MORA en gestion/helpers.php (RFG12).
   const PORCENTAJE_RECARGO_MORA = 10;
 
+  // Misma lista que METODOS_PAGO en gestion/helpers.php.
+  const METODOS_PAGO = <?= json_encode(METODOS_PAGO, JSON_UNESCAPED_UNICODE) ?>;
+  const opcionesMetodo = Object.entries(METODOS_PAGO).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const selMes = document.getElementById('sel-mes');
   MESES.forEach((m, i) => {
@@ -302,6 +312,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
 
   async function cargarCuotas(alumnoId) {
     if (!alumnoId) { cardCuotas.style.display = 'none'; return; }
+    document.getElementById('aviso-pago').innerHTML = '';
 
     const alumno = alumnosCache.find(a => String(a.id) === String(alumnoId));
     cuotasAlumnoNombre.textContent = alumno ? alumno.nombre : '';
@@ -326,10 +337,12 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
         const accion = c.estado === 'pendiente'
           ? `<div class="pago-inline">
                <input type="date" id="fecha-pago-${c.id}" value="${hoy}">
+               <select id="metodo-pago-${c.id}"><option value="">Forma de pago…</option>${opcionesMetodo}</select>
+               <input type="text" id="ref-pago-${c.id}" maxlength="60" placeholder="Referencia (opcional)">
                <button type="button" class="btn-sm" id="btn-pagar-${c.id}"
                  onclick="prepararPago(${c.id}, ${c.importe}, '${c.fecha_vencimiento_iso}')">Registrar pago</button>
              </div>`
-          : '—';
+          : `<a class="btn-sm" href="recibo_pdf.php?cuota_id=${c.id}" target="_blank" rel="noopener">📄 Recibo PDF</a>`;
         return `
           <tr>
             <td>${c.concepto === 'matricula' ? 'Matrícula' : 'Cuota'}</td>
@@ -357,6 +370,11 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
       return;
     }
 
+    if (!document.getElementById(`metodo-pago-${cuotaId}`).value) {
+      alert('Elegí la forma de pago antes de registrar.');
+      return;
+    }
+
     const fechaPago = inputFecha.value;
     const venc = new Date(fechaVencimientoIso + 'T00:00:00');
     const pago = new Date(fechaPago + 'T00:00:00');
@@ -376,13 +394,17 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
     const body = new FormData();
     body.append('cuota_id', cuotaId);
     body.append('fecha_pago', inputFecha.value);
+    body.append('metodo_pago', document.getElementById(`metodo-pago-${cuotaId}`).value);
+    body.append('referencia_pago', document.getElementById(`ref-pago-${cuotaId}`).value);
 
     try {
       const res  = await fetch('cuotas_pagar.php', { method: 'POST', body });
       const data = await res.json();
       if (data.success) {
-        cargarCuotas(selAlumno.value);
+        await cargarCuotas(selAlumno.value);
         cargarResumen();
+        document.getElementById('aviso-pago').innerHTML =
+          `<div class="aviso-pago">✅ Pago registrado. <a href="recibo_pdf.php?cuota_id=${data.cuota_id}" target="_blank" rel="noopener">Descargar recibo en PDF</a></div>`;
       } else {
         alert(data.message || 'Error al registrar el pago.');
         btn.disabled = false;
