@@ -1,0 +1,176 @@
+# Pipeline CI/CD — Sistema de Gestión "Educar para Transformar"
+# (Metodología de Sistemas II · TP Unidad 4)
+#
+#   push / pull request ──► 1. Lint ──► 2. Tests (RFG07) ──► 3. Build + artefacto
+#                                                              │
+#                                  solo en main: imagen Docker publicada en GHCR
+#
+# Render tiene Auto-Deploy = "After CI Checks Pass": si alguna etapa falla,
+# ese commit NO se despliega.
+
+name: CI Educar para Transformar
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I/**"
+      - ".github/workflows/ci-educar.yml"
+  pull_request:
+    paths:
+      - "3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I/**"
+      - ".github/workflows/ci-educar.yml"
+  workflow_dispatch:
+
+# Si llega un push nuevo a la misma rama, se cancela la corrida vieja.
+concurrency:
+  group: ci-educar-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_DIR: "3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I"
+  PHP_VERSION: "8.2"   # la misma que usa el Dockerfile de Render
+
+defaults:
+  run:
+    working-directory: "3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I"
+
+jobs:
+  # ── 1. Lint: errores de sintaxis en cualquier archivo PHP ───────────────
+  lint:
+    name: 1 · Lint PHP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: none
+
+      - name: php -l en todos los .php
+        run: |
+          errores=0
+          while IFS= read -r -d '' f; do
+            php -l "$f" > /dev/null || errores=$((errores+1))
+          done < <(find . -name '*.php' -not -path './lib/fpdf/*' -print0)
+          total=$(find . -name '*.php' -not -path './lib/fpdf/*' | wc -l)
+          echo "### Lint: $total archivos PHP, $errores con errores" >> "$GITHUB_STEP_SUMMARY"
+          exit $errores
+
+  # ── 2. Tests de integración de la funcionalidad RFG07 ───────────────────
+  tests:
+    name: 2 · Tests RFG07
+    needs: lint
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: ci_root
+          MARIADB_DATABASE: educar_db
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    # Variables de entorno: las mismas que lee database/db_config.php en Render.
+    env:
+      MYSQLHOST: 127.0.0.1
+      MYSQLPORT: 3306
+      MYSQLUSER: root
+      MYSQLPASSWORD: ci_root
+      MYSQLDATABASE: educar_db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mysqli, mbstring, curl
+          tools: phpunit:9.6
+          coverage: none
+
+      - name: Preparar base de prueba (schemas + seed)
+        run: bash ci/preparar_bd.sh
+
+      - name: Correr tests
+        run: phpunit --log-junit reporte-tests.xml
+
+      - name: Resumen en la corrida
+        if: always()
+        run: |
+          if [ -f reporte-tests.xml ]; then
+            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          s = ET.parse("reporte-tests.xml").getroot().find("testsuite")
+          print(f"### Tests RFG07: {s.get('tests')} tests, {s.get('failures')} fallas, "
+                f"{s.get('errors')} errores, {float(s.get('time')):.2f} s")
+          PY
+          fi
+
+      # Gestión de artefactos: el reporte queda guardado en la corrida.
+      - name: Guardar reporte de tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-tests-${{ github.sha }}
+          path: ${{ env.APP_DIR }}/reporte-tests.xml
+          retention-days: 30
+
+  # ── 3. Build de la imagen Docker y publicación del artefacto ────────────
+  build:
+    name: 3 · Build y artefacto
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nombre de la imagen (GHCR exige minúsculas)
+        id: img
+        run: |
+          repo=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/$repo/educar-para-transformar" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build de la imagen (mismo Dockerfile que Render)
+        run: |
+          docker build \
+            --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            -t "${{ steps.img.outputs.name }}:sha-${{ steps.img.outputs.short_sha }}" .
+
+      - name: Verificar la imagen
+        run: |
+          docker run --rm "${{ steps.img.outputs.name }}:sha-${{ steps.img.outputs.short_sha }}" \
+            php -r "exit(extension_loaded('mysqli') ? 0 : 1);"
+
+      - name: Publicar en GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag "${{ steps.img.outputs.name }}:sha-${{ steps.img.outputs.short_sha }}" "${{ steps.img.outputs.name }}:latest"
+          docker push "${{ steps.img.outputs.name }}:sha-${{ steps.img.outputs.short_sha }}"
+          docker push "${{ steps.img.outputs.name }}:latest"
+
+      - name: Ficha del artefacto
+        run: |
+          size=$(docker image inspect "${{ steps.img.outputs.name }}:sha-${{ steps.img.outputs.short_sha }}" --format '{{.Size}}')
+          cat > artefacto.txt <<EOF
+          imagen:  ${{ steps.img.outputs.name }}:sha-${{ steps.img.outputs.short_sha }}
+          commit:  ${{ github.sha }}
+          rama:    ${{ github.ref_name }}
+          autor:   ${{ github.actor }}
+          fecha:   $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          tamaño:  $((size/1024/1024)) MB
+          EOF
+          cat artefacto.txt
+          { echo '### Artefacto'; echo '```'; cat artefacto.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ficha-artefacto-${{ github.sha }}
+          path: ${{ env.APP_DIR }}/artefacto.txt
+          retention-days: 90

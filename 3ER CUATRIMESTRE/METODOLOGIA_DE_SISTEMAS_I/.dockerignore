@@ -1,0 +1,11 @@
+# Lo que no tiene que viajar en la imagen que se despliega en Render
+# (php -S sirve toda la carpeta: los tests y scripts de CI no deben quedar públicos).
+.git
+tests/
+ci/
+metricas/
+phpunit.xml
+reporte-tests.xml
+artefacto.txt
+node_modules/
+CLAUDE.md
