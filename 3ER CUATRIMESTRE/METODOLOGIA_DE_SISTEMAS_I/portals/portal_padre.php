@@ -222,6 +222,13 @@ $conn->close();
     .boletin-prom-anual { margin-top: .6rem; padding: .4rem .8rem; border-radius: 10px; font-size: .88rem; font-weight: 800; }
     .boletin-aprobada   { background: #d1fae5; color: #065F46; }
     .boletin-reprobada  { background: #fee2e2; color: #991B1B; }
+    .btn-consulta { background: var(--azul); color: #fff; border: none; border-radius: 8px; padding: .25rem .7rem; font-size: .78rem; font-weight: 800; cursor: pointer; font-family: inherit; }
+    .btn-consulta:hover { opacity: .85; }
+    .consulta-form { margin: .6rem 0; padding: .8rem; border: 2px solid var(--borde); border-radius: 10px; background: #f9fafb; }
+    .consulta-form textarea { width: 100%; min-height: 70px; padding: .5rem; border: 2px solid var(--borde); border-radius: 8px; font-family: inherit; font-size: .88rem; resize: vertical; }
+    .consulta-item { border-left: 4px solid var(--azul); background: #f9fafb; border-radius: 8px; padding: .6rem .9rem; margin-bottom: .6rem; font-size: .88rem; }
+    .consulta-item .resp { margin-top: .4rem; padding: .4rem .6rem; background: #d1fae5; color: #065F46; border-radius: 6px; }
+    .consulta-item .pend { margin-top: .4rem; color: #92400E; font-weight: 700; }
     .aviso-mora {
       max-width: 1100px; margin: 1.2rem auto 0; padding: .9rem 1.2rem;
       background: #FEE2E2; color: #991B1B; border-radius: 12px;
@@ -339,6 +346,9 @@ $conn->close();
         </div>
         <?php endif; ?>
         <div id="boletin-padre-body"><p class="empty-msg">Cargando boletín…</p></div>
+        <div id="consulta-form-box"></div>
+        <h3 style="font-size:.9rem;font-weight:800;color:var(--azul);margin:1.2rem 0 .5rem;">Mis consultas a docentes</h3>
+        <div id="consultas-padre-body"><p class="empty-msg">Cargando…</p></div>
       </div>
     </div>
 
@@ -421,18 +431,18 @@ $conn->close();
       let html = '<div style="overflow-x:auto;">';
       data.materias.forEach(mat => {
         html += `<h3 style="font-size:.9rem;font-weight:800;color:var(--azul);margin:.8rem 0 .3rem;">${esc(mat.materia)}</h3>`;
-        html += '<table><thead><tr><th>Evaluación</th><th>Nota</th><th>Fecha</th><th>Período</th></tr></thead><tbody>';
+        html += '<table><thead><tr><th>Evaluación</th><th>Nota</th><th>Fecha</th><th>Período</th><th></th></tr></thead><tbody>';
         let hayFilas = false;
         mat.periodos.forEach(p => {
           p.calificaciones.forEach(c => {
             hayFilas = true;
-            html += `<tr><td>${esc(c.evaluacion)}</td><td><strong>${c.nota}</strong></td><td>${c.fecha}</td><td>${esc(p.periodo)}</td></tr>`;
+            html += `<tr><td>${esc(c.evaluacion)}</td><td><strong>${c.nota}</strong></td><td>${c.fecha}</td><td>${esc(p.periodo)}</td><td><button type="button" class="btn-consulta" data-cal="${c.id}" data-desc="${esc(mat.materia + ' – ' + c.evaluacion).replace(/"/g, '&quot;')}">Consultar</button></td></tr>`;
           });
           if (p.calificaciones.length > 0) {
-            html += `<tr style="background:#f9fafb;"><td colspan="3" style="text-align:right;font-size:.8rem;color:#6b7280;">Promedio ${esc(p.periodo)}</td><td><strong>${p.promedio}</strong></td></tr>`;
+            html += `<tr style="background:#f9fafb;"><td colspan="3" style="text-align:right;font-size:.8rem;color:#6b7280;">Promedio ${esc(p.periodo)}</td><td><strong>${p.promedio}</strong></td><td></td></tr>`;
           }
         });
-        if (!hayFilas) html += '<tr><td colspan="4" class="empty-msg" style="padding:.5rem 0;">Sin evaluaciones cargadas.</td></tr>';
+        if (!hayFilas) html += '<tr><td colspan="5" class="empty-msg" style="padding:.5rem 0;">Sin evaluaciones cargadas.</td></tr>';
         html += '</tbody></table>';
         if (mat.promedio_anual !== null) {
           const cls = mat.aprobada ? 'boletin-aprobada' : 'boletin-reprobada';
@@ -448,8 +458,72 @@ $conn->close();
 
   function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
-  cargarBoletin(hijosIds[0]);
-  if (selHijo) selHijo.addEventListener('change', () => cargarBoletin(selHijo.value));
+  // RFG07: consultas sobre una calificación.
+  const consultasBody = document.getElementById('consultas-padre-body');
+  const formBox       = document.getElementById('consulta-form-box');
+
+  async function cargarConsultas(alumnoId) {
+    try {
+      const res  = await fetch(`../gestion/consulta_nota_listar.php?alumno_id=${encodeURIComponent(alumnoId)}`);
+      const data = await res.json();
+      if (!data.success || !data.consultas.length) {
+        consultasBody.innerHTML = '<p class="empty-msg">Todavía no enviaste consultas.</p>';
+        return;
+      }
+      consultasBody.innerHTML = data.consultas.map(q => `
+        <div class="consulta-item">
+          <strong>${esc(q.materia)} – ${esc(q.evaluacion)} (nota ${q.nota})</strong> <span style="color:#6b7280;">· ${q.fecha}</span>
+          <div>${esc(q.mensaje)}</div>
+          ${q.estado === 'respondida'
+            ? `<div class="resp"><strong>Respuesta del docente:</strong> ${esc(q.respuesta)}</div>`
+            : '<div class="pend">⏳ Pendiente de respuesta</div>'}
+        </div>`).join('');
+    } catch {
+      consultasBody.innerHTML = '<p class="empty-msg">Error al cargar las consultas.</p>';
+    }
+  }
+
+  boletinBody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-consulta');
+    if (!btn) return;
+    formBox.innerHTML = `
+      <div class="consulta-form">
+        <strong style="font-size:.85rem;">Consulta sobre: ${esc(btn.dataset.desc)}</strong>
+        <textarea id="consulta-texto" maxlength="1000" placeholder="Escribí tu consulta (mínimo 10 caracteres)…"></textarea>
+        <div style="margin-top:.5rem;display:flex;gap:.5rem;align-items:center;">
+          <button type="button" class="btn-consulta" id="consulta-enviar" data-cal="${btn.dataset.cal}">Enviar</button>
+          <button type="button" class="btn-consulta" id="consulta-cancelar" style="background:#9ca3af;">Cancelar</button>
+          <span id="consulta-msg" style="font-size:.85rem;font-weight:700;"></span>
+        </div>
+      </div>`;
+    formBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  formBox.addEventListener('click', async (e) => {
+    if (e.target.id === 'consulta-cancelar') { formBox.innerHTML = ''; return; }
+    if (e.target.id !== 'consulta-enviar') return;
+    const msg = document.getElementById('consulta-msg');
+    const body = new FormData();
+    body.append('calificacion_id', e.target.dataset.cal);
+    body.append('mensaje', document.getElementById('consulta-texto').value);
+    e.target.disabled = true;
+    try {
+      const res  = await fetch('../gestion/consulta_nota_guardar.php', { method: 'POST', body });
+      const data = await res.json();
+      msg.style.color = data.success ? '#059669' : '#DC2626';
+      msg.textContent = data.message || (data.success ? 'Enviada.' : 'Error.');
+      if (data.success) { formBox.innerHTML = ''; cargarConsultas(selHijo ? selHijo.value : hijosIds[0]); }
+    } catch {
+      msg.style.color = '#DC2626'; msg.textContent = 'Error de conexión.';
+    } finally {
+      e.target.disabled = false;
+    }
+  });
+
+  function cargarTodo(alumnoId) { formBox.innerHTML = ''; cargarBoletin(alumnoId); cargarConsultas(alumnoId); }
+
+  cargarTodo(hijosIds[0]);
+  if (selHijo) selHijo.addEventListener('change', () => cargarTodo(selHijo.value));
   <?php endif; ?>
 </script>
 </body>

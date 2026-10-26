@@ -37,7 +37,7 @@ if (!$alumno) {
 
 // Calificaciones del alumno agrupadas por materia y período (según mes de fecha_evaluacion)
 $stmt = $conn->prepare(
-    "SELECT m.nombre AS materia, c.evaluacion, c.nota,
+    "SELECT c.id, m.nombre AS materia, c.evaluacion, c.nota,
             MONTH(c.fecha_evaluacion) AS mes,
             DATE_FORMAT(c.fecha_evaluacion, '%d/%m/%Y') AS fecha
      FROM calificaciones c
@@ -70,6 +70,7 @@ foreach ($rows as $r) {
         ];
     }
     $materias[$mat][$trim][] = [
+        'id'         => (int) $r['id'],
         'evaluacion' => $r['evaluacion'],
         'nota'       => (int) $r['nota'],
         'fecha'      => $r['fecha'],

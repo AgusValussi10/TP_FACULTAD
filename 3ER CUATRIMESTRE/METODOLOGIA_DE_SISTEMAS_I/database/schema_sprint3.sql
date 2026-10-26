@@ -35,3 +35,19 @@ CREATE TABLE IF NOT EXISTS recuperatorios (
     FOREIGN KEY (alumno_id)  REFERENCES usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- RFG07: consultas del padre/tutor sobre una calificación, respondidas por el docente
+CREATE TABLE IF NOT EXISTS consultas_notas (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    calificacion_id INT NOT NULL,
+    padre_id        INT NOT NULL,
+    alumno_id       INT NOT NULL,
+    mensaje         TEXT NOT NULL,
+    respuesta       TEXT NULL,
+    estado          ENUM('pendiente','respondida') NOT NULL DEFAULT 'pendiente',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    respondida_at   TIMESTAMP NULL DEFAULT NULL,
+    FOREIGN KEY (calificacion_id) REFERENCES calificaciones(id) ON DELETE CASCADE,
+    FOREIGN KEY (padre_id)        REFERENCES usuarios(id)       ON DELETE CASCADE,
+    FOREIGN KEY (alumno_id)       REFERENCES usuarios(id)       ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

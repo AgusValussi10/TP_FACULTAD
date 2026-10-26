@@ -33,15 +33,36 @@ if (!$alumno) {
 
 // Curso actual
 $stmt = $conn->prepare(
-    "SELECT c.nombre AS curso, c.nivel_educativo FROM alumno_curso ac JOIN cursos c ON c.id = ac.curso_id WHERE ac.alumno_id = ?"
+    "SELECT c.nombre AS curso, c.nivel_educativo, ac.condicion
+     FROM alumno_curso ac JOIN cursos c ON c.id = ac.curso_id WHERE ac.alumno_id = ?"
 );
 $stmt->bind_param('i', $alumno_id);
 $stmt->execute();
 $curso = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-// Sprint 5 (RFG12): cuotas — tabla no creada aún.
-$cuotas_pendientes = [];
+// RFG12/RFG16: situación económica. Solo la ve el admin; el docente no recibe datos de pagos.
+$cuotas = null;       // null = sin acceso (el front no muestra la sección)
+$deuda_total = null;
+if (($_SESSION['rol'] ?? '') === 'admin') {
+    $cuotas = [];
+    $deuda_total = 0.0;
+    $stmt = $conn->prepare(
+        "SELECT concepto, mes, anio, importe, recargo, estado,
+                DATE_FORMAT(fecha_vencimiento,'%d/%m/%Y') AS vencimiento,
+                DATE_FORMAT(fecha_pago,'%d/%m/%Y') AS fecha_pago
+         FROM cuotas WHERE alumno_id = ? ORDER BY anio DESC, mes DESC, concepto"
+    );
+    $stmt->bind_param('i', $alumno_id);
+    $stmt->execute();
+    $cuotas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    foreach ($cuotas as $c) {
+        if ($c['estado'] === 'pendiente') {
+            $deuda_total += (float) $c['importe'] + (float) $c['recargo'];
+        }
+    }
+}
 
 // Calificaciones
 $stmt = $conn->prepare(
@@ -122,5 +143,6 @@ echo json_encode([
     'sanciones'         => $sanciones,
     'enfermeria'        => $enfermeria,
     'servicios'         => $servicios,
-    'cuotas_pendientes' => $cuotas_pendientes,
+    'cuotas'            => $cuotas,
+    'deuda_total'       => $deuda_total,
 ]);

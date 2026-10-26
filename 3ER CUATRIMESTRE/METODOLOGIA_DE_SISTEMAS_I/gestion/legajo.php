@@ -242,6 +242,8 @@ $conn->close();
       const d = data;
       const iniciales = iniciales2(d.alumno.nombre);
       const cursoStr  = d.curso ? `${d.curso.curso} · Nivel ${d.curso.nivel_educativo}` : 'Sin curso asignado';
+      const regularizacion = d.curso && d.curso.condicion === 'pendiente_regularizacion'
+        ? '<span class="badge badge-rojo">Pendiente de regularización</span>' : '';
       const estadoAlumno = d.alumno.activo ? '<span class="badge badge-verde">Activo</span>' : '<span class="badge badge-rojo">Suspendido</span>';
 
 
@@ -255,7 +257,7 @@ $conn->close();
                 <strong>${esc(d.alumno.nombre)}</strong>
                 <span>Usuario: ${esc(d.alumno.usuario)} · Alta: ${d.alumno.alta} · ${cursoStr}</span>
               </div>
-              <div style="margin-left:auto;">${estadoAlumno}</div>
+              <div style="margin-left:auto;display:flex;gap:.4rem;flex-wrap:wrap;">${regularizacion}${estadoAlumno}</div>
             </div>
           </div>
         </div>
@@ -295,6 +297,8 @@ $conn->close();
           </div>
         </div>
 
+        ${seccionEconomica(d)}
+
         <div class="card">
           <div class="card-header"><span class="icon">🍽️</span><h2>Servicios Reservados</h2></div>
           <div class="card-body" style="overflow-x:auto;">
@@ -308,6 +312,30 @@ $conn->close();
     }
   });
   <?php endif; ?>
+
+  // RFG12/RFG16: situación económica (el backend solo la envía al admin).
+  function seccionEconomica(d) {
+    if (!Array.isArray(d.cuotas)) return '';
+    const filas = d.cuotas.map(c => ({
+      concepto: c.concepto === 'matricula' ? 'Matrícula' : 'Cuota',
+      periodo: `${String(c.mes).padStart(2,'0')}/${c.anio}`,
+      importe: '$' + Number(c.importe).toLocaleString('es-AR'),
+      recargo: Number(c.recargo) > 0 ? '$' + Number(c.recargo).toLocaleString('es-AR') : '—',
+      vencimiento: c.vencimiento,
+      estado: c.estado === 'pagada' ? `Pagada (${c.fecha_pago || '—'})` : 'Pendiente',
+    }));
+    const deuda = Number(d.deuda_total) > 0
+      ? `<p style="margin-bottom:.7rem;font-weight:800;color:#991B1B;">Deuda pendiente: $${Number(d.deuda_total).toLocaleString('es-AR')}</p>`
+      : '<p style="margin-bottom:.7rem;font-weight:800;color:#065F46;">Sin deuda pendiente.</p>';
+    return `
+        <div class="card">
+          <div class="card-header"><span class="icon">💳</span><h2>Situación Económica</h2></div>
+          <div class="card-body" style="overflow-x:auto;">
+            ${deuda}
+            ${tablaSimple(filas, ['Concepto','Período','Importe','Recargo','Vencimiento','Estado'], ['concepto','periodo','importe','recargo','vencimiento','estado'])}
+          </div>
+        </div>`;
+  }
 
   function tablaSimple(filas, cabeceras, campos) {
     if (!filas || !filas.length) return '<p class="empty-msg">Sin registros.</p>';
