@@ -1,4 +1,5 @@
 <?php
+
 require_once '../auth/session.php';
 header('Content-Type: application/json; charset=utf-8');
 
@@ -18,7 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 set_exception_handler(function (Throwable $e) {
     global $conn;
     if ($conn instanceof mysqli) {
-        try { $conn->rollback(); } catch (Throwable $ignorado) {}
+        try {
+            $conn->rollback();
+        } catch (Throwable $ignorado) {
+            error_log('admitir.php: falló el rollback: ' . $ignorado->getMessage());
+        }
     }
     error_log('admitir.php: ' . $e->getMessage());
     http_response_code(500);
