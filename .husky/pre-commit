@@ -1,0 +1,38 @@
+# Pre-commit (Husky): bloquea el commit si los archivos PHP del sistema
+# tienen errores de sintaxis (php -l) o de estilo (phpcs con phpcs.xml).
+SISTEMA="3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I"
+
+# Archivos PHP del sistema que entran en este commit (agregados, copiados o modificados)
+   ARCHIVOS=$(git diff --cached --name-only --diff-filter=ACM -- "$SISTEMA" | grep '\.php$' | grep -v '/lib/fpdf/' || true)
+if [ -z "$ARCHIVOS" ]; then
+  echo "[pre-commit] No hay archivos PHP del sistema en este commit."
+  exit 0
+fi
+
+echo "[pre-commit] Revisando archivos PHP..."
+ERROR=0
+
+while IFS= read -r f; do
+   # 1) Sintaxis
+  if ! php -l "$f" > /dev/null 2>&1; then
+    echo "[X] Error de sintaxis en $f"
+    php -l "$f"
+    ERROR=1
+    continue
+  fi
+  # 2) Estilo: reglas de phpcs.xml (solo errores; los avisos no bloquean)
+  if ! phpcs --standard="$SISTEMA/phpcs.xml" -n --no-colors "$f"; then
+    ERROR=1
+  fi
+done <<LISTA
+$ARCHIVOS
+LISTA
+
+if [ "$ERROR" -ne 0 ]; then
+  echo ""
+  echo "[X] Commit bloqueado: corregi los errores de arriba y volve a intentar."
+  echo "    Tip: phpcbf \"<archivo>\" corrige solo los errores marcados con [x]."
+  exit 1
+fi
+
+echo "[OK] pre-commit: sintaxis y estilo correctos."

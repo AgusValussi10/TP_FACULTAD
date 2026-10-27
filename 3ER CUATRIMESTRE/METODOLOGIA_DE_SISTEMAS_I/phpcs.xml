@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!--
+  Reglas del linter (PHP_CodeSniffer) del Sistema de Gestión "Educar para Transformar".
+  Base: PSR-12 (estándar de estilo de PHP), adaptado a un proyecto con scripts procedurales.
+  Lo usan: VS Code (extensión PHP Sniffer & Beautifier), el pre-commit de Husky y el CI.
+  Uso manual:  phpcs            (revisa todo)
+               phpcs archivo.php
+               phpcbf archivo.php   (corrige automáticamente lo que puede)
+-->
+<ruleset name="EducarParaTransformar">
+    <description>PSR-12 adaptado al Sistema de Gestión</description>
+
+    <file>.</file>
+    <arg name="extensions" value="php"/>
+    <arg value="s"/>
+
+    <!-- Código de terceros o generado: no se revisa -->
+    <exclude-pattern>*/lib/fpdf/*</exclude-pattern>
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <rule ref="PSR12">
+        <!-- Los endpoints son scripts: declaran funciones y ejecutan código en el mismo archivo -->
+        <exclude name="PSR1.Files.SideEffects"/>
+        <!-- El proyecto no usa namespaces (ni autoload) -->
+        <exclude name="PSR1.Classes.ClassDeclaration.MissingNamespace"/>
+    </rule>
+
+    <!-- Las consultas SQL hacen largas algunas líneas: aviso desde 140, sin error -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="140"/>
+            <property name="absoluteLineLimit" value="0"/>
+        </properties>
+    </rule>
+
+    <!-- Errores de sintaxis (usa php -l) -->
+    <rule ref="Generic.PHP.Syntax"/>
+    <!-- Prácticas peligrosas -->
+    <rule ref="Squiz.PHP.Eval"/>
+    <rule ref="Generic.PHP.NoSilencedErrors"/>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter"/>
+    <rule ref="Generic.CodeAnalysis.EmptyStatement"/>
+</ruleset>
