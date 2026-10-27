@@ -125,8 +125,30 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   └── polling.php             ← GET → refresh de postulaciones
 ├── config/
 │   └── composer.json           ← Requiere PHP >= 8.0
+├── ci/
+│   ├── preparar_bd.sh          ← Recrea una base de prueba con los schemas en orden + seed (lo usa el pipeline)
+│   └── pipeline_local.sh       ← Corre lint + base + tests en local y mide cada etapa
+├── tests/                      ← Tests de integración (PHPUnit) de RFG07 por HTTP con sesiones reales
+├── phpunit.xml
+├── metricas/
+│   ├── metricas_git.py         ← Métricas de entrega desde el historial de git (TP Unidad 4)
+│   ├── carga_rf07.py           ← Prueba de carga de RFG07 (padres y docentes concurrentes)
+│   ├── proxy_latencia.py       ← Proxy TCP que simula la latencia de la base remota
+│   └── volumen_datos.php       ← Carga un ciclo lectivo de datos en la base de PRUEBA
+├── .dockerignore               ← Deja tests/, ci/ y metricas/ fuera de la imagen (php -S sirve toda la carpeta)
 └── package.json                ← Dev dependency: sharp ^0.34.5 (conversión de imágenes)
 ```
+
+Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 · Lint PHP → 2 · Tests RFG07
+(MariaDB 10.11 como servicio) → 3 · Build de la imagen Docker; en `main` publica
+`ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
+Auto-Deploy = "After CI Checks Pass". Correr los tests en local:
+`MYSQLHOST=127.0.0.1 MYSQLUSER=root bash ci/pipeline_local.sh` (borra y recrea la base `educar_db`).
+
+Servidor: `start.sh` levanta `php -S` con `PHP_CLI_SERVER_WORKERS=4` (configurable en Render).
+`requerir_rol()` cierra la sesión (`session_write_close()`) apenas valida el rol: los endpoints de
+gestión solo la leen; si un endpoint nuevo necesita ESCRIBIR en `$_SESSION`, no usar `requerir_rol()`
+o reabrirla con `session_start()`.
 
 ---
 
