@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("UnionDelSur.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eabef8d6f4c12ede83c1ba6276e149a7b69a4127")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b39a01d3bca770358d3fff1b50fe58824bb2da6b")]
 [assembly: System.Reflection.AssemblyProductAttribute("UnionDelSur.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UnionDelSur.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
