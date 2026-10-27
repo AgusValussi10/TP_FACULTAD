@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Cliente HTTP mínimo con cookies propias: cada instancia es "un navegador"
  * distinto, con su propia sesión PHP.

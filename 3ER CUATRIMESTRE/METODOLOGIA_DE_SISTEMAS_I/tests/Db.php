@@ -1,4 +1,5 @@
 <?php
+
 /** Acceso directo a la base de prueba, solo para preparar y verificar datos. */
 class Db
 {

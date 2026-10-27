@@ -1,4 +1,5 @@
 <?php
+
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -82,7 +83,9 @@ class ConsultasNotasTest extends TestCase
         ]);
         $this->assertTrue($r['json']['success'], $r['body']);
         $this->assertSame(1, (int) Db::valor(
-            "SELECT COUNT(*) FROM consultas_notas WHERE calificacion_id = ? AND estado = 'pendiente'", 'i', $calId
+            "SELECT COUNT(*) FROM consultas_notas WHERE calificacion_id = ? AND estado = 'pendiente'",
+            'i',
+            $calId
         ));
     }
 

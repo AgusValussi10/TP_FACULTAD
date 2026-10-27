@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Agrega volumen de datos "de un ciclo lectivo" a la base de prueba para que
  * las mediciones de rendimiento no se hagan con 10 alumnos de demo.
@@ -6,10 +7,14 @@
  *
  * Uso: php metricas/volumen_datos.php [alumnos=300] [consultas=1500]
  */
+
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn = new mysqli(
-    getenv('MYSQLHOST') ?: '127.0.0.1', getenv('MYSQLUSER') ?: 'root',
-    getenv('MYSQLPASSWORD') ?: '', getenv('MYSQLDATABASE') ?: 'educar_db', (int) (getenv('MYSQLPORT') ?: 3306)
+    getenv('MYSQLHOST') ?: '127.0.0.1',
+    getenv('MYSQLUSER') ?: 'root',
+    getenv('MYSQLPASSWORD') ?: '',
+    getenv('MYSQLDATABASE') ?: 'educar_db',
+    (int) (getenv('MYSQLPORT') ?: 3306)
 );
 $conn->set_charset('utf8');
 if (str_contains(getenv('MYSQLHOST') ?: '', 'filess.io')) {
@@ -39,7 +44,9 @@ $insCal     = $conn->prepare('INSERT INTO calificaciones (alumno_id, materia_id,
 $calificaciones = [];
 $padreId = 0;
 for ($i = 1; $i <= $nAlumnos; $i++) {
-    $nombre = "Alumno Carga $i"; $usuario = "carga.alumno$i"; $rol = 'alumno';
+    $nombre = "Alumno Carga $i";
+    $usuario = "carga.alumno$i";
+    $rol = 'alumno';
     $insUsuario->bind_param('ssss', $nombre, $usuario, $hashAlumno, $rol);
     $insUsuario->execute();
     $alumnoId = $conn->insert_id;
@@ -49,7 +56,9 @@ for ($i = 1; $i <= $nAlumnos; $i++) {
     $insCurso->execute();
 
     if ($i % 2 === 1) { // un padre cada dos alumnos (familias con 2 hijos)
-        $nombre = 'Tutor Carga ' . (($i + 1) / 2); $usuario = 'carga.padre' . (($i + 1) / 2); $rol = 'padre';
+        $nombre = 'Tutor Carga ' . (($i + 1) / 2);
+        $usuario = 'carga.padre' . (($i + 1) / 2);
+        $rol = 'padre';
         $insUsuario->bind_param('ssss', $nombre, $usuario, $hashPadre, $rol);
         $insUsuario->execute();
         $padreId = $conn->insert_id;

@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../auth/session.php';
 
 // Valor asumido: el TP1 no define un tope oficial de faltas por materia.
@@ -104,8 +105,12 @@ function dias_habiles_entre(string $desde, string $hasta): int
 function periodo_desde_fecha(string $fecha): string
 {
     $mes = (int) date('n', strtotime($fecha));
-    if ($mes <= 5) return '1er Trimestre';
-    if ($mes <= 8) return '2do Trimestre';
+    if ($mes <= 5) {
+        return '1er Trimestre';
+    }
+    if ($mes <= 8) {
+        return '2do Trimestre';
+    }
     return '3er Trimestre';
 }
 
