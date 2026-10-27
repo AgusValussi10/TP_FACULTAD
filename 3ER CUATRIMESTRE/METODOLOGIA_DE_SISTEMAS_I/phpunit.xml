@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tests de integración. Antes: ci/preparar_bd.sh (crea la base de prueba). -->
+<phpunit bootstrap="tests/bootstrap.php" colors="true" cacheResult="false">
+    <testsuites>
+        <testsuite name="RFG07 - Consultas sobre notas">
+            <file>tests/ConsultasNotasTest.php</file>
+        </testsuite>
+        <testsuite name="RFG04 - Admisión con requisitos académicos">
+            <file>tests/AdmisionTest.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>

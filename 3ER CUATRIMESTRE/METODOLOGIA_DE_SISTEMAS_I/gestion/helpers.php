@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../auth/session.php';
 
 // Valor asumido: el TP1 no define un tope oficial de faltas por materia.
@@ -55,6 +56,12 @@ function requerir_rol($roles): void
         echo json_encode(['success' => false, 'message' => 'Acceso denegado.']);
         exit;
     }
+    // Los endpoints de gestión solo LEEN la sesión (la escriben login.php y
+    // recuperar.php, que no pasan por acá). Liberarla ya evita que dos pedidos
+    // del mismo usuario en paralelo (p. ej. boletín + consultas en el portal
+    // del padre) queden en fila esperando el bloqueo del archivo de sesión.
+    // $_SESSION sigue disponible para leer después del cierre.
+    session_write_close();
 }
 
 /**
@@ -98,8 +105,12 @@ function dias_habiles_entre(string $desde, string $hasta): int
 function periodo_desde_fecha(string $fecha): string
 {
     $mes = (int) date('n', strtotime($fecha));
-    if ($mes <= 5) return '1er Trimestre';
-    if ($mes <= 8) return '2do Trimestre';
+    if ($mes <= 5) {
+        return '1er Trimestre';
+    }
+    if ($mes <= 8) {
+        return '2do Trimestre';
+    }
     return '3er Trimestre';
 }
 
