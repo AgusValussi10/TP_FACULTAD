@@ -5,3 +5,5 @@
 *.html text eol=lf
 *.css text eol=lf
 *.js text eol=lf
+
+.husky/* text eol=lf

@@ -1,0 +1,13 @@
+{
+  "php.validate.enable": true,
+  "php.validate.executablePath": "C:\\xampp\\php\\php.exe",
+  "php.validate.run": "onType",
+
+  "phpCodeSniffer.autoExecutable": false,
+  "phpCodeSniffer.exec.windows": "C:\\Users\\Agustin\\AppData\\Roaming\\Composer\\vendor\\bin\\phpcs.bat",
+  "phpCodeSniffer.standard": "Automatic",
+
+  "[php]": {
+    "editor.defaultFormatter": "obliviousharmony.vscode-php-codesniffer"
+  }
+}

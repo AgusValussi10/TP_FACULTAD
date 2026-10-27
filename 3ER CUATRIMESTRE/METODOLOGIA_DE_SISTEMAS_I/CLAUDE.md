@@ -736,6 +736,21 @@ Footer bg:           #1e293b
 | 4 | Constantes asumidas sin confirmar con el equipo: `EDAD_MINIMA_INICIAL`, `LIMITE_FALTAS`, `PORCENTAJE_RECARGO_MORA` (10%), `DIAS_LIMITE_REGULARIZACION` (60), `DIA_LIMITE_RESERVA_SERVICIOS` (25) | varios | Media |
 | 5 | `seed_datos.php` no es idempotente con materias (la clave única `uq_materia_curso` y la limpieza las aplica `init_db.php`) | Seed/BD | Baja |
 
+### Próximos pasos (cierre de sesión 26/10/2026)
+
+Hecho en esta sesión (commits `f6ca033`, `c217b15`, `d142656`): RF07 (consultas padre → docente), legajo con situación económica, recibo de pago en PDF con forma de pago. El recibo se probó y genera bien el PDF.
+
+Por prioridad:
+1. **Sprint 6 (RFG17/18/19):** sin empezar. El repo no tiene el enunciado de esos requisitos; hay que pedirlo al equipo o al documento del TP antes de implementar.
+2. **Recuperación de contraseña:** el modal "Recuperar acceso" de `index.html` no tiene backend.
+3. **Verificar en Render** tras el push: que `init_db.php` agregó `cuotas.metodo_pago/referencia_pago/registrado_por` y creó `consultas_notas`; probar un pago con recibo, una consulta de nota y el legajo. Si `init_db.php` falla, correr a mano el `ALTER` de `schema_sprint5.sql` y el bloque de `consultas_notas` de `schema_sprint3.sql`.
+4. **Mejoras opcionales del recibo:** que el padre lo descargue desde su portal (reutilizar `alumno_pertenece_a_padre`), numeración correlativa propia (hoy `R-` + id de cuota), importe en letras, envío por mail.
+5. Confirmar con el equipo las constantes asumidas de `helpers.php` (recargo 10%, 60 días de regularización, edad mínima 3, 15 faltas, día 25 para reservas).
+
+Ojo con git: el repo real está en `TP_FACULTAD/`, no en esta carpeta. Si aparece un `.git` dentro de `METODOLOGIA_DE_SISTEMAS_I/` (pasó una vez, de origen desconocido) los commits van a ese repo anidado y no al real; borrarlo antes de commitear. Aún no se hizo `git push` de los commits de esta sesión.
+
+Herramientas locales: PHP 8.2 y MariaDB de XAMPP (`xampp/php/php.exe`, `xampp/mysql`) sirven para lintear y probar; el `educar_db` local es de desarrollo, usar una base temporal para pruebas.
+
 ### Notas técnicas importantes
 
 **Portal admin — pestañas vs. gestión del sistema:** Las pestañas del portal (Inscripciones, Opiniones, Propuestas, Consultas, Noticias) gestionan contenido de la landing page. La barra oscura sobre las pestañas contiene accesos rápidos al sistema (ABM alumnos, legajo, vacantes, materias, etc.). No mezclar.
