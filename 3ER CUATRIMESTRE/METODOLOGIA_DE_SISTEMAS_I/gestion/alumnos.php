@@ -22,11 +22,19 @@ $res = $conn->query(
      WHERE u.rol = 'alumno'
      ORDER BY u.activo DESC, u.nombre"
 );
-if ($res) while ($r = $res->fetch_assoc()) $alumnos[] = $r;
+if ($res) {
+    while ($r = $res->fetch_assoc()) {
+        $alumnos[] = $r;
+    }
+}
 
 $cursos = [];
 $res2 = $conn->query("SELECT id, nombre FROM cursos ORDER BY nombre");
-if ($res2) while ($r = $res2->fetch_assoc()) $cursos[] = $r;
+if ($res2) {
+    while ($r = $res2->fetch_assoc()) {
+        $cursos[] = $r;
+    }
+}
 
 $conn->close();
 ?>
@@ -166,7 +174,7 @@ $conn->close();
     $total    = count($alumnos);
     $activos  = count(array_filter($alumnos, fn($a) => $a['activo']));
     $inactivos = $total - $activos;
-  ?>
+    ?>
 
   <div class="card">
     <div class="card-header">
@@ -181,16 +189,16 @@ $conn->close();
       <div class="stats-bar">
         <div class="stat-pill">Total: <span><?= $total ?></span></div>
         <div class="stat-pill">Activos: <span><?= $activos ?></span></div>
-        <?php if ($inactivos > 0): ?>
+        <?php if ($inactivos > 0) : ?>
         <div class="stat-pill">Suspendidos: <span><?= $inactivos ?></span></div>
         <?php endif; ?>
       </div>
 
       <input type="text" class="busqueda" id="busqueda" placeholder="Buscar por nombre, usuario o DNI…" oninput="filtrar()">
 
-      <?php if (empty($alumnos)): ?>
+      <?php if (empty($alumnos)) : ?>
         <p class="empty-msg">No hay alumnos registrados aún.</p>
-      <?php else: ?>
+      <?php else : ?>
       <div style="overflow-x:auto;">
       <table id="tabla-alumnos">
         <thead>
@@ -205,7 +213,7 @@ $conn->close();
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($alumnos as $al): ?>
+          <?php foreach ($alumnos as $al) : ?>
           <tr id="row-<?= $al['id'] ?>"
               data-nombre="<?= strtolower(htmlspecialchars($al['nombre'])) ?>"
               data-usuario="<?= strtolower(htmlspecialchars($al['usuario'])) ?>"
@@ -224,9 +232,9 @@ $conn->close();
               <div class="acciones" id="acc-<?= $al['id'] ?>">
                 <button class="btn-accion btn-editar" onclick="abrirModal(ALUMNOS[<?= (int)$al['id'] ?>])">Editar</button>
                 <a class="btn-accion btn-editar btn-legajo" href="legajo.php?alumno_id=<?= (int)$al['id'] ?>">Legajo</a>
-                <?php if ($al['activo']): ?>
+                <?php if ($al['activo']) : ?>
                 <button class="btn-accion btn-suspender" onclick="accion(<?= $al['id'] ?>,'suspender')">Suspender</button>
-                <?php else: ?>
+                <?php else : ?>
                 <button class="btn-accion btn-reactivar" onclick="accion(<?= $al['id'] ?>,'reactivar')">Reactivar</button>
                 <?php endif; ?>
                 <button class="btn-accion btn-eliminar" onclick="accion(<?= $al['id'] ?>,'eliminar')">Eliminar</button>
@@ -264,7 +272,7 @@ $conn->close();
         <label>Curso</label>
         <select id="al-curso">
           <option value="0">— Sin asignar —</option>
-          <?php foreach ($cursos as $c): ?>
+          <?php foreach ($cursos as $c) : ?>
           <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nombre']) ?></option>
           <?php endforeach; ?>
         </select>

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * seed_legajo.php — Datos personales de demostración para el legajo (tabla alumnos_datos).
  *
@@ -13,6 +14,7 @@
  * (INSERT IGNORE), así que no pisa lo que se haya editado desde el ABM.
  * Todos los datos son ficticios.
  */
+
 require_once 'db_config.php';
 $conn->set_charset('utf8');
 

@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -34,9 +35,12 @@ function filas(mysqli $conn, string $sql, int $id): array
 }
 
 // ── Identificación ──────────────────────────────────────────────
-$alumno = filas($conn,
+$alumno = filas(
+    $conn,
     "SELECT id, nombre, usuario, activo, DATE_FORMAT(created_at,'%d/%m/%Y') AS alta
-     FROM usuarios WHERE id = ? AND rol = 'alumno'", $alumno_id)[0] ?? null;
+     FROM usuarios WHERE id = ? AND rol = 'alumno'",
+    $alumno_id
+)[0] ?? null;
 if (!$alumno) {
     echo json_encode(['success' => false, 'message' => 'Alumno no encontrado.']);
     exit;
@@ -44,7 +48,8 @@ if (!$alumno) {
 $alumno['activo'] = (int) $alumno['activo'];
 
 // Datos personales (tabla alumnos_datos; puede no existir la fila si el alumno es viejo).
-$datos = filas($conn,
+$datos = filas(
+    $conn,
     "SELECT d.dni, d.fecha_nacimiento, DATE_FORMAT(d.fecha_nacimiento,'%d/%m/%Y') AS fecha_nacimiento_ar,
             d.domicilio, d.telefono, d.email, d.tutor_nombre, d.contacto_emergencia,
             d.obra_social, d.observaciones_salud, d.solicitud_id,
@@ -52,26 +57,37 @@ $datos = filas($conn,
             DATE_FORMAT(d.actualizado_en,'%d/%m/%Y') AS actualizado
      FROM alumnos_datos d
      LEFT JOIN solicitudes_inscripcion s ON s.id = d.solicitud_id
-     WHERE d.alumno_id = ?", $alumno_id)[0] ?? null;
+     WHERE d.alumno_id = ?",
+    $alumno_id
+)[0] ?? null;
 if ($datos && $datos['fecha_nacimiento']) {
     $datos['edad'] = edad_desde_fecha_nacimiento($datos['fecha_nacimiento']);
 }
 
-$curso = filas($conn,
+$curso = filas(
+    $conn,
     "SELECT c.id, c.nombre AS curso, c.nivel_educativo, ac.condicion
-     FROM alumno_curso ac JOIN cursos c ON c.id = ac.curso_id WHERE ac.alumno_id = ?", $alumno_id)[0] ?? null;
+     FROM alumno_curso ac JOIN cursos c ON c.id = ac.curso_id WHERE ac.alumno_id = ?",
+    $alumno_id
+)[0] ?? null;
 
-$tutores = filas($conn,
+$tutores = filas(
+    $conn,
     "SELECT u.nombre, u.usuario, u.activo
      FROM padre_alumno pa JOIN usuarios u ON u.id = pa.padre_id
-     WHERE pa.alumno_id = ? ORDER BY u.nombre", $alumno_id);
+     WHERE pa.alumno_id = ? ORDER BY u.nombre",
+    $alumno_id
+);
 
 // ── Académico ──────────────────────────────────────────────────
-$calificaciones = filas($conn,
+$calificaciones = filas(
+    $conn,
     "SELECT m.nombre AS materia, c.evaluacion, c.nota, c.fecha_evaluacion,
             DATE_FORMAT(c.fecha_evaluacion,'%d/%m/%Y') AS fecha
      FROM calificaciones c JOIN materias m ON m.id = c.materia_id
-     WHERE c.alumno_id = ? ORDER BY m.nombre, c.fecha_evaluacion", $alumno_id);
+     WHERE c.alumno_id = ? ORDER BY m.nombre, c.fecha_evaluacion",
+    $alumno_id
+);
 foreach ($calificaciones as &$c) {
     $c['nota']      = (int) $c['nota'];
     $c['trimestre'] = periodo_desde_fecha($c['fecha_evaluacion']);
@@ -79,7 +95,8 @@ foreach ($calificaciones as &$c) {
 }
 unset($c);
 
-$asistencia = filas($conn,
+$asistencia = filas(
+    $conn,
     "SELECT m.nombre AS materia,
             SUM(a.estado = 'presente') AS presentes,
             SUM(a.estado = 'tarde')    AS tardes,
@@ -87,7 +104,9 @@ $asistencia = filas($conn,
             COUNT(a.id)                AS total
      FROM asistencias a JOIN materias m ON m.id = a.materia_id
      WHERE a.alumno_id = ?
-     GROUP BY m.nombre ORDER BY m.nombre", $alumno_id);
+     GROUP BY m.nombre ORDER BY m.nombre",
+    $alumno_id
+);
 foreach ($asistencia as &$a) {
     foreach (['presentes', 'tardes', 'faltas', 'total'] as $k) {
         $a[$k] = (int) $a[$k];
@@ -97,15 +116,19 @@ foreach ($asistencia as &$a) {
 }
 unset($a);
 
-$recuperatorios = filas($conn,
+$recuperatorios = filas(
+    $conn,
     "SELECT m.nombre AS materia, r.periodo, DATE_FORMAT(r.fecha,'%d/%m/%Y') AS fecha, r.turno, r.estado, r.nota
      FROM recuperatorios r JOIN materias m ON m.id = r.materia_id
-     WHERE r.alumno_id = ? ORDER BY r.fecha IS NULL, r.fecha DESC", $alumno_id);
+     WHERE r.alumno_id = ? ORDER BY r.fecha IS NULL, r.fecha DESC",
+    $alumno_id
+);
 
 // Resumen por materia del curso actual: docente, promedio, faltas, recuperatorios.
 $materias = [];
 if ($curso) {
-    $materias = filas($conn,
+    $materias = filas(
+        $conn,
         "SELECT m.nombre AS materia, d.nombre AS docente,
                 (SELECT ROUND(AVG(c.nota),2) FROM calificaciones c WHERE c.materia_id = m.id AND c.alumno_id = ac.alumno_id) AS promedio,
                 (SELECT COUNT(*) FROM calificaciones c WHERE c.materia_id = m.id AND c.alumno_id = ac.alumno_id) AS evaluaciones,
@@ -114,7 +137,9 @@ if ($curso) {
          FROM alumno_curso ac
          JOIN materias m ON m.curso_id = ac.curso_id
          LEFT JOIN usuarios d ON d.id = m.docente_id
-         WHERE ac.alumno_id = ? ORDER BY m.nombre", $alumno_id);
+         WHERE ac.alumno_id = ? ORDER BY m.nombre",
+        $alumno_id
+    );
     foreach ($materias as &$m) {
         $m['promedio']          = $m['promedio'] !== null ? (float) $m['promedio'] : null;
         $m['evaluaciones']      = (int) $m['evaluaciones'];
@@ -127,49 +152,70 @@ if ($curso) {
 }
 
 // ── Convivencia, salud y servicios ─────────────────────────────
-$sanciones = filas($conn,
+$sanciones = filas(
+    $conn,
     "SELECT s.tipo, s.descripcion, DATE_FORMAT(s.fecha,'%d/%m/%Y') AS fecha, u.nombre AS registrado_por
      FROM sanciones s JOIN usuarios u ON u.id = s.registrado_por
-     WHERE s.alumno_id = ? ORDER BY s.fecha DESC", $alumno_id);
+     WHERE s.alumno_id = ? ORDER BY s.fecha DESC",
+    $alumno_id
+);
 
-$enfermeria = filas($conn,
+$enfermeria = filas(
+    $conn,
     "SELECT ae.motivo, TIME_FORMAT(ae.hora,'%H:%i') AS hora, ae.observaciones,
             DATE_FORMAT(ae.created_at,'%d/%m/%Y') AS fecha, u.nombre AS atendido_por
      FROM atenciones_enfermeria ae JOIN usuarios u ON u.id = ae.atendido_por
-     WHERE ae.alumno_id = ? ORDER BY ae.created_at DESC", $alumno_id);
+     WHERE ae.alumno_id = ? ORDER BY ae.created_at DESC",
+    $alumno_id
+);
 
-$servicios = filas($conn,
-    "SELECT servicio, mes, anio, estado FROM reservas_servicios WHERE alumno_id = ? ORDER BY anio DESC, mes DESC", $alumno_id);
+$servicios = filas(
+    $conn,
+    "SELECT servicio, mes, anio, estado FROM reservas_servicios WHERE alumno_id = ? ORDER BY anio DESC, mes DESC",
+    $alumno_id
+);
 
-$deportes = filas($conn,
+$deportes = filas(
+    $conn,
     "SELECT d.nombre AS deporte, d.horario, DATE_FORMAT(i.created_at,'%d/%m/%Y') AS desde
      FROM inscripciones_deportivas i JOIN deportes d ON d.id = i.deporte_id
-     WHERE i.alumno_id = ? ORDER BY d.nombre", $alumno_id);
+     WHERE i.alumno_id = ? ORDER BY d.nombre",
+    $alumno_id
+);
 
 // Comunicación con la familia
-$consultas = filas($conn,
+$consultas = filas(
+    $conn,
     "SELECT m.nombre AS materia, c.evaluacion, c.nota, p.nombre AS padre, q.mensaje, q.respuesta, q.estado,
             DATE_FORMAT(q.created_at,'%d/%m/%Y') AS fecha
      FROM consultas_notas q
      JOIN calificaciones c ON c.id = q.calificacion_id
      JOIN materias m ON m.id = c.materia_id
      JOIN usuarios p ON p.id = q.padre_id
-     WHERE q.alumno_id = ? ORDER BY q.created_at DESC", $alumno_id);
+     WHERE q.alumno_id = ? ORDER BY q.created_at DESC",
+    $alumno_id
+);
 
-$notificaciones = filas($conn,
+$notificaciones = filas(
+    $conn,
     "SELECT tipo, mensaje, DATE_FORMAT(created_at,'%d/%m/%Y %H:%i') AS fecha
-     FROM notificaciones WHERE alumno_id = ? ORDER BY created_at DESC LIMIT 15", $alumno_id);
+     FROM notificaciones WHERE alumno_id = ? ORDER BY created_at DESC LIMIT 15",
+    $alumno_id
+);
 
 // RFG12/RFG16: situación económica. Solo la ve el admin; el docente no recibe datos de pagos.
 $cuotas = null;       // null = sin acceso (el front no muestra la sección)
 $deuda_total = null;
 if ($es_admin) {
-    $cuotas = filas($conn,
+    $cuotas = filas(
+        $conn,
         "SELECT concepto, mes, anio, importe, recargo, estado, metodo_pago,
                 DATE_FORMAT(fecha_vencimiento,'%d/%m/%Y') AS vencimiento,
                 DATE_FORMAT(fecha_pago,'%d/%m/%Y') AS fecha_pago,
                 (estado = 'pendiente' AND fecha_vencimiento < CURDATE()) AS vencida
-         FROM cuotas WHERE alumno_id = ? ORDER BY anio DESC, mes DESC, concepto", $alumno_id);
+         FROM cuotas WHERE alumno_id = ? ORDER BY anio DESC, mes DESC, concepto",
+        $alumno_id
+    );
     $deuda_total = 0.0;
     foreach ($cuotas as &$q) {
         $q['vencida'] = (bool) $q['vencida'];

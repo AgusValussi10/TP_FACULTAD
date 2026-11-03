@@ -30,7 +30,11 @@ if ($es_docente) {
     $stmt->close();
 } else {
     $res = $conn->query("SELECT u.id, u.nombre, c.nombre AS curso FROM usuarios u LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id LEFT JOIN cursos c ON c.id = ac.curso_id WHERE u.rol = 'alumno' AND u.activo = 1 ORDER BY u.nombre");
-    if ($res) while ($r = $res->fetch_assoc()) $alumnos[] = $r;
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            $alumnos[] = $r;
+        }
+    }
 }
 $conn->close();
 ?>
@@ -193,14 +197,14 @@ $conn->close();
   <div class="card" id="card-selector">
     <div class="card-header"><span class="icon">📂</span><h2>Seleccionar Alumno</h2></div>
     <div class="card-body">
-      <?php if (empty($alumnos)): ?>
+      <?php if (empty($alumnos)) : ?>
         <p class="empty-msg"><?= $es_docente ? 'Todavía no tenés alumnos a cargo (pedile al admin que te asigne una materia).' : 'No hay alumnos activos registrados.' ?></p>
-      <?php else: ?>
+      <?php else : ?>
       <div class="form-row">
         <label>Alumno
           <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí nombre o curso…" autocomplete="off" style="min-width:280px;">
           <datalist id="dl-alumnos">
-            <?php foreach ($alumnos as $a): ?>
+            <?php foreach ($alumnos as $a) : ?>
             <option value="<?= htmlspecialchars($a['nombre']) ?><?= $a['curso'] ? ' — ' . htmlspecialchars($a['curso']) : '' ?>">
             <?php endforeach; ?>
           </datalist>
@@ -220,7 +224,7 @@ $conn->close();
   const contenido = document.getElementById('legajo-contenido');
   const ES_ADMIN  = <?= $es_docente ? 'false' : 'true' ?>;
 
-  <?php if (!empty($alumnos)): ?>
+  <?php if (!empty($alumnos)) : ?>
   const ALUMNOS = <?= json_encode(array_map(fn($a) => [
       'id'     => $a['id'],
       'nombre' => $a['nombre'],

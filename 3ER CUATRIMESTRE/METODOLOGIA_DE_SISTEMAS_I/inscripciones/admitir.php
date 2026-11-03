@@ -195,8 +195,16 @@ $datos = $conn->prepare(
      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
 );
 $contacto = trim($solicitud['nombre_tutor'] . ' · ' . $solicitud['telefono'], ' ·');
-$datos->bind_param('isssssi', $nuevoAlumnoId, $solicitud['fecha_nacimiento'], $solicitud['telefono'],
-                   $solicitud['email'], $solicitud['nombre_tutor'], $contacto, $id);
+$datos->bind_param(
+    'isssssi',
+    $nuevoAlumnoId,
+    $solicitud['fecha_nacimiento'],
+    $solicitud['telefono'],
+    $solicitud['email'],
+    $solicitud['nombre_tutor'],
+    $contacto,
+    $id
+);
 if (!$datos->execute()) {
     abortarAdmision($conn, 'No se pudieron guardar los datos personales del alumno.');
 }

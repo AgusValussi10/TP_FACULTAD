@@ -1,4 +1,5 @@
 <?php
+
 $host    = getenv('MYSQLHOST')     ?: 'localhost';
 $dbname  = getenv('MYSQLDATABASE') ?: 'educar_db';
 $db_user = getenv('MYSQLUSER')     ?: 'root';
@@ -14,7 +15,9 @@ if ($conn->connect_error) {
 $schema = file_get_contents(__DIR__ . '/database/schema.sql');
 if ($conn->multi_query($schema)) {
     do {
-        if ($res = $conn->store_result()) $res->free();
+        if ($res = $conn->store_result()) {
+            $res->free();
+        }
     } while ($conn->more_results() && $conn->next_result());
 }
 
@@ -237,7 +240,9 @@ if (tabla_existe($conn, 'materias')) {
     $conservadas = "SELECT MIN(id) AS keep_id, nombre, curso_id FROM materias GROUP BY nombre, curso_id";
 
     foreach (['asistencias', 'calificaciones', 'planificaciones', 'recuperatorios'] as $tablaRef) {
-        if (!tabla_existe($conn, $tablaRef)) continue;
+        if (!tabla_existe($conn, $tablaRef)) {
+            continue;
+        }
         $ok = $conn->query(
             "UPDATE IGNORE `$tablaRef` t
              JOIN materias d ON d.id = t.materia_id
@@ -251,11 +256,13 @@ if (tabla_existe($conn, 'materias')) {
         }
     }
 
-    if (!$conn->query(
-        "DELETE d FROM materias d
+    if (
+        !$conn->query(
+            "DELETE d FROM materias d
          JOIN ($conservadas) k ON k.nombre = d.nombre AND k.curso_id = d.curso_id
          WHERE d.id <> k.keep_id"
-    )) {
+        )
+    ) {
         fwrite(STDERR, "Error borrando materias duplicadas: " . $conn->error . PHP_EOL);
         exit(1);
     }

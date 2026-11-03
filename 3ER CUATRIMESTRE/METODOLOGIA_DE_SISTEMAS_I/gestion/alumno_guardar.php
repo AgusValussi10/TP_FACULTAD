@@ -1,9 +1,13 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 requerir_rol(['admin']);
 errores_como_json();
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit;
+}
 require_once __DIR__ . '/../database/db_config.php';
 
 function responder(bool $ok, string $mensaje, array $extra = []): void
@@ -102,8 +106,19 @@ try {
             contacto_emergencia = VALUES(contacto_emergencia), obra_social = VALUES(obra_social),
             observaciones_salud = VALUES(observaciones_salud), actualizado_en = NOW()"
     );
-    $stmt->bind_param('isssssssss', $id, $d['dni'], $d['fecha_nacimiento'], $d['domicilio'], $d['telefono'],
-                      $d['email'], $d['tutor_nombre'], $d['contacto_emergencia'], $d['obra_social'], $d['observaciones_salud']);
+    $stmt->bind_param(
+        'isssssssss',
+        $id,
+        $d['dni'],
+        $d['fecha_nacimiento'],
+        $d['domicilio'],
+        $d['telefono'],
+        $d['email'],
+        $d['tutor_nombre'],
+        $d['contacto_emergencia'],
+        $d['obra_social'],
+        $d['observaciones_salud']
+    );
     $stmt->execute();
     $stmt->close();
 

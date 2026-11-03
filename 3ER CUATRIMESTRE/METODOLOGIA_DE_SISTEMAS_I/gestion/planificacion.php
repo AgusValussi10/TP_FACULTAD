@@ -156,7 +156,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
   <span class="rol-badge"><?= $es_admin ? 'Coordinación · Administración' : 'Portal Docente' ?></span>
 </div>
 
-<?php if ($es_admin): ?>
+<?php if ($es_admin) : ?>
 <div class="container ancho">
   <a href="<?= $volver_url ?>" class="volver">&larr; Volver al portal</a>
 
@@ -195,7 +195,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
     </div>
   </div>
 </div>
-<?php else: ?>
+<?php else : ?>
 <div class="container">
   <a href="<?= $volver_url ?>" class="volver">&larr; Volver al portal</a>
 
@@ -236,7 +236,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
 
 <?php endif; ?>
 
-<?php if ($es_admin): ?>
+<?php if ($es_admin) : ?>
 <script>
   const admAnio = document.getElementById('adm-anio');
   const admCurso = document.getElementById('adm-curso');
@@ -316,7 +316,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
   admEstado.addEventListener('change', () => { if (ultimaLista.length) pintar(); });
   buscar();
 </script>
-<?php else: ?>
+<?php else : ?>
 <script>
   const selMateria  = document.getElementById('sel-materia');
   const selAnio     = document.getElementById('sel-anio');

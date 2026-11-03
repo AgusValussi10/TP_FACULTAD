@@ -154,7 +154,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
 <div class="container ancho">
   <a href="<?= $volver_url ?>" class="volver">&larr; Volver al portal</a>
 
-<?php if ($es_admin): ?>
+<?php if ($es_admin) : ?>
   <div class="card">
     <div class="card-header"><span class="icon">🔎</span><h2>Recuperatorios de la institución</h2></div>
     <div class="card-body">
@@ -184,7 +184,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
       <p class="hint" style="margin:.8rem 0 0;">Los recuperatorios los programa y califica el docente de cada materia. En rojo: pendientes con fecha ya pasada (falta cargar la nota).</p>
     </div>
   </div>
-<?php else: ?>
+<?php else : ?>
   <div class="card">
     <div class="card-header"><span class="icon">📋</span><h2>Seleccionar Materia</h2></div>
     <div class="card-body">
@@ -263,7 +263,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
   const turnoTxt = t => t === 'mañana' ? 'Mañana' : (t === 'tarde' ? 'Tarde' : '—');
 </script>
 
-<?php if ($es_admin): ?>
+<?php if ($es_admin) : ?>
 <script>
   const fCurso = document.getElementById('f-curso');
   let cursosOk = false;
@@ -305,7 +305,7 @@ $volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_doc
   fCurso.addEventListener('change', buscar);
   buscar();
 </script>
-<?php else: ?>
+<?php else : ?>
 <script>
   const selMateria = document.getElementById('sel-materia');
   const msgForm    = document.getElementById('msg-form');
