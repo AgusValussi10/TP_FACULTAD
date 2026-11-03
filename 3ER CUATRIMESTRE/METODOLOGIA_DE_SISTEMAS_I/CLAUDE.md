@@ -131,7 +131,7 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 ├── ci/
 │   ├── preparar_bd.sh          ← Recrea una base de prueba con los schemas en orden + seed (lo usa el pipeline)
 │   └── pipeline_local.sh       ← Corre lint + base + tests en local y mide cada etapa
-├── tests/                      ← Tests de integración (PHPUnit) de RFG07 por HTTP con sesiones reales
+├── tests/                      ← Tests de integración (PHPUnit) por HTTP con sesiones reales: RFG04, RFG05, RFG06, RFG07, RFG16
 ├── phpunit.xml
 ├── metricas/
 │   ├── metricas_git.py         ← Métricas de entrega desde el historial de git (TP Unidad 4)
@@ -145,8 +145,33 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 · Lint PHP → 2 · Tests RFG07
 (MariaDB 10.11 como servicio) → 3 · Build de la imagen Docker; en `main` publica
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
-Auto-Deploy = "After CI Checks Pass". Correr los tests en local:
-`MYSQLHOST=127.0.0.1 MYSQLUSER=root bash ci/pipeline_local.sh` (borra y recrea la base `educar_db`).
+Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
+
+**Tests de integración** (`phpunit.xml`, 42 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+`RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07) y `LegajoTest` (RFG16). Usan `tests/HttpClient.php`
+(un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
+`php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
+rearmar la base.
+
+**Correrlos en local SIEMPRE sobre una base aparte** (`ci/preparar_bd.sh` hace `DROP DATABASE` de `$MYSQLDATABASE`;
+sin la variable, borra `educar_db`):
+```bash
+MYSQLHOST=127.0.0.1 MYSQLUSER=root MYSQLDATABASE=educar_test bash ci/pipeline_local.sh   # lint + base + tests
+MYSQLHOST=127.0.0.1 MYSQLUSER=root MYSQLDATABASE=educar_test phpunit                      # solo tests, base ya armada
+```
+`preparar_bd.sh` quita la línea `USE educar_db;` de los `schema_sprint*.sql` al aplicarlos (antes, con otra base,
+esos schemas y sus seeds terminaban en `educar_db`).
+
+**En Windows con XAMPP** (Git Bash): XAMPP trae **PHP 8.0.30** y MariaDB 10.4, fuera del PATH. CI y Render usan 8.2;
+por eso `db_config.php` fija `mysqli_report(... STRICT)` (excepciones, como el default de 8.1+). Herramientas:
+- Composer en `~/bin/composer` (wrapper de `composer.phar` con `/c/xampp/php/php.exe`); `phpcs` 3.13 y
+  `phpunit` 9.6 instalados con `composer global require` en `%APPDATA%\Composer\vendor\bin`.
+- El PATH va en este orden: `%APPDATA%/Composer/vendor/bin` **antes** de `/c/xampp/php`, porque XAMPP trae un
+  PHPUnit viejo de PEAR que no anda en PHP 8. Más `/c/xampp/mysql/bin` para el cliente `mysql`.
+- Pre-commit (Husky 9, `.husky/pre-commit` en la raíz del repo): corre `php -l` y `phpcs` con `phpcs.xml` sobre los PHP
+  del sistema que entran al commit. Se activa con `npm install` en la raíz (`core.hooksPath = .husky/_`). Husky carga
+  `~/.config/husky/init.sh` antes de cada hook: ahí se exporta el PATH de arriba. Errores marcados con `[x]` se
+  corrigen con `phpcbf`. No usar `--no-verify`.
 
 Servidor: `start.sh` levanta `php -S` con `PHP_CLI_SERVER_WORKERS=4` (configurable en Render).
 `requerir_rol()` cierra la sesión (`session_write_close()`) apenas valida el rol: los endpoints de
@@ -170,6 +195,9 @@ Port:     MYSQLPORT     → 3306                (prod: 3307)
 Charset:  utf8
 Timezone: America/Argentina/Buenos_Aires (-03:00)
 ```
+
+Activa `mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT)` antes de conectar (default desde PHP 8.1; se fija
+para que PHP 8.0 se comporte igual). El error de conexión se captura con `try/catch` y responde HTTP 500 + JSON.
 
 ### Acceso con MySQL Workbench
 
@@ -746,7 +774,8 @@ Footer bg:           #1e293b
 | 3 | Validar en producción los cambios nuevos: tabla `consultas_notas` (se crea en `init_db.php` solo si ya existe `calificaciones`; si no, correr `schema_sprint3.sql`) y legajo con cuotas | RFG07/RFG16 | Alta |
 | 4 | Constantes asumidas sin confirmar con el equipo: `EDAD_MINIMA_INICIAL`, `LIMITE_FALTAS`, `PORCENTAJE_RECARGO_MORA` (10%), `DIAS_LIMITE_REGULARIZACION` (60), `DIA_LIMITE_RESERVA_SERVICIOS` (25) | varios | Media |
 | 6 | Reglas de recuperatorios asumidas (lunes a viernes, sin fechas pasadas, estado por nota) — confirmar con el equipo | RFG06 | Media |
-| 7 | El padre ve los recuperatorios solo por notificaciones (no hay sección propia en su portal) | RFG06 | Baja |
+| 7 | El padre ve los recuperatorios solo por notificaciones: no tiene una sección propia en su portal (el alumno sí la tiene) | RFG06 | Baja |
+| 8 | Cypress (`cypress/e2e/rfg04_admision.cy.js`) no se corrió en la verificación del PR #13 | RFG04 | Baja |
 | 5 | `seed_datos.php` no es idempotente con materias (la clave única `uq_materia_curso` y la limpieza las aplica `init_db.php`) | Seed/BD | Baja |
 
 ### Sesión 03/11/2026 — rama `fix/planificaciones-recuperatorios-legajo`
@@ -777,8 +806,20 @@ Causas encontradas y arreglos:
 
 **Para producción (Render) después del merge:** el deploy corre `init_db.php` solo; después abrir una vez
 `/database/seed_legajo.php` para cargar los datos personales de demo. Probado en local con PHP 8.3 + MariaDB 10.11
-(flujos de admin y docente en Chromium con Playwright). No se pudo correr PHPUnit en esa sesión; correr
-`ci/pipeline_local.sh` antes de mergear.
+(flujos de admin y docente en Chromium con Playwright).
+
+**Verificación en Windows (03/11/2026, PR #13, sin mergear):** pipeline local sobre `educar_test` (PHP 8.0 + MariaDB
+10.4 de XAMPP) y CI (PHP 8.2 + MariaDB 10.11): 42 tests OK; SonarCloud OK; prueba manual completa de la lista del PR OK.
+Lo que apareció al verificar (commits aparte en la misma rama):
+- **ABM pisaba el legajo de otro alumno con DNI repetido:** `INSERT … ON DUPLICATE KEY UPDATE` sobre `alumnos_datos`
+  (dos claves únicas: `alumno_id` y `uq_alumno_dni`) actualizaba la fila del dueño del DNI y le borraba los datos.
+  Ahora `SELECT … FOR UPDATE` + `UPDATE`/`INSERT` explícito; el DNI repetido da error y rollback. **No usar
+  `ON DUPLICATE KEY UPDATE` en tablas con más de una clave única.**
+- `ci/preparar_bd.sh` aplicaba los `schema_sprint*.sql` sobre `educar_db` aunque se pidiera otra base (`USE educar_db`).
+- `db_config.php` con `mysqli_report` para PHP 8.0; `phpcs` corregido en los archivos del fix; `<label for>` en el
+  formulario de Gestión de Alumnos (SonarCloud lo marcaba como bug de accesibilidad).
+- Tests nuevos: `RecuperatoriosTest`, `PlanificacionTest`, `LegajoTest` (ver "Tests de integración" arriba).
+- Cypress (`cypress/e2e/`) no se corrió en esta verificación.
 
 ### Próximos pasos (cierre de sesión 26/10/2026)
 
@@ -793,7 +834,7 @@ Por prioridad:
 
 Ojo con git: el repo real está en `TP_FACULTAD/`, no en esta carpeta. Si aparece un `.git` dentro de `METODOLOGIA_DE_SISTEMAS_I/` (pasó una vez, de origen desconocido) los commits van a ese repo anidado y no al real; borrarlo antes de commitear. Aún no se hizo `git push` de los commits de esta sesión.
 
-Herramientas locales: PHP 8.2 y MariaDB de XAMPP (`xampp/php/php.exe`, `xampp/mysql`) sirven para lintear y probar; el `educar_db` local es de desarrollo, usar una base temporal para pruebas.
+Herramientas locales: PHP 8.0.30 y MariaDB 10.4 de XAMPP (`xampp/php/php.exe`, `xampp/mysql`) sirven para lintear y probar (ver "En Windows con XAMPP" arriba); el `educar_db` local es de desarrollo, para pruebas usar `educar_test`.
 
 ### Notas técnicas importantes
 
