@@ -95,20 +95,30 @@ try {
         $stmt->close();
     }
 
+    // UPDATE o INSERT explícitos, no "INSERT ... ON DUPLICATE KEY UPDATE": alumnos_datos
+    // tiene dos claves únicas (alumno_id y dni) y con un DNI repetido el upsert actualizaba
+    // la fila del OTRO alumno en vez de fallar. Así el DNI repetido da error 1062.
+    // FOR UPDATE bloquea la fila (o el hueco) hasta el commit, para que dos guardados
+    // simultáneos del mismo alumno no intenten insertar los dos.
+    $stmt = $conn->prepare("SELECT 1 FROM alumnos_datos WHERE alumno_id = ? FOR UPDATE");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $existe = $stmt->get_result()->num_rows > 0;
+    $stmt->close();
+
     $stmt = $conn->prepare(
-        "INSERT INTO alumnos_datos
-            (alumno_id, dni, fecha_nacimiento, domicilio, telefono, email, tutor_nombre,
-             contacto_emergencia, obra_social, observaciones_salud, actualizado_en)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE
-            dni = VALUES(dni), fecha_nacimiento = VALUES(fecha_nacimiento), domicilio = VALUES(domicilio),
-            telefono = VALUES(telefono), email = VALUES(email), tutor_nombre = VALUES(tutor_nombre),
-            contacto_emergencia = VALUES(contacto_emergencia), obra_social = VALUES(obra_social),
-            observaciones_salud = VALUES(observaciones_salud), actualizado_en = NOW()"
+        $existe
+            ? "UPDATE alumnos_datos SET
+                  dni = ?, fecha_nacimiento = ?, domicilio = ?, telefono = ?, email = ?, tutor_nombre = ?,
+                  contacto_emergencia = ?, obra_social = ?, observaciones_salud = ?, actualizado_en = NOW()
+               WHERE alumno_id = ?"
+            : "INSERT INTO alumnos_datos
+                  (dni, fecha_nacimiento, domicilio, telefono, email, tutor_nombre,
+                   contacto_emergencia, obra_social, observaciones_salud, alumno_id, actualizado_en)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())"
     );
     $stmt->bind_param(
-        'isssssssss',
-        $id,
+        'sssssssssi',
         $d['dni'],
         $d['fecha_nacimiento'],
         $d['domicilio'],
@@ -117,7 +127,8 @@ try {
         $d['tutor_nombre'],
         $d['contacto_emergencia'],
         $d['obra_social'],
-        $d['observaciones_salud']
+        $d['observaciones_salud'],
+        $id
     );
     $stmt->execute();
     $stmt->close();
@@ -126,6 +137,8 @@ try {
 } catch (mysqli_sql_exception $e) {
     $conn->rollback();
     if ($e->getCode() === 1062) {
+        // MariaDB nombra la clave "uq_alumno_dni"; MySQL 8 "alumnos_datos.uq_alumno_dni":
+        // se busca como subcadena para cubrir los dos.
         $msg = str_contains($e->getMessage(), 'uq_alumno_dni')
             ? 'Ya hay otro alumno cargado con ese DNI.'
             : 'El nombre de usuario ya existe.';
