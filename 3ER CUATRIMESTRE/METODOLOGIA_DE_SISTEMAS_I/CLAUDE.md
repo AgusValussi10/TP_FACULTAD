@@ -39,10 +39,12 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── schema_sprint3.sql      ← Sprint 3: planificaciones, recuperatorios
 │   ├── schema_sprint4.sql      ← Sprint 4: sanciones; agrega columna capacidad a cursos
 │   ├── schema_sprint5.sql      ← Sprint 5: deportes, inscripciones_deportivas, cuotas; agrega alumno_curso.condicion
+│   ├── schema_legajo.sql       ← alumnos_datos: datos personales del legajo (DNI, nacimiento, contactos, salud)
+│   ├── seed_legajo.php         ← Datos personales de demo para los 10 alumnos (idempotente, no pisa ediciones)
 │   ├── setup_demo.php          ← Usuarios base de demo (admin, 2 alumnos, 2 docentes, 2 padres, enfermeria)
 │   ├── seed_datos.php          ← Seed masivo: 13 usuarios nuevos + todos los datos de demostración (secciones 1–18)
 │   └── seed_parte2.php         ← Continuación del seed desde sección 11 (útil si seed_datos falla a mitad)
-├── init_db.php                 ← Corre en el deploy (Render): crea tablas públicas, Sprint 5, consultas_notas (si existe calificaciones), agrega columnas faltantes y elimina materias duplicadas
+├── init_db.php                 ← Corre en el deploy (Render): crea tablas públicas, Sprint 3/4 (planificaciones, recuperatorios, sanciones), Sprint 5, alumnos_datos, consultas_notas; agrega columnas faltantes y elimina materias duplicadas
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -65,14 +67,15 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── enfermeria.php                 ← UI registro de atenciones (enfermería)
 │   ├── enfermeria_alumnos.php         ← GET → lista de alumnos para enfermería
 │   ├── enfermeria_guardar.php         ← POST → guardar atención
-│   ├── planificacion.php              ← UI planificación anual (docente)
-│   ├── planificacion_guardar.php      ← POST → guardar planificación
-│   ├── planificacion_listar.php       ← GET → JSON planificaciones
-│   ├── recuperatorios.php             ← UI gestión de recuperatorios (docente)
-│   ├── recuperatorio_guardar.php      ← POST → guardar recuperatorio
-│   ├── recuperatorio_listar.php       ← GET → JSON recuperatorios
-│   ├── legajo.php                     ← UI legajo completo del alumno (admin/docente)
-│   ├── legajo_listar.php              ← GET → JSON datos de legajo (situación económica solo para admin)
+│   ├── planificacion.php              ← UI planificación anual: docente carga/edita; admin ve el control de todas (cargadas/pendientes)
+│   ├── planificacion_guardar.php      ← POST docente → guardar planificación
+│   ├── planificacion_listar.php       ← GET docente (su materia) / admin (todas las materias del año, filtro curso)
+│   ├── recuperatorios.php             ← UI recuperatorios: docente programa/edita/califica/elimina; admin ve todos (solo lectura)
+│   ├── recuperatorio_guardar.php      ← POST docente → crear (sin id) o editar (id); estado sale de la nota; notifica al padre
+│   ├── recuperatorio_eliminar.php     ← POST docente → eliminar un recuperatorio de sus materias
+│   ├── recuperatorio_listar.php       ← GET docente (?materia_id) / admin (?curso_id&estado)
+│   ├── legajo.php                     ← UI legajo completo (admin/docente), ?alumno_id=N lo abre directo, imprimible
+│   ├── legajo_listar.php              ← GET → JSON legajo completo (situación económica solo para admin)
 │   ├── consulta_nota_guardar.php      ← POST padre → consulta sobre una calificación (RFG07)
 │   ├── consulta_nota_listar.php       ← GET padre (sus consultas) / docente (las de sus materias) → JSON
 │   ├── consulta_nota_responder.php    ← POST docente → responder consulta y notificar al padre
@@ -88,9 +91,9 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── vacantes_actualizar.php        ← POST → actualizar puesto vacante
 │   ├── vacantes_listar.php            ← GET → JSON puestos vacantes
 │   ├── roles_listar.php               ← GET → JSON roles disponibles
-│   ├── alumnos.php                    ← UI ABM de alumnos (admin) — alta/baja/modificación
+│   ├── alumnos.php                    ← UI ABM de alumnos (admin) — alta/baja/modificación + datos del legajo; ?editar=N abre el modal
 │   ├── alumnos_listar.php             ← GET → JSON lista de alumnos con curso
-│   ├── alumno_guardar.php             ← POST → crear o actualizar alumno
+│   ├── alumno_guardar.php             ← POST → crear o actualizar alumno y sus datos personales (alumnos_datos)
 │   └── alumno_eliminar.php            ← POST → suspender/reactivar/eliminar alumno
 ├── noticias/
 │   ├── listar.php              ← GET público → JSON de noticias publicadas
@@ -363,6 +366,7 @@ Datos de conexión:
 | anio | SMALLINT UNSIGNED | |
 | contenidos | TEXT | |
 | observaciones | TEXT NULL | |
+| actualizado_en | DATETIME NULL | Última edición (DATETIME y no TIMESTAMP: MySQL 5.5 admite un solo TIMESTAMP con CURRENT_TIMESTAMP) |
 | — | UNIQUE | (materia_id, anio) — un plan por materia/año |
 
 **`recuperatorios`** — `schema_sprint3.sql`
@@ -374,7 +378,8 @@ Datos de conexión:
 | periodo | ENUM | '1er Trimestre', '2do Trimestre', '3er Trimestre', 'Anual' |
 | fecha | DATE NULL | |
 | turno | ENUM NULL | 'mañana', 'tarde' |
-| estado | ENUM | 'pendiente', 'aprobado', 'desaprobado' |
+| estado | ENUM | 'pendiente', 'aprobado', 'desaprobado' — lo calcula el backend a partir de la nota |
+| nota | TINYINT NULL | Nota del recuperatorio (agregada nov/2026) |
 | — | UNIQUE | (alumno_id, materia_id, periodo) |
 
 **`consultas_notas`** — `schema_sprint3.sql` (RFG07)
@@ -394,6 +399,12 @@ Datos de conexión:
 - `inscripciones_deportivas`: UNIQUE (alumno_id, deporte_id).
 - `cuotas`: alumno_id, concepto ('matricula'/'cuota'), mes, anio, importe, recargo, fecha_vencimiento, estado ('pendiente'/'pagada'), fecha_pago, metodo_pago (ENUM efectivo/transferencia/tarjeta_debito/tarjeta_credito/otro, NULL en pagos anteriores al recibo), referencia_pago (opcional, 60 chars), registrado_por (admin que cobró) — UNIQUE (alumno_id, concepto, mes, anio).
 - `alumno_curso.condicion`: ENUM 'regular' / 'pendiente_regularizacion' (RFG13).
+
+**`alumnos_datos`** — `schema_legajo.sql` (lo crea `init_db.php`)
+Datos personales del legajo, 1:1 con `usuarios` (rol alumno). Todo opcional: dni (UNIQUE), fecha_nacimiento,
+domicilio, telefono, email, tutor_nombre, contacto_emergencia, obra_social, observaciones_salud, solicitud_id
+(solicitud de inscripción de origen), actualizado_en. Se completa al admitir (fecha de nacimiento, tutor, teléfono y
+email salen de la solicitud) y desde el ABM de alumnos (DNI, domicilio, salud, etc.).
 
 **`sanciones`** — `schema_sprint4.sql`
 | Campo | Tipo | Notas |
@@ -734,7 +745,40 @@ Footer bg:           #1e293b
 | 2 | Recuperación de contraseña: modal sin backend | — | Media |
 | 3 | Validar en producción los cambios nuevos: tabla `consultas_notas` (se crea en `init_db.php` solo si ya existe `calificaciones`; si no, correr `schema_sprint3.sql`) y legajo con cuotas | RFG07/RFG16 | Alta |
 | 4 | Constantes asumidas sin confirmar con el equipo: `EDAD_MINIMA_INICIAL`, `LIMITE_FALTAS`, `PORCENTAJE_RECARGO_MORA` (10%), `DIAS_LIMITE_REGULARIZACION` (60), `DIA_LIMITE_RESERVA_SERVICIOS` (25) | varios | Media |
+| 6 | Reglas de recuperatorios asumidas (lunes a viernes, sin fechas pasadas, estado por nota) — confirmar con el equipo | RFG06 | Media |
+| 7 | El padre ve los recuperatorios solo por notificaciones (no hay sección propia en su portal) | RFG06 | Baja |
 | 5 | `seed_datos.php` no es idempotente con materias (la clave única `uq_materia_curso` y la limpieza las aplica `init_db.php`) | Seed/BD | Baja |
+
+### Sesión 03/11/2026 — rama `fix/planificaciones-recuperatorios-legajo`
+
+Lo que se vio en clase: "planificaciones y recuperatorios no andan" y "el legajo no muestra toda la info del alumno".
+
+Causas encontradas y arreglos:
+1. **Admin rebotaba a la landing:** el portal admin tiene botones a Planificaciones y Recuperatorios, pero esas páginas
+   solo aceptaban rol docente (`header('Location: /')`). Ahora el admin entra a una vista propia: control de
+   planificaciones por año/curso (cargadas vs. pendientes, ver contenidos) y listado de todos los recuperatorios con filtros.
+2. **Tablas faltantes en Render:** `planificaciones`, `recuperatorios` y `sanciones` solo se creaban corriendo
+   `schema_sprint3/4.sql` a mano (que hacen `USE educar_db`). Si faltaban, los endpoints tiraban excepción. Ahora las crea
+   `init_db.php` en cada deploy (idempotente, probado sobre una base sin ellas).
+3. **Errores invisibles:** en planificación el mensaje estaba dentro del formulario oculto (si fallaba "Cargar" no se veía
+   nada) y los endpoints no usaban `errores_como_json()`. Corregido en planificación, recuperatorios y legajo.
+4. **Recuperatorios del docente rediseñado:** el listado repetía al alumno una vez por recuperatorio y cambiar el período
+   creaba otro registro en lugar de editar. Ahora: formulario para programar/editar, tabla de recuperatorios con
+   Editar/Eliminar, tabla de alumnos con promedio y botón "+ Programar". Reglas (asumidas, confirmar con el equipo):
+   lunes a viernes; al programar/reprogramar no se aceptan fechas pasadas; la nota exige fecha ya ocurrida; el estado sale
+   de la nota (`NOTA_APROBACION`); uno por alumno/materia/período. Se notifica al padre al programar, reprogramar y al
+   cargar la nota (`tipo = 'recuperatorio'`). Resaltados en rojo los pendientes con fecha pasada (falta la nota).
+5. **Legajo completo:** nueva tabla `alumnos_datos` + campos en el ABM de alumnos. El legajo muestra indicadores
+   (promedio, % asistencia, materias en riesgo, faltas, recuperatorios, sanciones, deuda), datos personales, familia y
+   contactos (tutor declarado + padres con usuario), salud (obra social, observaciones, enfermería), rendimiento por
+   materia con docente, calificaciones con trimestre, asistencia con presentes/tardes/faltas/%/semáforo, recuperatorios
+   con nota, sanciones, deportes y servicios, consultas de notas y notificaciones, y situación económica (solo admin).
+   Botones "Imprimir / PDF" y "Editar datos"; el ABM tiene botón "Legajo" por alumno.
+
+**Para producción (Render) después del merge:** el deploy corre `init_db.php` solo; después abrir una vez
+`/database/seed_legajo.php` para cargar los datos personales de demo. Probado en local con PHP 8.3 + MariaDB 10.11
+(flujos de admin y docente en Chromium con Playwright). No se pudo correr PHPUnit en esa sesión; correr
+`ci/pipeline_local.sh` antes de mergear.
 
 ### Próximos pasos (cierre de sesión 26/10/2026)
 

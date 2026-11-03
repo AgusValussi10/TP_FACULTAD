@@ -43,5 +43,6 @@ correr_php seed_datos.php
 correr_sql database/schema_sprint5.sql
 echo "    PHP  init_db.php"
 php init_db.php
+correr_php seed_legajo.php                  # datos personales del legajo (necesita alumnos_datos de init_db)
 
 echo "==> Base lista"

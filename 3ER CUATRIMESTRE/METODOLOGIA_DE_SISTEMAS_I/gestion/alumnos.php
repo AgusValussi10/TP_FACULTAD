@@ -12,10 +12,13 @@ require_once '../database/db_config.php';
 $alumnos = [];
 $res = $conn->query(
     "SELECT u.id, u.nombre, u.usuario, u.activo,
-            c.nombre AS curso, ac.curso_id
+            c.nombre AS curso, ac.curso_id,
+            d.dni, d.fecha_nacimiento, d.domicilio, d.telefono, d.email, d.tutor_nombre,
+            d.contacto_emergencia, d.obra_social, d.observaciones_salud
      FROM usuarios u
      LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id
      LEFT JOIN cursos c ON c.id = ac.curso_id
+     LEFT JOIN alumnos_datos d ON d.alumno_id = u.id
      WHERE u.rol = 'alumno'
      ORDER BY u.activo DESC, u.nombre"
 );
@@ -110,7 +113,7 @@ $conn->close();
     .overlay.open { display: flex; }
     @keyframes popIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }
 
-    .modal-box { background: #fff; border-radius: 20px; padding: 2rem; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: popIn .2s ease; }
+    .modal-box { background: #fff; border-radius: 20px; padding: 2rem; width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: popIn .2s ease; }
     .modal-box h3 { font-size: 1.1rem; font-weight: 900; color: var(--azul); margin-bottom: 1.1rem; }
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
     .modal-grid .span2 { grid-column: 1/-1; }
@@ -119,6 +122,9 @@ $conn->close();
     .modal-grid select { width: 100%; padding: .6rem .8rem; border: 2px solid var(--borde); border-radius: 10px; font-size: .88rem; font-family: inherit; transition: border-color .2s; }
     .modal-grid input:focus,
     .modal-grid select:focus { outline: none; border-color: var(--naranja); }
+    .modal-grid textarea { width: 100%; padding: .6rem .8rem; border: 2px solid var(--borde); border-radius: 10px; font-size: .88rem; font-family: inherit; resize: vertical; min-height: 64px; }
+    .modal-sub { grid-column: 1/-1; font-size: .78rem; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: var(--naranja); border-bottom: 2px solid var(--borde); padding-bottom: .3rem; margin-top: .6rem; }
+    .btn-legajo { text-decoration: none; display: inline-block; }
     .modal-error { color: #DC2626; font-size: .83rem; font-weight: 700; min-height: 1.2rem; margin-top: .5rem; }
     .modal-btns { display: flex; gap: .7rem; justify-content: flex-end; margin-top: 1.2rem; }
     .btn-cancelar  { background: #F3F4F6; color: #374151; border: none; border-radius: 10px; padding: .6rem 1.2rem; font-weight: 800; cursor: pointer; font-family: inherit; }
@@ -180,7 +186,7 @@ $conn->close();
         <?php endif; ?>
       </div>
 
-      <input type="text" class="busqueda" id="busqueda" placeholder="Buscar por nombre o usuario…" oninput="filtrar()">
+      <input type="text" class="busqueda" id="busqueda" placeholder="Buscar por nombre, usuario o DNI…" oninput="filtrar()">
 
       <?php if (empty($alumnos)): ?>
         <p class="empty-msg">No hay alumnos registrados aún.</p>
@@ -192,6 +198,7 @@ $conn->close();
             <th>#</th>
             <th>Nombre</th>
             <th>Usuario</th>
+            <th>DNI</th>
             <th>Curso</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -201,10 +208,12 @@ $conn->close();
           <?php foreach ($alumnos as $al): ?>
           <tr id="row-<?= $al['id'] ?>"
               data-nombre="<?= strtolower(htmlspecialchars($al['nombre'])) ?>"
-              data-usuario="<?= strtolower(htmlspecialchars($al['usuario'])) ?>">
+              data-usuario="<?= strtolower(htmlspecialchars($al['usuario'])) ?>"
+              data-dni="<?= htmlspecialchars($al['dni'] ?? '') ?>">
             <td><?= $al['id'] ?></td>
             <td><strong><?= htmlspecialchars($al['nombre']) ?></strong></td>
             <td><?= htmlspecialchars($al['usuario']) ?></td>
+            <td><?= $al['dni'] ? htmlspecialchars($al['dni']) : '<span style="color:#9CA3AF" title="Faltan datos personales">sin cargar</span>' ?></td>
             <td><?= $al['curso'] ? htmlspecialchars($al['curso']) : '<span style="color:#9CA3AF">—</span>' ?></td>
             <td id="estado-<?= $al['id'] ?>">
               <span class="estado-badge <?= $al['activo'] ? 'al-activo' : 'al-inactivo' ?>">
@@ -213,10 +222,8 @@ $conn->close();
             </td>
             <td>
               <div class="acciones" id="acc-<?= $al['id'] ?>">
-                <button class="btn-accion btn-editar"
-                  onclick='abrirModal(<?= json_encode(['id'=>(int)$al['id'],'nombre'=>$al['nombre'],'usuario'=>$al['usuario'],'curso_id'=>(int)($al['curso_id'] ?? 0)]) ?>)'>
-                  Editar
-                </button>
+                <button class="btn-accion btn-editar" onclick="abrirModal(ALUMNOS[<?= (int)$al['id'] ?>])">Editar</button>
+                <a class="btn-accion btn-editar btn-legajo" href="legajo.php?alumno_id=<?= (int)$al['id'] ?>">Legajo</a>
                 <?php if ($al['activo']): ?>
                 <button class="btn-accion btn-suspender" onclick="accion(<?= $al['id'] ?>,'suspender')">Suspender</button>
                 <?php else: ?>
@@ -262,6 +269,46 @@ $conn->close();
           <?php endforeach; ?>
         </select>
       </div>
+
+      <div class="modal-sub">Datos personales (legajo)</div>
+      <div>
+        <label>DNI</label>
+        <input type="text" id="al-dni" inputmode="numeric" placeholder="Sin puntos">
+      </div>
+      <div>
+        <label>Fecha de nacimiento</label>
+        <input type="date" id="al-fecha_nacimiento" max="<?= date('Y-m-d') ?>">
+      </div>
+      <div class="span2">
+        <label>Domicilio</label>
+        <input type="text" id="al-domicilio" placeholder="Calle, número, localidad">
+      </div>
+      <div>
+        <label>Teléfono</label>
+        <input type="text" id="al-telefono" placeholder="362 4xxxxxx">
+      </div>
+      <div>
+        <label>Email de contacto</label>
+        <input type="email" id="al-email" placeholder="familia@mail.com">
+      </div>
+
+      <div class="modal-sub">Familia y salud</div>
+      <div>
+        <label>Tutor declarado</label>
+        <input type="text" id="al-tutor_nombre" placeholder="Nombre del padre/madre/tutor">
+      </div>
+      <div>
+        <label>Contacto de emergencia</label>
+        <input type="text" id="al-contacto_emergencia" placeholder="Nombre (vínculo) · teléfono">
+      </div>
+      <div class="span2">
+        <label>Obra social</label>
+        <input type="text" id="al-obra_social" placeholder="Ej: OSDE, InSSSeP, sin obra social">
+      </div>
+      <div class="span2">
+        <label>Observaciones de salud</label>
+        <textarea id="al-observaciones_salud" placeholder="Alergias, medicación, condiciones a tener en cuenta…"></textarea>
+      </div>
     </div>
     <div class="modal-error" id="al-error"></div>
     <div class="modal-btns">
@@ -272,10 +319,21 @@ $conn->close();
 </div>
 
 <script>
+  // Datos de cada alumno para el modal de edición (incluye los del legajo).
+  const ALUMNOS = <?= json_encode(array_column(array_map(fn($al) => [
+      'id' => (int)$al['id'], 'nombre' => $al['nombre'], 'usuario' => $al['usuario'],
+      'curso_id' => (int)($al['curso_id'] ?? 0),
+      'dni' => $al['dni'], 'fecha_nacimiento' => $al['fecha_nacimiento'], 'domicilio' => $al['domicilio'],
+      'telefono' => $al['telefono'], 'email' => $al['email'], 'tutor_nombre' => $al['tutor_nombre'],
+      'contacto_emergencia' => $al['contacto_emergencia'], 'obra_social' => $al['obra_social'],
+      'observaciones_salud' => $al['observaciones_salud'],
+  ], $alumnos), null, 'id'), JSON_FORCE_OBJECT) ?>;
+  const CAMPOS_LEGAJO = ['dni','fecha_nacimiento','domicilio','telefono','email','tutor_nombre','contacto_emergencia','obra_social','observaciones_salud'];
+
   function filtrar() {
     const q = (document.getElementById('busqueda').value || '').toLowerCase().trim();
     document.querySelectorAll('#tabla-alumnos tbody tr').forEach(tr => {
-      tr.style.display = (!q || tr.dataset.nombre.includes(q) || tr.dataset.usuario.includes(q)) ? '' : 'none';
+      tr.style.display = (!q || tr.dataset.nombre.includes(q) || tr.dataset.usuario.includes(q) || tr.dataset.dni.includes(q)) ? '' : 'none';
     });
   }
 
@@ -288,6 +346,7 @@ $conn->close();
     document.getElementById('al-password').value         = '';
     document.getElementById('al-pass-label').textContent = nuevo ? 'Contraseña' : 'Nueva contraseña (dejar vacío para no cambiar)';
     document.getElementById('al-curso').value            = nuevo ? '0' : String(al.curso_id || 0);
+    CAMPOS_LEGAJO.forEach(c => { document.getElementById('al-' + c).value = nuevo ? '' : (al[c] || ''); });
     document.getElementById('al-error').textContent      = '';
     document.getElementById('overlay').classList.add('open');
   }
@@ -320,12 +379,16 @@ $conn->close();
     fd.append('usuario', usuario);
     fd.append('password', password);
     fd.append('curso_id', curso_id);
+    CAMPOS_LEGAJO.forEach(c => fd.append(c, document.getElementById('al-' + c).value.trim()));
 
     try {
       const res  = await fetch('alumno_guardar.php', { method: 'POST', body: fd });
       const data = await res.json();
       if (!data.success) { errorEl.textContent = data.message; btn.disabled = false; return; }
-      location.reload();
+      // Si se vino desde un legajo (?editar=N), volver a ese legajo ya actualizado.
+      const editarUrl = new URLSearchParams(location.search).get('editar');
+      if (editarUrl && editarUrl === String(data.id)) location.href = 'legajo.php?alumno_id=' + data.id;
+      else location.href = 'alumnos.php';
     } catch {
       errorEl.textContent = 'Error de conexión.';
       btn.disabled = false;
@@ -372,6 +435,10 @@ $conn->close();
       alert('Error de conexión.');
     }
   }
+
+  // alumnos.php?editar=N abre directo el modal (lo usa el botón "Editar datos" del legajo).
+  const editarId = new URLSearchParams(location.search).get('editar');
+  if (editarId && ALUMNOS[editarId]) abrirModal(ALUMNOS[editarId]);
 </script>
 
 </body>

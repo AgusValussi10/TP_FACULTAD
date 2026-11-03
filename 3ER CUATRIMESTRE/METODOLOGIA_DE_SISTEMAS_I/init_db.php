@@ -75,6 +75,93 @@ foreach ($tablasSprint5 as $sql) {
     }
 }
 
+/** true si la tabla existe en la base actual. */
+function tabla_existe(mysqli $conn, string $tabla): bool
+{
+    $stmt = $conn->prepare("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?");
+    $stmt->bind_param('s', $tabla);
+    $stmt->execute();
+    $existe = (bool) $stmt->get_result()->fetch_row();
+    $stmt->close();
+    return $existe;
+}
+
+// Sprint 3/4 (RFG05/RFG06/RFG16): planificaciones, recuperatorios y sanciones.
+// Antes solo se creaban corriendo schema_sprint3/4.sql a mano (que hacen
+// "USE educar_db" y no sirven tal cual en Render); si faltaban, los endpoints
+// tiraban excepción y la pantalla quedaba "sin andar". Dependen de materias.
+if (tabla_existe($conn, 'materias')) {
+    $tablasSprint34 = [
+        "CREATE TABLE IF NOT EXISTS planificaciones (
+            id             INT AUTO_INCREMENT PRIMARY KEY,
+            materia_id     INT NOT NULL,
+            anio           SMALLINT UNSIGNED NOT NULL,
+            contenidos     TEXT NOT NULL,
+            observaciones  TEXT,
+            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            actualizado_en DATETIME NULL DEFAULT NULL,
+            UNIQUE KEY uq_plan (materia_id, anio),
+            FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+        "CREATE TABLE IF NOT EXISTS recuperatorios (
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            alumno_id  INT NOT NULL,
+            materia_id INT NOT NULL,
+            periodo    ENUM('1er Trimestre','2do Trimestre','3er Trimestre','Anual') NOT NULL DEFAULT 'Anual',
+            fecha      DATE NULL,
+            turno      ENUM('mañana','tarde') NULL,
+            estado     ENUM('pendiente','aprobado','desaprobado') NOT NULL DEFAULT 'pendiente',
+            nota       TINYINT UNSIGNED NULL DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_recup (alumno_id, materia_id, periodo),
+            FOREIGN KEY (alumno_id)  REFERENCES usuarios(id) ON DELETE CASCADE,
+            FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    ];
+    foreach ($tablasSprint34 as $sql) {
+        if (!$conn->query($sql)) {
+            fwrite(STDERR, "Error en tablas de Sprint 3: " . $conn->error . PHP_EOL);
+            exit(1);
+        }
+    }
+}
+$tablasUsuarios = [
+    "CREATE TABLE IF NOT EXISTS sanciones (
+        id             INT AUTO_INCREMENT PRIMARY KEY,
+        alumno_id      INT NOT NULL,
+        tipo           ENUM('apercibimiento','suspension','otra') NOT NULL,
+        descripcion    TEXT NOT NULL,
+        fecha          DATE NOT NULL,
+        registrado_por INT NOT NULL,
+        created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (alumno_id)      REFERENCES usuarios(id) ON DELETE CASCADE,
+        FOREIGN KEY (registrado_por) REFERENCES usuarios(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    // Legajo completo: datos personales del alumno (database/schema_legajo.sql).
+    "CREATE TABLE IF NOT EXISTS alumnos_datos (
+        alumno_id           INT PRIMARY KEY,
+        dni                 VARCHAR(20)  NULL,
+        fecha_nacimiento    DATE         NULL,
+        domicilio           VARCHAR(200) NULL,
+        telefono            VARCHAR(30)  NULL,
+        email               VARCHAR(150) NULL,
+        tutor_nombre        VARCHAR(100) NULL,
+        contacto_emergencia VARCHAR(150) NULL,
+        obra_social         VARCHAR(100) NULL,
+        observaciones_salud TEXT         NULL,
+        solicitud_id        INT          NULL,
+        actualizado_en      DATETIME     NULL DEFAULT NULL,
+        UNIQUE KEY uq_alumno_dni (dni),
+        FOREIGN KEY (alumno_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+];
+foreach ($tablasUsuarios as $sql) {
+    if (!$conn->query($sql)) {
+        fwrite(STDERR, "Error en sanciones/alumnos_datos: " . $conn->error . PHP_EOL);
+        exit(1);
+    }
+}
+
 // Columnas agregadas en sprints posteriores. Los schema_sprintN.sql usan
 // "ADD COLUMN IF NOT EXISTS", que es sintaxis de MariaDB y falla en MySQL,
 // así que se verifican acá contra information_schema (idempotente).
@@ -86,6 +173,10 @@ $columnas = [
     ['cuotas',                  'metodo_pago',             "ENUM('efectivo','transferencia','tarjeta_debito','tarjeta_credito','otro') NULL DEFAULT NULL"],
     ['cuotas',                  'referencia_pago',         "VARCHAR(60) NULL DEFAULT NULL"],
     ['cuotas',                  'registrado_por',          "INT NULL DEFAULT NULL"],
+    // Planificación: fecha de la última edición (DATETIME por compatibilidad con MySQL 5.5).
+    ['planificaciones',         'actualizado_en',          "DATETIME NULL DEFAULT NULL"],
+    // Recuperatorio: nota obtenida (el estado aprobado/desaprobado sale de ella).
+    ['recuperatorios',          'nota',                    "TINYINT UNSIGNED NULL DEFAULT NULL AFTER estado"],
 ];
 foreach ($columnas as [$tabla, $columna, $definicion]) {
     $stmt = $conn->prepare(
@@ -107,17 +198,6 @@ foreach ($columnas as [$tabla, $columna, $definicion]) {
         }
         echo "Columna agregada: $tabla.$columna" . PHP_EOL;
     }
-}
-
-/** true si la tabla existe en la base actual. */
-function tabla_existe(mysqli $conn, string $tabla): bool
-{
-    $stmt = $conn->prepare("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?");
-    $stmt->bind_param('s', $tabla);
-    $stmt->execute();
-    $existe = (bool) $stmt->get_result()->fetch_row();
-    $stmt->close();
-    return $existe;
 }
 
 // RFG07 (Sprint 3): consultas del padre sobre una calificación. Tiene FK a

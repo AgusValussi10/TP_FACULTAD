@@ -1,10 +1,13 @@
 <?php
 require_once '../auth/session.php';
-if (($_SESSION['rol'] ?? '') !== 'docente') {
+$rol_sesion = $_SESSION['rol'] ?? '';
+if (!in_array($rol_sesion, ['docente', 'admin'], true)) {
     header('Location: /');
     exit;
 }
-$nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
+$es_admin   = $rol_sesion === 'admin';
+$nombre     = htmlspecialchars($_SESSION['nombre'] ?? ($es_admin ? 'Administrador' : 'Docente'));
+$volver_url = $es_admin ? '../portals/portal_admin.php' : '../portals/portal_docente.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -106,6 +109,29 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
       font-size: .85rem; margin-bottom: 1rem;
     }
     .plan-existente strong { color: var(--azul); }
+
+    /* Vista de coordinación (admin) */
+    .container.ancho { max-width: 1100px; }
+    .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .resumen .stat { background: var(--blanco); border-radius: 14px; box-shadow: var(--sombra); padding: 1rem 1.2rem; }
+    .resumen .stat b { display: block; font-size: 1.6rem; font-weight: 900; color: var(--azul); }
+    .resumen .stat span { font-size: .8rem; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: .05em; }
+    .resumen .stat.ok b { color: #059669; }
+    .resumen .stat.pend b { color: #DC2626; }
+    .barra { height: 8px; background: var(--borde); border-radius: 6px; overflow: hidden; margin-top: .5rem; }
+    .barra i { display: block; height: 100%; background: #059669; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    th { text-align: left; padding: .6rem .7rem; background: #F3F4F6; font-weight: 800; color: var(--azul); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+    td { padding: .6rem .7rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+    .badge { display: inline-block; padding: .2rem .65rem; border-radius: 12px; font-size: .75rem; font-weight: 800; white-space: nowrap; }
+    .badge-verde { background: #D1FAE5; color: #065F46; }
+    .badge-rojo  { background: #FEE2E2; color: #991B1B; }
+    .btn-sm { background: var(--blanco); color: var(--azul); border: 2px solid var(--borde); border-radius: 8px; padding: .3rem .8rem; font-weight: 800; font-size: .8rem; cursor: pointer; font-family: inherit; }
+    .btn-sm:hover { border-color: var(--naranja); color: var(--naranja); }
+    .detalle-plan td { background: var(--naranja-bg); line-height: 1.5; }
+    .detalle-plan .texto { white-space: pre-wrap; }
+    .detalle-plan h4 { font-size: .8rem; text-transform: uppercase; color: var(--azul); margin: .2rem 0 .3rem; }
+    .empty-msg { color: #6B7280; font-style: italic; padding: .5rem 0; }
   </style>
 </head>
 <body>
@@ -119,7 +145,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
     </div>
   </a>
   <div class="user-info">
-    <span class="user-badge">🎓 Docente</span>
+    <span class="user-badge"><?= $es_admin ? '🛡️ Administrador' : '🎓 Docente' ?></span>
     <a href="../auth/logout.php" class="btn-logout">Cerrar sesión</a>
   </div>
 </header>
@@ -127,11 +153,51 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
 <div class="welcome">
   <h1>Planificación Anual</h1>
   <p>Bienvenido/a, <?= $nombre ?></p>
-  <span class="rol-badge">Portal Docente</span>
+  <span class="rol-badge"><?= $es_admin ? 'Coordinación · Administración' : 'Portal Docente' ?></span>
 </div>
 
+<?php if ($es_admin): ?>
+<div class="container ancho">
+  <a href="<?= $volver_url ?>" class="volver">&larr; Volver al portal</a>
+
+  <div class="card">
+    <div class="card-header"><span class="icon">📁</span><h2>Control de planificaciones anuales</h2></div>
+    <div class="card-body">
+      <div class="form-row" style="margin-bottom:0;">
+        <label>Año lectivo
+          <input type="number" id="adm-anio" value="<?= date('Y') ?>" min="2024" max="2100">
+        </label>
+        <label>Curso
+          <select id="adm-curso"><option value="0">Todos los cursos</option></select>
+        </label>
+        <label>Estado
+          <select id="adm-estado">
+            <option value="">Todas</option>
+            <option value="cargada">Cargadas</option>
+            <option value="pendiente">Pendientes</option>
+          </select>
+        </label>
+        <button type="button" class="btn" id="adm-buscar">Ver</button>
+      </div>
+      <div class="msg" id="adm-msg"></div>
+    </div>
+  </div>
+
+  <div class="resumen" id="adm-resumen" style="display:none;"></div>
+
+  <div class="card" id="adm-tabla-card" style="display:none;">
+    <div class="card-header"><span class="icon">📚</span><h2 id="adm-titulo">Materias</h2></div>
+    <div class="card-body" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Curso</th><th>Materia</th><th>Docente</th><th>Estado</th><th>Última carga</th><th></th></tr></thead>
+        <tbody id="adm-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<?php else: ?>
 <div class="container">
-  <a href="../portals/portal_docente.php" class="volver">&larr; Volver al portal</a>
+  <a href="<?= $volver_url ?>" class="volver">&larr; Volver al portal</a>
 
   <div class="card">
     <div class="card-header"><span class="icon">📁</span><h2>Cargar / Actualizar Planificación</h2></div>
@@ -145,9 +211,10 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
         </label>
         <button type="button" class="btn" id="btn-cargar">Cargar</button>
       </div>
+      <div class="msg" id="msg"></div>
 
       <div id="plan-existente" style="display:none;" class="plan-existente">
-        <strong>Ya existe una planificación para esta materia y año</strong> (cargada el <span id="fecha-carga"></span>).
+        <strong>Ya existe una planificación para esta materia y año</strong> (cargada el <span id="fecha-carga"></span><span id="fecha-act"></span>).
         Podés editarla y guardar nuevamente.
       </div>
 
@@ -161,13 +228,95 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
           <label for="txt-obs">Observaciones (opcional)</label>
           <textarea id="txt-obs" style="min-height:80px;" placeholder="Recursos, metodología, adaptaciones, etc."></textarea>
         </div>
-        <div class="msg" id="msg"></div>
         <button type="button" class="btn" id="btn-guardar">💾 Guardar planificación</button>
       </div>
     </div>
   </div>
 </div>
 
+<?php endif; ?>
+
+<?php if ($es_admin): ?>
+<script>
+  const admAnio = document.getElementById('adm-anio');
+  const admCurso = document.getElementById('adm-curso');
+  const admEstado = document.getElementById('adm-estado');
+  const admMsg = document.getElementById('adm-msg');
+  const admTbody = document.getElementById('adm-tbody');
+  const admResumen = document.getElementById('adm-resumen');
+  const admCard = document.getElementById('adm-tabla-card');
+  let cursosCargados = false;
+  let ultimaLista = [];
+
+  function esc(str) {
+    if (str === null || str === undefined) return '—';
+    const d = document.createElement('div'); d.textContent = String(str); return d.innerHTML;
+  }
+
+  async function buscar() {
+    admMsg.textContent = 'Cargando…'; admMsg.style.color = '';
+    try {
+      const res = await fetch(`planificacion_listar.php?anio=${encodeURIComponent(admAnio.value)}&curso_id=${encodeURIComponent(admCurso.value)}`);
+      const data = await res.json();
+      if (!data.success) { admMsg.textContent = data.message || 'Error al cargar.'; admMsg.style.color = '#DC2626'; return; }
+
+      if (!cursosCargados) {
+        data.cursos.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nombre; admCurso.appendChild(o); });
+        cursosCargados = true;
+      }
+      ultimaLista = data.materias;
+      const r = data.resumen;
+      const pct = r.total ? Math.round(r.cargadas * 100 / r.total) : 0;
+      admResumen.innerHTML = `
+        <div class="stat"><b>${r.total}</b><span>Materias</span></div>
+        <div class="stat ok"><b>${r.cargadas}</b><span>Con planificación</span></div>
+        <div class="stat pend"><b>${r.pendientes}</b><span>Pendientes</span></div>
+        <div class="stat"><b>${pct}%</b><span>Avance ${data.anio}</span><div class="barra"><i style="width:${pct}%"></i></div></div>`;
+      admResumen.style.display = '';
+      document.getElementById('adm-titulo').textContent = `Materias — ciclo lectivo ${data.anio}`;
+      pintar();
+      admCard.style.display = '';
+      admMsg.textContent = '';
+    } catch {
+      admMsg.textContent = 'Error de conexión con el servidor.'; admMsg.style.color = '#DC2626';
+    }
+  }
+
+  function pintar() {
+    const filtro = admEstado.value;
+    const filas = ultimaLista.filter(m => !filtro || (filtro === 'cargada') === (m.plan_id !== null));
+    if (!filas.length) { admTbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No hay materias para ese filtro.</td></tr>'; return; }
+    admTbody.innerHTML = filas.map(m => {
+      const tiene = m.plan_id !== null;
+      const fecha = tiene ? (m.fecha_actualizacion ? `${m.fecha_actualizacion} (editada)` : m.fecha_carga) : '—';
+      return `<tr>
+        <td>${esc(m.curso)}</td>
+        <td><strong>${esc(m.materia)}</strong></td>
+        <td>${m.docente ? esc(m.docente) : '<span class="badge badge-rojo">Sin docente</span>'}</td>
+        <td>${tiene ? '<span class="badge badge-verde">Cargada</span>' : '<span class="badge badge-rojo">Pendiente</span>'}</td>
+        <td>${fecha}</td>
+        <td>${tiene ? `<button class="btn-sm" data-ver="${m.materia_id}">Ver</button>` : ''}</td>
+      </tr>
+      ${tiene ? `<tr class="detalle-plan" id="det-${m.materia_id}" style="display:none;"><td colspan="6">
+        <h4>Contenidos</h4><div class="texto">${esc(m.contenidos)}</div>
+        ${m.observaciones ? `<h4 style="margin-top:.8rem;">Observaciones</h4><div class="texto">${esc(m.observaciones)}</div>` : ''}
+      </td></tr>` : ''}`;
+    }).join('');
+  }
+
+  admTbody.addEventListener('click', e => {
+    const id = e.target.dataset.ver;
+    if (!id) return;
+    const fila = document.getElementById('det-' + id);
+    const abierta = fila.style.display !== 'none';
+    fila.style.display = abierta ? 'none' : '';
+    e.target.textContent = abierta ? 'Ver' : 'Ocultar';
+  });
+  document.getElementById('adm-buscar').addEventListener('click', buscar);
+  admEstado.addEventListener('change', () => { if (ultimaLista.length) pintar(); });
+  buscar();
+</script>
+<?php else: ?>
 <script>
   const selMateria  = document.getElementById('sel-materia');
   const selAnio     = document.getElementById('sel-anio');
@@ -190,6 +339,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
       const res  = await fetch('materias_docente.php');
       const data = await res.json();
       if (!data.success) { return; }
+      if (!data.materias.length) { setMsg('No tenés materias asignadas. Pedile al administrador que te asigne una.', '#DC2626'); return; }
       data.materias.forEach(m => {
         const opt = document.createElement('option');
         opt.value = m.id;
@@ -217,6 +367,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
         txtContenidos.value = data.plan.contenidos;
         txtObs.value = data.plan.observaciones || '';
         fechaCarga.textContent = data.plan.fecha_carga;
+        document.getElementById('fecha-act').textContent = data.plan.fecha_actualizacion ? `, última edición ${data.plan.fecha_actualizacion}` : '';
         planExist.style.display = '';
       } else {
         txtContenidos.value = '';
@@ -227,7 +378,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
       formPlan.style.display = '';
       setMsg('');
     } catch {
-      setMsg('Error de conexión.', '#DC2626');
+      setMsg('Error de conexión con el servidor.', '#DC2626');
     }
   });
 
@@ -254,8 +405,13 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
       const data = await res.json();
       if (data.success) {
         setMsg('✅ ' + data.message, '#059669');
+        if (planExist.style.display === 'none') {
+          fechaCarga.textContent = new Date().toLocaleDateString('es-AR');
+          document.getElementById('fecha-act').textContent = '';
+        } else {
+          document.getElementById('fecha-act').textContent = `, última edición ${new Date().toLocaleDateString('es-AR')}`;
+        }
         planExist.style.display = '';
-        fechaCarga.textContent = new Date().toLocaleDateString('es-AR');
       } else {
         setMsg(data.message || 'Error al guardar.', '#DC2626');
       }
@@ -266,6 +422,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Docente');
     }
   });
 </script>
+<?php endif; ?>
 
 </body>
 </html>
