@@ -194,7 +194,7 @@ $conn->close();
         <?php endif; ?>
       </div>
 
-      <input type="text" class="busqueda" id="busqueda" placeholder="Buscar por nombre, usuario o DNI…" oninput="filtrar()">
+      <input type="text" class="busqueda" id="busqueda" aria-label="Buscar alumno por nombre, usuario o DNI" placeholder="Buscar por nombre, usuario o DNI…" oninput="filtrar()">
 
       <?php if (empty($alumnos)) : ?>
         <p class="empty-msg">No hay alumnos registrados aún.</p>
@@ -257,19 +257,19 @@ $conn->close();
     <input type="hidden" id="al-id">
     <div class="modal-grid">
       <div class="span2">
-        <label>Nombre completo</label>
+        <label for="al-nombre">Nombre completo</label>
         <input type="text" id="al-nombre" placeholder="Ej: García, Ana Laura">
       </div>
       <div>
-        <label>Usuario (para login)</label>
+        <label for="al-usuario">Usuario (para login)</label>
         <input type="text" id="al-usuario" placeholder="ana.garcia">
       </div>
       <div>
-        <label id="al-pass-label">Contraseña</label>
+        <label for="al-password" id="al-pass-label">Contraseña</label>
         <input type="password" id="al-password" placeholder="Mínimo 4 caracteres">
       </div>
       <div class="span2">
-        <label>Curso</label>
+        <label for="al-curso">Curso</label>
         <select id="al-curso">
           <option value="0">— Sin asignar —</option>
           <?php foreach ($cursos as $c) : ?>
@@ -280,41 +280,41 @@ $conn->close();
 
       <div class="modal-sub">Datos personales (legajo)</div>
       <div>
-        <label>DNI</label>
+        <label for="al-dni">DNI</label>
         <input type="text" id="al-dni" inputmode="numeric" placeholder="Sin puntos">
       </div>
       <div>
-        <label>Fecha de nacimiento</label>
+        <label for="al-fecha_nacimiento">Fecha de nacimiento</label>
         <input type="date" id="al-fecha_nacimiento" max="<?= date('Y-m-d') ?>">
       </div>
       <div class="span2">
-        <label>Domicilio</label>
+        <label for="al-domicilio">Domicilio</label>
         <input type="text" id="al-domicilio" placeholder="Calle, número, localidad">
       </div>
       <div>
-        <label>Teléfono</label>
+        <label for="al-telefono">Teléfono</label>
         <input type="text" id="al-telefono" placeholder="362 4xxxxxx">
       </div>
       <div>
-        <label>Email de contacto</label>
+        <label for="al-email">Email de contacto</label>
         <input type="email" id="al-email" placeholder="familia@mail.com">
       </div>
 
       <div class="modal-sub">Familia y salud</div>
       <div>
-        <label>Tutor declarado</label>
+        <label for="al-tutor_nombre">Tutor declarado</label>
         <input type="text" id="al-tutor_nombre" placeholder="Nombre del padre/madre/tutor">
       </div>
       <div>
-        <label>Contacto de emergencia</label>
+        <label for="al-contacto_emergencia">Contacto de emergencia</label>
         <input type="text" id="al-contacto_emergencia" placeholder="Nombre (vínculo) · teléfono">
       </div>
       <div class="span2">
-        <label>Obra social</label>
+        <label for="al-obra_social">Obra social</label>
         <input type="text" id="al-obra_social" placeholder="Ej: OSDE, InSSSeP, sin obra social">
       </div>
       <div class="span2">
-        <label>Observaciones de salud</label>
+        <label for="al-observaciones_salud">Observaciones de salud</label>
         <textarea id="al-observaciones_salud" placeholder="Alergias, medicación, condiciones a tener en cuenta…"></textarea>
       </div>
     </div>
