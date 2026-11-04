@@ -67,12 +67,15 @@ $stmt->close();
 
 // Cuotas de cada hijo con su estado (RFG19): impagas y próximas a vencer arriba, pagadas aparte.
 $cuotas_hijos = [];
+$prioridad    = ['impaga' => 0, 'proxima_a_vencer' => 1, 'pendiente' => 2];
 foreach ($hijos as $h) {
-    $datos = cuotas_de_alumno($conn, (int) $h['id']);
+    $datos    = cuotas_de_alumno($conn, (int) $h['id']);
+    $abiertas = array_values(array_filter($datos['cuotas'], fn($c) => $c['estado_visual'] !== 'pagada'));
+    usort($abiertas, fn($a, $b) => [$prioridad[$a['estado_visual']], $a['vencimiento']] <=> [$prioridad[$b['estado_visual']], $b['vencimiento']]);
     $cuotas_hijos[] = [
         'hijo'     => $h,
         'resumen'  => $datos['resumen'],
-        'abiertas' => array_values(array_filter($datos['cuotas'], fn($c) => $c['estado_visual'] !== 'pagada')),
+        'abiertas' => $abiertas,
         'pagadas'  => array_values(array_filter($datos['cuotas'], fn($c) => $c['estado_visual'] === 'pagada')),
     ];
 }
