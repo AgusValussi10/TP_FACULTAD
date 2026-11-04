@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -23,6 +24,11 @@ if ($alumno_id > 0) {
     $cuotas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
     $conn->close();
+    // RFG19: estado para mostrar (impaga / próxima a vencer / pendiente / pagada).
+    foreach ($cuotas as &$c) {
+        $c['estado_visual'] = estado_visual_cuota($c['estado'], $c['fecha_vencimiento_iso']);
+    }
+    unset($c);
 
     echo json_encode(['success' => true, 'cuotas' => $cuotas]);
     exit;
