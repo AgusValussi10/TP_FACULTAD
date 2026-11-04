@@ -1,8 +1,10 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
 requerir_rol('admin');
+errores_como_json();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -33,14 +35,15 @@ $stmt = $conn->prepare(
 );
 $stmt->bind_param('isiids', $alumno_id, $concepto, $mes, $anio, $importe, $fecha_vencimiento);
 
-if (!$stmt->execute()) {
-    $stmt->close();
-    if ($conn->errno === 1062) {
-        echo json_encode(['success' => false, 'message' => 'Ya existe una cuota para ese concepto/período.']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Error al generar la cuota.']);
-    }
+// mysqli lanza excepciones (PHP 8.1+ y db_config.php): el duplicado llega como 1062.
+try {
+    $stmt->execute();
+} catch (mysqli_sql_exception $e) {
     $conn->close();
+    if ($e->getCode() !== 1062) {
+        throw $e;
+    }
+    echo json_encode(['success' => false, 'message' => 'Ya existe una cuota para ese concepto/período.']);
     exit;
 }
 $stmt->close();

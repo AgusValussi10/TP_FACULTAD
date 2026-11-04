@@ -49,6 +49,17 @@ const TIPOS_SANCION = ['apercibimiento' => 'Apercibimiento', 'suspension' => 'Su
 const SANCION_DIAS_ATRAS_MAX = 30;
 const SUSPENSION_DIAS_MAX = 30;
 
+// RFG19: una cuota impaga que vence dentro de estos días se muestra como "próxima a vencer".
+// Asunción (confirmar con el equipo).
+const DIAS_AVISO_VENCIMIENTO = 7;
+const ESTADOS_CUOTA = [
+    'impaga'           => 'Impaga (vencida)',
+    'proxima_a_vencer' => 'Próxima a vencer',
+    'pendiente'        => 'Pendiente',
+    'pagada'           => 'Pagada',
+];
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
 /**
  * Corta la ejecución con 403 + JSON si el rol de sesión no está permitido.
  * @param string|string[] $roles
@@ -265,4 +276,83 @@ function actualizar_condicion_regularizacion(mysqli $conn, int $alumno_id): void
     $upd->bind_param('si', $condicion, $alumno_id);
     $upd->execute();
     $upd->close();
+}
+
+/**
+ * RFG19: estado de una cuota para mostrar, calculado desde estado y vencimiento
+ * (no se guarda: cambia solo con el paso de los días).
+ */
+function estado_visual_cuota(string $estado, string $fecha_vencimiento): string
+{
+    if ($estado === 'pagada') {
+        return 'pagada';
+    }
+    $hoy = date('Y-m-d');
+    if ($fecha_vencimiento < $hoy) {
+        return 'impaga';
+    }
+    $aviso = date('Y-m-d', strtotime("+" . DIAS_AVISO_VENCIMIENTO . " days"));
+    return $fecha_vencimiento <= $aviso ? 'proxima_a_vencer' : 'pendiente';
+}
+
+/**
+ * RFG19 (Repository): cuotas de un alumno con su estado visual y un resumen de deuda.
+ * Lo usan el portal del padre, cuotas_estado.php y cuotas_listar.php (y la API móvil).
+ * A una impaga se le suma el recargo que correspondería si se pagara hoy.
+ *
+ * @return array{cuotas: array<int, array>, resumen: array}
+ */
+function cuotas_de_alumno(mysqli $conn, int $alumno_id, ?int $anio = null): array
+{
+    $anio_filtro = $anio ?? 0;
+    $stmt = $conn->prepare(
+        "SELECT id, concepto, mes, anio, importe, recargo, fecha_vencimiento, estado, fecha_pago, metodo_pago
+         FROM cuotas WHERE alumno_id = ? AND (? = 0 OR anio = ?)
+         ORDER BY fecha_vencimiento DESC, concepto"
+    );
+    $stmt->bind_param('iii', $alumno_id, $anio_filtro, $anio_filtro);
+    $stmt->execute();
+    $filas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $cuotas  = [];
+    $resumen = ['total_adeudado' => 0.0, 'total_vencido' => 0.0, 'impagas' => 0, 'proximas_a_vencer' => 0, 'proximo_vencimiento' => null];
+    foreach ($filas as $c) {
+        $estado  = estado_visual_cuota($c['estado'], $c['fecha_vencimiento']);
+        $importe = (float) $c['importe'];
+        $recargo = $estado === 'impaga' ? calcular_recargo($importe, $c['fecha_vencimiento']) : (float) $c['recargo'];
+        $total   = round($importe + $recargo, 2);
+        $cuotas[] = [
+            'id'              => (int) $c['id'],
+            'concepto'        => $c['concepto'] === 'matricula' ? 'Matrícula' : 'Cuota',
+            'periodo'         => MESES[(int) $c['mes'] - 1] . ' ' . $c['anio'],
+            'mes'             => (int) $c['mes'],
+            'anio'            => (int) $c['anio'],
+            'importe'         => $importe,
+            'recargo'         => $recargo,
+            'total'           => $total,
+            'vencimiento'     => $c['fecha_vencimiento'],
+            'vencimiento_ar'  => date('d/m/Y', strtotime($c['fecha_vencimiento'])),
+            'estado_visual'   => $estado,
+            'estado_texto'    => ESTADOS_CUOTA[$estado],
+            'fecha_pago_ar'   => $c['fecha_pago'] ? date('d/m/Y', strtotime($c['fecha_pago'])) : null,
+            'metodo_pago'     => $c['metodo_pago'] ? (METODOS_PAGO[$c['metodo_pago']] ?? $c['metodo_pago']) : null,
+        ];
+        if ($estado === 'pagada') {
+            continue;
+        }
+        $resumen['total_adeudado'] += $total;
+        if ($estado === 'impaga') {
+            $resumen['total_vencido'] += $total;
+            $resumen['impagas']++;
+            continue;
+        }
+        $resumen['proximas_a_vencer'] += $estado === 'proxima_a_vencer' ? 1 : 0;
+        if ($resumen['proximo_vencimiento'] === null || $c['fecha_vencimiento'] < $resumen['proximo_vencimiento']) {
+            $resumen['proximo_vencimiento'] = $c['fecha_vencimiento'];
+        }
+    }
+    $resumen['total_adeudado'] = round($resumen['total_adeudado'], 2);
+    $resumen['total_vencido']  = round($resumen['total_vencido'], 2);
+    return ['cuotas' => $cuotas, 'resumen' => $resumen];
 }

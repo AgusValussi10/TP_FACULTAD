@@ -183,6 +183,11 @@ $columnas = [
     // RFG14 (Sprint 6): sanciones con días de suspensión y aviso pendiente a la familia.
     ['sanciones',               'dias_suspension',         "TINYINT UNSIGNED NULL DEFAULT NULL"],
     ['sanciones',               'sin_contacto',            "TINYINT(1) NOT NULL DEFAULT 0"],
+    // RFG14b: anulación lógica de sanciones (DATETIME: la tabla ya tiene un TIMESTAMP).
+    ['sanciones',               'anulada',                 "TINYINT(1) NOT NULL DEFAULT 0"],
+    ['sanciones',               'motivo_anulacion',        "VARCHAR(500) NULL DEFAULT NULL"],
+    ['sanciones',               'anulada_por',             "INT NULL DEFAULT NULL"],
+    ['sanciones',               'anulada_en',              "DATETIME NULL DEFAULT NULL"],
 ];
 foreach ($columnas as [$tabla, $columna, $definicion]) {
     $stmt = $conn->prepare(

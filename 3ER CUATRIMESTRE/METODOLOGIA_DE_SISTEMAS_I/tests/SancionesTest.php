@@ -6,7 +6,8 @@ use PHPUnit\Framework\TestCase;
  * RFG14 (RN13) — Sanciones disciplinarias.
  *
  * Admin y docente registran sanciones; se notifica a cada padre vinculado y,
- * si el alumno no tiene, queda marcada "sin contacto".
+ * si el alumno no tiene, queda marcada "sin contacto". El admin las anula
+ * (baja lógica, también notificada) y el legajo las muestra tachadas.
  *
  * Datos del seed: maria.rodriguez dicta en 3°A y 2°B; carlos.lopez es de 3°A
  * (padre diego.fernandez); luciana.campos es de 1°A y no tiene padre vinculado.
@@ -40,14 +41,16 @@ class SancionesTest extends TestCase
 
     // ── Registro ─────────────────────────────────────────────────────────
 
-    public function testElDocenteSancionaASuAlumnoYSeNotificaAlPadre(): void
+    public function testElDocenteSancionaASuAlumnoYSeNotificaAlPadre(): int
     {
         $r = self::$docente->post('/gestion/sanciones_guardar.php', $this->datos(self::$carlosId, 'apercibimiento'));
 
         $this->assertTrue($r['json']['success'], $r['body']);
         $this->assertFalse($r['json']['sin_contacto']);
-        $this->assertSame(1, (int) Db::valor('SELECT COUNT(*) FROM sanciones WHERE id = ?', 'i', (int) $r['json']['id']));
+        $id = (int) $r['json']['id'];
+        $this->assertSame(1, (int) Db::valor('SELECT COUNT(*) FROM sanciones WHERE id = ? AND anulada = 0', 'i', $id));
         $this->assertSame(1, $this->notificacionesDeDiego('Se registró una sanción'), 'No se notificó al padre');
+        return $id;
     }
 
     public function testUnaSuspensionGuardaLosDias(): void
@@ -125,6 +128,46 @@ class SancionesTest extends TestCase
         $this->assertTrue($r['json']['success'], $r['body']);
         $this->assertNotContains(self::$lucianaId, array_map('intval', array_column($r['json']['sanciones'], 'alumno_id')));
         $this->assertContains(self::$carlosId, array_map('intval', array_column($r['json']['sanciones'], 'alumno_id')));
+    }
+
+    // ── Anulación ────────────────────────────────────────────────────────
+
+    /** @depends testElDocenteSancionaASuAlumnoYSeNotificaAlPadre */
+    public function testElDocenteNoPuedeAnular(int $id): void
+    {
+        $r = self::$docente->post('/gestion/sanciones_anular.php', ['id' => $id, 'motivo' => 'El docente intenta anular']);
+        $this->assertSame(403, $r['status']);
+    }
+
+    /** @depends testElDocenteSancionaASuAlumnoYSeNotificaAlPadre */
+    public function testElAdminAnulaYSeNotificaAlPadre(int $id): int
+    {
+        $r = self::$admin->post('/gestion/sanciones_anular.php', ['id' => $id, 'motivo' => self::MARCA . ' Se aclaró que no participó.']);
+
+        $this->assertTrue($r['json']['success'], $r['body']);
+        $this->assertSame(1, (int) Db::valor('SELECT anulada FROM sanciones WHERE id = ? AND anulada_en IS NOT NULL', 'i', $id));
+        $this->assertSame(1, $this->notificacionesDeDiego('Se anuló la sanción'));
+
+        $r = self::$admin->post('/gestion/sanciones_anular.php', ['id' => $id, 'motivo' => 'Segundo intento de anulación']);
+        $this->assertFalse($r['json']['success']);
+        $this->assertStringContainsString('ya estaba anulada', $r['json']['message']);
+        return $id;
+    }
+
+    /** @depends testElAdminAnulaYSeNotificaAlPadre */
+    public function testElLegajoReflejaLaAnulacion(): void
+    {
+        $r = self::$admin->get('/gestion/legajo_listar.php?alumno_id=' . self::$carlosId);
+        $this->assertTrue($r['json']['success'], $r['body']);
+
+        $anuladas = array_filter($r['json']['sanciones'], fn($s) => (int) $s['anulada'] === 1);
+        $this->assertNotEmpty($anuladas, 'El legajo no trae la sanción anulada');
+        $this->assertStringContainsString('no participó', array_values($anuladas)[0]['motivo_anulacion']);
+        $this->assertSame(
+            (int) Db::valor('SELECT COUNT(*) FROM sanciones WHERE alumno_id = ? AND anulada = 0', 'i', self::$carlosId),
+            $r['json']['resumen']['sanciones'],
+            'El indicador de sanciones no debe contar las anuladas'
+        );
     }
 
     // ── Auxiliares ───────────────────────────────────────────────────────

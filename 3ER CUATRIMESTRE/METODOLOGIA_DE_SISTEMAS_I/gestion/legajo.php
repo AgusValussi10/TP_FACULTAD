@@ -421,7 +421,14 @@ $conn->close();
 
     // Sanciones
     const TIPOS = { apercibimiento: 'Apercibimiento', suspension: 'Suspensión', otra: 'Otra' };
-    h += card('sec-sanciones', '⚠️', 'Sanciones', tablaSimple(d.sanciones.map(s => ({ ...s, tipo: TIPOS[s.tipo] || s.tipo })),
+    // Las anuladas siguen en el legajo (RN13), tachadas y con el motivo.
+    h += card('sec-sanciones', '⚠️', 'Sanciones', tablaSimple(d.sanciones.map(s => {
+      const tipo = esc(TIPOS[s.tipo] || s.tipo) + (s.dias_suspension ? ` (${s.dias_suspension} días)` : '');
+      return Number(s.anulada) ? { ...s,
+        tipo: { html: `<s>${tipo}</s> <span class="badge badge-gris">Anulada</span>` },
+        descripcion: { html: `<s>${esc(s.descripcion)}</s><br><small>Motivo de la anulación: ${esc(s.motivo_anulacion)}</small>` },
+      } : { ...s, tipo: { html: tipo } };
+    }),
       ['Fecha','Tipo','Descripción','Registrado por'], ['fecha','tipo','descripcion','registrado_por']));
 
     // Deportes y servicios
