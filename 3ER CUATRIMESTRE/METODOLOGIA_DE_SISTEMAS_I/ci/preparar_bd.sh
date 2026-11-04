@@ -22,8 +22,10 @@ echo "==> Recreando base $DB en $HOST:$PORT"
 "${MYSQL[@]}" -e "DROP DATABASE IF EXISTS \`$DB\`; CREATE DATABASE \`$DB\` CHARACTER SET utf8;"
 
 correr_sql() {
+    # Los schema_sprint*.sql traen "USE educar_db;" para usarlos a mano: se quita
+    # esa línea para que se apliquen siempre sobre $DB (p. ej. educar_test en local).
     echo "    SQL  $1"
-    "${MYSQL[@]}" "$DB" < "$1"
+    sed -E '/^[[:space:]]*USE[[:space:]]+[^;]+;[[:space:]]*$/Id' "$1" | "${MYSQL[@]}" "$DB"
 }
 correr_php() {
     # Los scripts de seed se pensaron para el navegador: se ejecutan por CLI
@@ -41,7 +43,9 @@ correr_sql database/schema_sprint3.sql
 correr_sql database/schema_sprint4.sql
 correr_php seed_datos.php
 correr_sql database/schema_sprint5.sql
+correr_sql database/schema_sprint6.sql      # RFG14: columnas nuevas de sanciones
 echo "    PHP  init_db.php"
 php init_db.php
+correr_php seed_legajo.php                  # datos personales del legajo (necesita alumnos_datos de init_db)
 
 echo "==> Base lista"
