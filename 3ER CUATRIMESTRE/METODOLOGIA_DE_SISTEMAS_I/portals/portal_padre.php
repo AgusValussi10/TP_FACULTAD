@@ -49,6 +49,22 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 
+// Convivencia (RFG14 / RN13): sanciones de los hijos, incluidas las anuladas (se muestran tachadas).
+$sanciones = [];
+$stmt = $conn->prepare(
+    "SELECT u.nombre AS alumno, s.tipo, s.descripcion, s.dias_suspension, s.anulada, s.motivo_anulacion,
+            DATE_FORMAT(s.fecha, '%d/%m/%Y') AS fecha
+     FROM sanciones s
+     JOIN padre_alumno pa ON pa.alumno_id = s.alumno_id
+     JOIN usuarios u ON u.id = s.alumno_id
+     WHERE pa.padre_id = ?
+     ORDER BY s.fecha DESC, s.id DESC"
+);
+$stmt->bind_param('i', $padre_id);
+$stmt->execute();
+$sanciones = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
 $conn->close();
 
 $tipos_notificacion = [
@@ -328,6 +344,32 @@ $tipos_notificacion = [
             <div class="comunicado notificacion">
               <strong><?= htmlspecialchars($tipos_notificacion[$n['tipo']] ?? ucfirst($n['tipo'])) ?> · <?= $n['fecha'] ?></strong>
                 <?= htmlspecialchars($n['mensaje']) ?>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- CONVIVENCIA (RFG14) -->
+    <div class="card">
+      <div class="card-header"><span class="icon">⚖️</span><h2>Convivencia</h2></div>
+      <div class="card-body">
+        <?php if (empty($sanciones)) : ?>
+          <p class="empty-msg">Sin sanciones registradas.</p>
+        <?php else : ?>
+            <?php foreach ($sanciones as $s) : ?>
+            <div class="comunicado" style="<?= $s['anulada'] ? 'opacity:.6;' : '' ?>">
+              <strong>
+                <?= $s['anulada'] ? '<s>' : '' ?><?= htmlspecialchars(TIPOS_SANCION[$s['tipo']] . ($s['dias_suspension'] ? " ({$s['dias_suspension']} días)" : '')) ?><?= $s['anulada'] ? '</s>' : '' ?>
+                · <?= $s['fecha'] ?><?= count($hijos) > 1 ? ' · ' . htmlspecialchars($s['alumno']) : '' ?>
+                <?php if ($s['anulada']) :
+                    ?><span class="badge badge-amarillo">Anulada</span><?php
+                endif; ?>
+              </strong>
+                <?= htmlspecialchars($s['descripcion']) ?>
+                <?php if ($s['anulada']) :
+                    ?><br><small>Motivo de la anulación: <?= htmlspecialchars($s['motivo_anulacion']) ?></small><?php
+                endif; ?>
             </div>
             <?php endforeach; ?>
         <?php endif; ?>

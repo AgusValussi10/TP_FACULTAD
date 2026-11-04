@@ -63,14 +63,17 @@ $minimo = date('Y-m-d', strtotime('-' . SANCION_DIAS_ATRAS_MAX . ' days'));
     input, select, textarea { padding: .5rem .65rem; border: 2px solid var(--borde); border-radius: 8px; font-family: inherit; font-size: .9rem; }
     textarea { width: 100%; min-height: 80px; resize: vertical; }
     .btn { background: var(--naranja); color: #fff; border: none; border-radius: 10px; padding: .55rem 1.2rem; font-weight: 800; cursor: pointer; font-family: inherit; }
+    .btn-sm { background: var(--azul); color: #fff; border: none; border-radius: 8px; padding: .3rem .7rem; font-weight: 800; font-size: .78rem; cursor: pointer; font-family: inherit; }
     .msg { margin: .6rem 0; font-weight: 700; font-size: .88rem; min-height: 1.2em; }
     table { width: 100%; border-collapse: collapse; font-size: .86rem; }
     th { background: var(--naranja-bg); color: var(--naranja); font-weight: 800; padding: .5rem .6rem; text-align: left; font-size: .78rem; text-transform: uppercase; }
     td { padding: .55rem .6rem; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
+    tr.anulada td { color: #9CA3AF; }
+    tr.anulada .desc { text-decoration: line-through; }
     .badge { display: inline-block; border-radius: 12px; padding: .12rem .5rem; font-size: .74rem; font-weight: 800; margin: .1rem 0; }
     .b-apercibimiento { background: #fef3c7; color: #92400E; }
     .b-suspension { background: #fee2e2; color: #991B1B; }
-    .b-otra { background: #E5E7EB; color: #374151; }
+    .b-otra, .b-anulada { background: #E5E7EB; color: #374151; }
     .b-contacto { background: #DC2626; color: #fff; }
     .empty-msg { color: #9CA3AF; text-align: center; padding: 1.2rem 0; }
   </style>
@@ -141,9 +144,13 @@ $minimo = date('Y-m-d', strtotime('-' . SANCION_DIAS_ATRAS_MAX . ' days'));
             <?php endforeach; ?>
           </select>
         </label>
+        <label for="fl-estado">Estado
+          <select id="fl-estado"><option value="">Todas</option><option value="vigente">Vigentes</option><option value="anulada">Anuladas</option></select>
+        </label>
         <label for="fl-desde">Desde <input type="date" id="fl-desde"></label>
         <label for="fl-hasta">Hasta <input type="date" id="fl-hasta"></label>
       </div>
+      <div class="msg" id="msg-lista"></div>
       <div id="lista"><p class="empty-msg">Cargando…</p></div>
     </div>
   </div>
@@ -182,7 +189,8 @@ $minimo = date('Y-m-d', strtotime('-' . SANCION_DIAS_ATRAS_MAX . ' days'));
   }
 
   async function cargar() {
-    const p = new URLSearchParams({ curso_id: $('fl-curso').value, tipo: $('fl-tipo').value, desde: $('fl-desde').value, hasta: $('fl-hasta').value });
+    const p = new URLSearchParams({ curso_id: $('fl-curso').value, tipo: $('fl-tipo').value,
+      estado: $('fl-estado').value, desde: $('fl-desde').value, hasta: $('fl-hasta').value });
     try {
       const data = await (await fetch('sanciones_listar.php?' + p)).json();
       if (!data.success) { $('lista').innerHTML = `<p class="empty-msg">${esc(data.message)}</p>`; return; }
@@ -190,23 +198,41 @@ $minimo = date('Y-m-d', strtotime('-' . SANCION_DIAS_ATRAS_MAX . ' days'));
         $('fl-curso').innerHTML += data.cursos.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
         cursosCargados = true;
       }
-      $('lista').innerHTML = data.sanciones.length ? tabla(data.sanciones) : '<p class="empty-msg">No hay sanciones con esos filtros.</p>';
+      $('lista').innerHTML = data.sanciones.length ? tabla(data.sanciones, data.es_admin) : '<p class="empty-msg">No hay sanciones con esos filtros.</p>';
     } catch { $('lista').innerHTML = '<p class="empty-msg">Error al cargar las sanciones.</p>'; }
   }
 
-  function tabla(filas) {
-    return `<table><thead><tr><th>Fecha</th><th>Alumno</th><th>Tipo</th><th>Descripción</th><th>Registró</th></tr></thead><tbody>`
-      + filas.map(s => `<tr>
+  function tabla(filas, esAdmin) {
+    return `<table><thead><tr><th>Fecha</th><th>Alumno</th><th>Tipo</th><th>Descripción</th><th>Registró</th>${esAdmin ? '<th></th>' : ''}</tr></thead><tbody>`
+      + filas.map(s => `<tr class="${s.anulada ? 'anulada' : ''}">
           <td>${s.fecha_ar}</td>
           <td>${esc(s.alumno)}<br><small>${esc(s.curso || 'Sin curso')}</small></td>
           <td><span class="badge b-${s.tipo}">${esc(s.tipo_texto)}${s.dias_suspension ? ` · ${s.dias_suspension} d` : ''}</span>
+            ${s.anulada ? '<br><span class="badge b-anulada">Anulada</span>' : ''}
             ${s.sin_contacto ? '<br><span class="badge b-contacto" title="El alumno no tiene padre/tutor vinculado">Avisar a la familia</span>' : ''}</td>
-          <td>${esc(s.descripcion)}</td>
+          <td><span class="desc">${esc(s.descripcion)}</span>
+            ${s.anulada ? `<br><small>Anulada el ${s.anulada_en} por ${esc(s.anulada_por)}: ${esc(s.motivo_anulacion)}</small>` : ''}</td>
           <td>${esc(s.registrado_por)}</td>
+          ${esAdmin ? `<td>${s.anulada ? '' : `<button type="button" class="btn-sm" data-anular="${s.id}">Anular</button>`}</td>` : ''}
         </tr>`).join('') + '</tbody></table>';
   }
 
-  ['fl-curso', 'fl-tipo', 'fl-desde', 'fl-hasta'].forEach(id => $(id).addEventListener('change', cargar));
+  $('lista').addEventListener('click', async e => {
+    const id = e.target.dataset.anular;
+    if (!id) return;
+    const motivo = prompt('Motivo de la anulación (10 a 500 caracteres). Se avisará a la familia:');
+    if (motivo === null) return;
+    const body = new FormData();
+    body.append('id', id);
+    body.append('motivo', motivo);
+    try {
+      const data = await (await fetch('sanciones_anular.php', { method: 'POST', body })).json();
+      msg('msg-lista', data.message, data.success);
+      if (data.success) cargar();
+    } catch { msg('msg-lista', 'Error de conexión.'); }
+  });
+
+  ['fl-curso', 'fl-tipo', 'fl-estado', 'fl-desde', 'fl-hasta'].forEach(id => $(id).addEventListener('change', cargar));
   cargar();
 </script>
 </body>

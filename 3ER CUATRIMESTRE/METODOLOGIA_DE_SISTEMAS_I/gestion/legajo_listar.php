@@ -154,7 +154,8 @@ if ($curso) {
 // ── Convivencia, salud y servicios ─────────────────────────────
 $sanciones = filas(
     $conn,
-    "SELECT s.tipo, s.descripcion, DATE_FORMAT(s.fecha,'%d/%m/%Y') AS fecha, u.nombre AS registrado_por
+    "SELECT s.tipo, s.descripcion, DATE_FORMAT(s.fecha,'%d/%m/%Y') AS fecha, u.nombre AS registrado_por,
+            s.dias_suspension, s.anulada, s.motivo_anulacion
      FROM sanciones s JOIN usuarios u ON u.id = s.registrado_por
      WHERE s.alumno_id = ? ORDER BY s.fecha DESC",
     $alumno_id
@@ -239,7 +240,7 @@ $resumen = [
     'materias_riesgo'   => count(array_filter($materias, fn($m) => $m['situacion'] === 'En riesgo')),
     'materias_total'    => count($materias),
     'recups_pendientes' => count(array_filter($recuperatorios, fn($r) => $r['estado'] === 'pendiente')),
-    'sanciones'         => count($sanciones),
+    'sanciones'         => count(array_filter($sanciones, fn($s) => !$s['anulada'])),
     'nota_aprobacion'   => NOTA_APROBACION,
     'limite_faltas'     => LIMITE_FALTAS,
 ];
