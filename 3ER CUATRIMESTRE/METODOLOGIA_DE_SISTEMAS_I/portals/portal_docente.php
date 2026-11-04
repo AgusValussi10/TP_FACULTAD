@@ -60,7 +60,9 @@ $result = $conn->query(
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $solicitudes[] = $row;
-        if ($row['estado'] === 'pendiente') $pendientes++;
+        if ($row['estado'] === 'pendiente') {
+            $pendientes++;
+        }
     }
 }
 $conn->close();
@@ -252,15 +254,15 @@ $conn->close();
     <div class="card">
       <div class="card-header"><span class="icon">📖</span><h2>Mis Materias</h2></div>
       <div class="card-body">
-        <?php if (empty($materias_docente)): ?>
+        <?php if (empty($materias_docente)) : ?>
           <p class="empty-msg">Todavía no tenés materias asignadas. Pedile al administrador que te asigne una desde "Asignar Materias".</p>
-        <?php else: ?>
-          <?php foreach ($materias_docente as $m): ?>
+        <?php else : ?>
+            <?php foreach ($materias_docente as $m) : ?>
           <div class="materia-item">
             <div class="materia-info"><strong><?= htmlspecialchars($m['nombre']) ?></strong><span><?= htmlspecialchars($m['curso_nombre']) ?></span></div>
             <span class="materia-count"><?= (int) $m['alumnos'] ?> alumno<?= (int) $m['alumnos'] === 1 ? '' : 's' ?></span>
           </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
       </div>
     </div>
@@ -296,14 +298,14 @@ $conn->close();
     <div class="card">
       <div class="card-header"><span class="icon">📝</span><h2>Últimas Calificaciones</h2></div>
       <div class="card-body">
-        <?php if (empty($ultimas_calificaciones)): ?>
+        <?php if (empty($ultimas_calificaciones)) : ?>
           <p class="empty-msg">Todavía no cargaste calificaciones.</p>
-        <?php else: ?>
+        <?php else : ?>
         <div class="table-scroll">
         <table>
           <thead><tr><th>Alumno</th><th>Materia</th><th>Evaluación</th><th>Nota</th><th>Fecha</th></tr></thead>
           <tbody>
-            <?php foreach ($ultimas_calificaciones as $cal): ?>
+            <?php foreach ($ultimas_calificaciones as $cal) : ?>
             <tr>
               <td><?= htmlspecialchars($cal['alumno_nombre']) ?></td>
               <td><?= htmlspecialchars($cal['materia_nombre']) ?></td>
@@ -337,15 +339,15 @@ $conn->close();
       <div class="card-header">
         <span class="icon">📋</span>
         <h2>Solicitudes de Inscripción
-          <?php if ($pendientes > 0): ?>
+          <?php if ($pendientes > 0) : ?>
             <span class="badge-count"><?= $pendientes ?> pendiente<?= $pendientes > 1 ? 's' : '' ?></span>
           <?php endif; ?>
         </h2>
       </div>
       <div class="card-body">
-        <?php if (empty($solicitudes)): ?>
+        <?php if (empty($solicitudes)) : ?>
           <p class="empty-msg">No hay solicitudes registradas aún.</p>
-        <?php else: ?>
+        <?php else : ?>
           <div class="table-scroll">
           <table>
             <thead>
@@ -360,7 +362,7 @@ $conn->close();
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($solicitudes as $s): ?>
+              <?php foreach ($solicitudes as $s) : ?>
               <tr>
                 <td><?= $s['id'] ?></td>
                 <td><strong><?= htmlspecialchars($s['apellido_alumno'] . ', ' . $s['nombre_alumno']) ?></strong></td>

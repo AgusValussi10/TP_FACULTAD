@@ -260,10 +260,10 @@ $conn->close();
   <span class="rol-badge">Portal Familias</span>
 </div>
 
-<?php if (!empty($hijos_pendientes_regularizacion)): ?>
+<?php if (!empty($hijos_pendientes_regularizacion)) : ?>
 <div class="aviso-mora">
   ⚠️ Hay cuotas atrasadas hace más de <?= DIAS_LIMITE_REGULARIZACION ?> días para
-  <?= htmlspecialchars(implode(', ', array_column($hijos_pendientes_regularizacion, 'nombre'))) ?>.
+    <?= htmlspecialchars(implode(', ', array_column($hijos_pendientes_regularizacion, 'nombre'))) ?>.
   Situación: pendiente de regularización.
 </div>
 <?php endif; ?>
@@ -275,13 +275,13 @@ $conn->close();
     <div class="card" style="grid-column: 1 / -1;">
       <div class="card-header"><span class="icon">👦</span><h2>Información del Alumno<?= count($hijos) > 1 ? 'es' : '' ?></h2></div>
       <div class="card-body">
-        <?php if (empty($hijos)): ?>
+        <?php if (empty($hijos)) : ?>
           <p class="empty-msg">No hay alumnos vinculados a tu cuenta.</p>
-        <?php else: ?>
-          <?php foreach ($hijos as $hijo):
-            $partes = preg_split('/\s+/', trim($hijo['nombre']));
-            $iniciales = strtoupper(mb_substr($partes[0] ?? '', 0, 1) . mb_substr($partes[count($partes) - 1] ?? '', 0, 1));
-          ?>
+        <?php else : ?>
+            <?php foreach ($hijos as $hijo) :
+                $partes = preg_split('/\s+/', trim($hijo['nombre']));
+                $iniciales = strtoupper(mb_substr($partes[0] ?? '', 0, 1) . mb_substr($partes[count($partes) - 1] ?? '', 0, 1));
+                ?>
           <div class="hijo-card">
             <div class="hijo-avatar"><?= htmlspecialchars($iniciales) ?></div>
             <div class="hijo-datos">
@@ -292,7 +292,7 @@ $conn->close();
               </span>
             </div>
           </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
       </div>
     </div>
@@ -317,15 +317,15 @@ $conn->close();
     <div class="card">
       <div class="card-header"><span class="icon">🔔</span><h2>Notificaciones</h2></div>
       <div class="card-body">
-        <?php if (empty($notificaciones)): ?>
+        <?php if (empty($notificaciones)) : ?>
           <p class="empty-msg">Sin notificaciones por el momento.</p>
-        <?php else: ?>
-          <?php foreach ($notificaciones as $n): ?>
+        <?php else : ?>
+            <?php foreach ($notificaciones as $n) : ?>
             <div class="comunicado notificacion">
               <strong><?= htmlspecialchars(ucfirst($n['tipo'])) ?> · <?= $n['fecha'] ?></strong>
-              <?= htmlspecialchars($n['mensaje']) ?>
+                <?= htmlspecialchars($n['mensaje']) ?>
             </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
       </div>
     </div>
@@ -334,11 +334,11 @@ $conn->close();
     <div class="card" style="grid-column: 1 / -1;">
       <div class="card-header"><span class="icon">📄</span><h2>Boletín de Calificaciones</h2></div>
       <div class="card-body">
-        <?php if (count($hijos) > 1): ?>
+        <?php if (count($hijos) > 1) : ?>
         <div style="margin-bottom:1rem;">
           <label style="font-size:.82rem;font-weight:800;color:var(--azul);">Alumno
             <select id="sel-hijo" style="margin-left:.5rem;padding:.4rem .6rem;border:2px solid var(--borde);border-radius:8px;font-family:inherit;">
-              <?php foreach ($hijos as $h): ?>
+              <?php foreach ($hijos as $h) : ?>
               <option value="<?= $h['id'] ?>"><?= htmlspecialchars($h['nombre']) ?></option>
               <?php endforeach; ?>
             </select>
@@ -414,7 +414,7 @@ $conn->close();
 </div>
 
 <script>
-  <?php if (!empty($hijos)): ?>
+  <?php if (!empty($hijos)) : ?>
   const hijosIds = <?= json_encode(array_column($hijos, 'id')) ?>;
   const boletinBody = document.getElementById('boletin-padre-body');
   const selHijo = document.getElementById('sel-hijo');
