@@ -50,6 +50,10 @@ while ($row = $res->fetch_assoc()) {
 $stmt->close();
 
 $conn->close();
+
+$tipos_notificacion = [
+    'sancion' => 'Sanción', 'enfermeria' => 'Enfermería', 'consulta_nota' => 'Consulta sobre nota', 'recuperatorio' => 'Recuperatorio',
+];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -322,7 +326,7 @@ $conn->close();
         <?php else : ?>
             <?php foreach ($notificaciones as $n) : ?>
             <div class="comunicado notificacion">
-              <strong><?= htmlspecialchars(ucfirst($n['tipo'])) ?> · <?= $n['fecha'] ?></strong>
+              <strong><?= htmlspecialchars($tipos_notificacion[$n['tipo']] ?? ucfirst($n['tipo'])) ?> · <?= $n['fecha'] ?></strong>
                 <?= htmlspecialchars($n['mensaje']) ?>
             </div>
             <?php endforeach; ?>

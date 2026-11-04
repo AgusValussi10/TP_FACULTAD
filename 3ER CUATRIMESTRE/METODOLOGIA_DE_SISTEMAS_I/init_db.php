@@ -180,6 +180,9 @@ $columnas = [
     ['planificaciones',         'actualizado_en',          "DATETIME NULL DEFAULT NULL"],
     // Recuperatorio: nota obtenida (el estado aprobado/desaprobado sale de ella).
     ['recuperatorios',          'nota',                    "TINYINT UNSIGNED NULL DEFAULT NULL AFTER estado"],
+    // RFG14 (Sprint 6): sanciones con días de suspensión y aviso pendiente a la familia.
+    ['sanciones',               'dias_suspension',         "TINYINT UNSIGNED NULL DEFAULT NULL"],
+    ['sanciones',               'sin_contacto',            "TINYINT(1) NOT NULL DEFAULT 0"],
 ];
 foreach ($columnas as [$tabla, $columna, $definicion]) {
     $stmt = $conn->prepare(
