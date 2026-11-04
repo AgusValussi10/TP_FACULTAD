@@ -1,5 +1,7 @@
 <?php
-// GET ?cuota_id=N → recibo de pago en PDF (RFG12). Solo admin; la cuota debe estar pagada.
+
+// GET ?cuota_id=N → recibo de pago en PDF (RFG12). Admin, o padre para cuotas de sus hijos (RFG19);
+// la cuota debe estar pagada.
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/../lib/recibo.php';
 
@@ -14,7 +16,8 @@ function recibo_error(int $codigo, string $mensaje): void
     exit;
 }
 
-if (($_SESSION['rol'] ?? '') !== 'admin') {
+$rol = $_SESSION['rol'] ?? '';
+if (!in_array($rol, ['admin', 'padre'], true)) {
     recibo_error(403, 'Acceso denegado.');
 }
 
@@ -42,6 +45,11 @@ $stmt->execute();
 $cuota = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// El padre solo accede a cuotas de sus hijos (403 también si no existe, para no revelar ids ajenos).
+if ($rol === 'padre' && (!$cuota || !alumno_pertenece_a_padre($conn, (int) $cuota['alumno_id'], (int) $_SESSION['usuario_id']))) {
+    $conn->close();
+    recibo_error(403, 'Acceso denegado.');
+}
 if (!$cuota) {
     $conn->close();
     recibo_error(404, 'La cuota no existe.');

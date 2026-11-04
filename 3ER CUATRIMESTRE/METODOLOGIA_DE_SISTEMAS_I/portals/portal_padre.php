@@ -49,6 +49,37 @@ while ($row = $res->fetch_assoc()) {
 }
 $stmt->close();
 
+// Convivencia (RFG14 / RN13): sanciones de los hijos, incluidas las anuladas (se muestran tachadas).
+$sanciones = [];
+$stmt = $conn->prepare(
+    "SELECT u.nombre AS alumno, s.tipo, s.descripcion, s.dias_suspension, s.anulada, s.motivo_anulacion,
+            DATE_FORMAT(s.fecha, '%d/%m/%Y') AS fecha
+     FROM sanciones s
+     JOIN padre_alumno pa ON pa.alumno_id = s.alumno_id
+     JOIN usuarios u ON u.id = s.alumno_id
+     WHERE pa.padre_id = ?
+     ORDER BY s.fecha DESC, s.id DESC"
+);
+$stmt->bind_param('i', $padre_id);
+$stmt->execute();
+$sanciones = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+// Cuotas de cada hijo con su estado (RFG19): impagas y próximas a vencer arriba, pagadas aparte.
+$cuotas_hijos = [];
+$prioridad    = ['impaga' => 0, 'proxima_a_vencer' => 1, 'pendiente' => 2];
+foreach ($hijos as $h) {
+    $datos    = cuotas_de_alumno($conn, (int) $h['id']);
+    $abiertas = array_values(array_filter($datos['cuotas'], fn($c) => $c['estado_visual'] !== 'pagada'));
+    usort($abiertas, fn($a, $b) => [$prioridad[$a['estado_visual']], $a['vencimiento']] <=> [$prioridad[$b['estado_visual']], $b['vencimiento']]);
+    $cuotas_hijos[] = [
+        'hijo'     => $h,
+        'resumen'  => $datos['resumen'],
+        'abiertas' => $abiertas,
+        'pagadas'  => array_values(array_filter($datos['cuotas'], fn($c) => $c['estado_visual'] === 'pagada')),
+    ];
+}
+
 $conn->close();
 
 $tipos_notificacion = [
@@ -183,6 +214,10 @@ $tipos_notificacion = [
     .det-item span   { color: #6b7280; }
 
     /* Comunicados */
+    .cuota { display: flex; justify-content: space-between; gap: .5rem; padding: .45rem .6rem; border-radius: 8px; margin-bottom: .35rem; font-size: .86rem; background: #F9FAFB; }
+    .cuota.impaga { background: #fee2e2; }
+    .cuota.proxima_a_vencer { background: #fef3c7; }
+    .cuota .monto { font-weight: 800; white-space: nowrap; }
     .comunicado {
       padding: .8rem; border-left: 4px solid var(--verde-claro);
       background: var(--verde-bg); border-radius: 0 10px 10px 0;
@@ -331,6 +366,76 @@ $tipos_notificacion = [
             </div>
             <?php endforeach; ?>
         <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- CONVIVENCIA (RFG14) -->
+    <div class="card">
+      <div class="card-header"><span class="icon">⚖️</span><h2>Convivencia</h2></div>
+      <div class="card-body">
+        <?php if (empty($sanciones)) : ?>
+          <p class="empty-msg">Sin sanciones registradas.</p>
+        <?php else : ?>
+            <?php foreach ($sanciones as $s) : ?>
+            <div class="comunicado" style="<?= $s['anulada'] ? 'opacity:.6;' : '' ?>">
+              <strong>
+                <?= $s['anulada'] ? '<s>' : '' ?><?= htmlspecialchars(TIPOS_SANCION[$s['tipo']] . ($s['dias_suspension'] ? " ({$s['dias_suspension']} días)" : '')) ?><?= $s['anulada'] ? '</s>' : '' ?>
+                · <?= $s['fecha'] ?><?= count($hijos) > 1 ? ' · ' . htmlspecialchars($s['alumno']) : '' ?>
+                <?php if ($s['anulada']) :
+                    ?><span class="badge badge-amarillo">Anulada</span><?php
+                endif; ?>
+              </strong>
+                <?= htmlspecialchars($s['descripcion']) ?>
+                <?php if ($s['anulada']) :
+                    ?><br><small>Motivo de la anulación: <?= htmlspecialchars($s['motivo_anulacion']) ?></small><?php
+                endif; ?>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- CUOTAS (RFG19) -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-header"><span class="icon">💳</span><h2>Cuotas</h2></div>
+      <div class="card-body">
+        <?php foreach ($cuotas_hijos as $ch) :
+            $r = $ch['resumen']; ?>
+          <div style="margin-bottom:1rem;">
+            <strong><?= htmlspecialchars($ch['hijo']['nombre']) ?></strong>
+            <?php if ($r['total_adeudado'] > 0) : ?>
+              · Total adeudado: <strong>$<?= number_format($r['total_adeudado'], 2, ',', '.') ?></strong>
+                <?php if ($r['impagas']) : ?>
+                <span class="badge badge-rojo"><?= $r['impagas'] ?> vencida<?= $r['impagas'] > 1 ? 's' : '' ?></span>
+                <?php endif; ?>
+            <?php else : ?>
+              <span class="badge badge-verde">Al día</span>
+            <?php endif; ?>
+            <?php foreach ($ch['abiertas'] as $c) : ?>
+              <div class="cuota <?= $c['estado_visual'] ?>">
+                <span><?= htmlspecialchars($c['concepto'] . ' ' . $c['periodo']) ?> · vence <?= $c['vencimiento_ar'] ?>
+                  · <em><?= $c['estado_texto'] ?></em><?= $c['recargo'] > 0 ? ' (incluye recargo por mora)' : '' ?></span>
+                <span class="monto">$<?= number_format($c['total'], 2, ',', '.') ?></span>
+              </div>
+            <?php endforeach; ?>
+            <?php if ($ch['pagadas']) : ?>
+              <details>
+                <summary style="cursor:pointer;font-size:.85rem;">Cuotas pagadas (<?= count($ch['pagadas']) ?>)</summary>
+                <?php foreach ($ch['pagadas'] as $c) : ?>
+                  <div class="cuota">
+                    <span><?= htmlspecialchars($c['concepto'] . ' ' . $c['periodo']) ?> · pagada el <?= $c['fecha_pago_ar'] ?></span>
+                    <span class="monto">$<?= number_format($c['total'], 2, ',', '.') ?>
+                      <a href="../gestion/recibo_pdf.php?cuota_id=<?= $c['id'] ?>" target="_blank" rel="noopener">📄 Recibo</a></span>
+                  </div>
+                <?php endforeach; ?>
+              </details>
+            <?php endif; ?>
+            <?php if (!$ch['abiertas'] && !$ch['pagadas']) : ?>
+              <p class="empty-msg">Sin cuotas generadas.</p>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+        <p style="font-size:.8rem;color:#6B7280;">Las cuotas impagas suman un recargo del <?= PORCENTAJE_RECARGO_MORA ?>% al pagarse después del vencimiento. Pagos en Secretaría.</p>
       </div>
     </div>
 
