@@ -43,6 +43,12 @@ const INSTITUCION_TELEFONO  = '3625 - 010102';
 // Asunción: RN12 fija el plazo en 60 días, no especifica más detalle.
 const DIAS_LIMITE_REGULARIZACION = 60;
 
+// RFG14 (RN13): sanciones. Asunciones (confirmar con el equipo): se registran hasta
+// 30 días después del hecho y una suspensión dura entre 1 y 30 días.
+const TIPOS_SANCION = ['apercibimiento' => 'Apercibimiento', 'suspension' => 'Suspensión', 'otra' => 'Otra'];
+const SANCION_DIAS_ATRAS_MAX = 30;
+const SUSPENSION_DIAS_MAX = 30;
+
 /**
  * Corta la ejecución con 403 + JSON si el rol de sesión no está permitido.
  * @param string|string[] $roles
