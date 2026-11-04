@@ -332,6 +332,7 @@ $conn->close();
         <a href="../gestion/consultas_notas.php" class="accion-btn" style="text-decoration:none;">💬 Consultas sobre notas</a>
         <a href="../gestion/legajo.php" class="accion-btn" style="text-decoration:none;">📂 Ver legajo de alumno</a>
         <a href="../gestion/sanciones.php" class="accion-btn" style="text-decoration:none;">⚠️ Sanciones disciplinarias</a>
+        <a href="../gestion/cuotas_docente.php" class="accion-btn" style="text-decoration:none;">💳 Estado de cuotas</a>
       </div>
     </div>
 

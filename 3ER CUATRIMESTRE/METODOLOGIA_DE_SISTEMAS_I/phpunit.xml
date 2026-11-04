@@ -17,6 +17,9 @@
         <testsuite name="RFG14 - Sanciones disciplinarias">
             <file>tests/SancionesTest.php</file>
         </testsuite>
+        <testsuite name="RFG19 - Estado de cuotas">
+            <file>tests/CuotasEstadoTest.php</file>
+        </testsuite>
         <testsuite name="RFG16 - Legajo del alumno">
             <file>tests/LegajoTest.php</file>
         </testsuite>
