@@ -30,7 +30,11 @@ if ($es_docente) {
     $stmt->close();
 } else {
     $res = $conn->query("SELECT u.id, u.nombre, c.nombre AS curso FROM usuarios u LEFT JOIN alumno_curso ac ON ac.alumno_id = u.id LEFT JOIN cursos c ON c.id = ac.curso_id WHERE u.rol = 'alumno' AND u.activo = 1 ORDER BY u.nombre");
-    if ($res) while ($r = $res->fetch_assoc()) $alumnos[] = $r;
+    if ($res) {
+        while ($r = $res->fetch_assoc()) {
+            $alumnos[] = $r;
+        }
+    }
 }
 $conn->close();
 ?>
@@ -136,6 +140,33 @@ $conn->close();
     }
     .alumno-datos strong { display: block; font-weight: 800; font-size: 1rem; }
     .alumno-datos span   { font-size: .82rem; color: #5d6d7e; }
+    .legajo-toolbar { display: flex; gap: .5rem; flex-wrap: wrap; margin-left: auto; }
+    .btn-sec { background: var(--blanco); color: var(--azul); border: 2px solid var(--borde); border-radius: 10px; padding: .45rem 1rem; font-weight: 800; font-size: .82rem; cursor: pointer; font-family: inherit; text-decoration: none; }
+    .btn-sec:hover { border-color: var(--naranja); color: var(--naranja); }
+    .indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .8rem; margin-bottom: 1.5rem; }
+    .indicador { background: var(--blanco); border-radius: 14px; box-shadow: var(--sombra); padding: .9rem 1rem; border-top: 4px solid var(--borde); }
+    .indicador b { display: block; font-size: 1.45rem; font-weight: 900; color: var(--azul); }
+    .indicador span { font-size: .72rem; font-weight: 800; color: #6B7280; text-transform: uppercase; letter-spacing: .05em; }
+    .indicador.ok { border-top-color: #10B981; } .indicador.mal { border-top-color: #EF4444; } .indicador.warn { border-top-color: #F59E0B; }
+    .datos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .9rem 1.5rem; }
+    .dato span { display: block; font-size: .72rem; font-weight: 800; color: #6B7280; text-transform: uppercase; letter-spacing: .05em; }
+    .dato strong { font-size: .92rem; font-weight: 700; }
+    .aviso { border-radius: 10px; padding: .7rem 1rem; font-size: .86rem; margin-bottom: 1rem; }
+    .aviso-salud { background: #FEF3C7; border-left: 4px solid #F59E0B; }
+    .aviso-falta { background: #F3F4F6; border-left: 4px solid #9CA3AF; }
+    .nota-baja { color: #DC2626; font-weight: 800; }
+    .indice { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.2rem; }
+    .indice a { font-size: .78rem; font-weight: 800; color: var(--azul); background: var(--blanco); border: 1px solid var(--borde); border-radius: 20px; padding: .25rem .75rem; text-decoration: none; }
+    .indice a:hover { border-color: var(--naranja); color: var(--naranja); }
+    .solo-impresion { display: none; }
+    @media print {
+      header, .welcome, .volver, #card-selector, .legajo-toolbar, .indice { display: none !important; }
+      body { background: #fff; }
+      .container { max-width: none; margin: 0; padding: 0; }
+      .card, .indicador { box-shadow: none; border: 1px solid #D1D5DB; break-inside: avoid; }
+      .solo-impresion { display: block; margin-bottom: 1rem; font-size: .85rem; }
+      .solo-impresion strong { font-family: 'Merriweather', serif; font-size: 1.1rem; }
+    }
   </style>
 </head>
 <body>
@@ -163,17 +194,17 @@ $conn->close();
 <div class="container">
   <a href="<?= $volver_url ?>" class="volver">&larr; Volver al portal</a>
 
-  <div class="card">
+  <div class="card" id="card-selector">
     <div class="card-header"><span class="icon">📂</span><h2>Seleccionar Alumno</h2></div>
     <div class="card-body">
-      <?php if (empty($alumnos)): ?>
+      <?php if (empty($alumnos)) : ?>
         <p class="empty-msg"><?= $es_docente ? 'Todavía no tenés alumnos a cargo (pedile al admin que te asigne una materia).' : 'No hay alumnos activos registrados.' ?></p>
-      <?php else: ?>
+      <?php else : ?>
       <div class="form-row">
         <label>Alumno
           <input type="text" id="sel-alumno-buscar" list="dl-alumnos" placeholder="Escribí nombre o curso…" autocomplete="off" style="min-width:280px;">
           <datalist id="dl-alumnos">
-            <?php foreach ($alumnos as $a): ?>
+            <?php foreach ($alumnos as $a) : ?>
             <option value="<?= htmlspecialchars($a['nombre']) ?><?= $a['curso'] ? ' — ' . htmlspecialchars($a['curso']) : '' ?>">
             <?php endforeach; ?>
           </datalist>
@@ -191,8 +222,9 @@ $conn->close();
 
 <script>
   const contenido = document.getElementById('legajo-contenido');
+  const ES_ADMIN  = <?= $es_docente ? 'false' : 'true' ?>;
 
-  <?php if (!empty($alumnos)): ?>
+  <?php if (!empty($alumnos)) : ?>
   const ALUMNOS = <?= json_encode(array_map(fn($a) => [
       'id'     => $a['id'],
       'nombre' => $a['nombre'],
@@ -223,14 +255,25 @@ $conn->close();
     return match;
   }
   buscarAlumno.addEventListener('input', resolverAlumno);
+  buscarAlumno.addEventListener('keydown', e => { if (e.key === 'Enter') btnVer.click(); });
 
-  btnVer.addEventListener('click', async () => {
+  btnVer.addEventListener('click', () => {
     resolverAlumno();
-    const alumno_id = selAlumno.value;
-    if (!alumno_id) { noEncontrado.style.display = ''; return; }
+    if (!selAlumno.value) { noEncontrado.style.display = ''; return; }
+    verLegajo(selAlumno.value);
+  });
+
+  // Abrir directo un legajo: legajo.php?alumno_id=N (por ejemplo, desde el ABM de alumnos).
+  const desdeUrl = new URLSearchParams(location.search).get('alumno_id');
+  if (desdeUrl) {
+    const a = ALUMNOS.find(x => String(x.id) === desdeUrl);
+    if (a) { buscarAlumno.value = a.texto; selAlumno.value = a.id; verLegajo(a.id); }
+  }
+  <?php endif; ?>
+
+  async function verLegajo(alumno_id) {
     contenido.innerHTML = '<div class="card"><div class="card-body"><p class="empty-msg">Cargando legajo…</p></div></div>';
     contenido.style.display = '';
-
     try {
       const res  = await fetch(`legajo_listar.php?alumno_id=${encodeURIComponent(alumno_id)}`);
       const data = await res.json();
@@ -238,80 +281,169 @@ $conn->close();
         contenido.innerHTML = `<div class="card"><div class="card-body"><p class="empty-msg">${esc(data.message)}</p></div></div>`;
         return;
       }
-
-      const d = data;
-      const iniciales = iniciales2(d.alumno.nombre);
-      const cursoStr  = d.curso ? `${d.curso.curso} · Nivel ${d.curso.nivel_educativo}` : 'Sin curso asignado';
-      const regularizacion = d.curso && d.curso.condicion === 'pendiente_regularizacion'
-        ? '<span class="badge badge-rojo">Pendiente de regularización</span>' : '';
-      const estadoAlumno = d.alumno.activo ? '<span class="badge badge-verde">Activo</span>' : '<span class="badge badge-rojo">Suspendido</span>';
-
-
-      let html = `
-        <div class="card">
-          <div class="card-header"><span class="icon">👤</span><h2>Datos Personales</h2></div>
-          <div class="card-body">
-            <div class="alumno-header">
-              <div class="alumno-avatar">${iniciales}</div>
-              <div class="alumno-datos">
-                <strong>${esc(d.alumno.nombre)}</strong>
-                <span>Usuario: ${esc(d.alumno.usuario)} · Alta: ${d.alumno.alta} · ${cursoStr}</span>
-              </div>
-              <div style="margin-left:auto;display:flex;gap:.4rem;flex-wrap:wrap;">${regularizacion}${estadoAlumno}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="icon">📊</span><h2>Calificaciones</h2></div>
-          <div class="card-body" style="overflow-x:auto;">
-            ${tablaSimple(d.calificaciones, ['Materia','Evaluación','Nota','Fecha'], ['materia','evaluacion','nota','fecha'])}
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="icon">📋</span><h2>Asistencia por Materia</h2></div>
-          <div class="card-body" style="overflow-x:auto;">
-            ${tablaSimple(d.asistencia, ['Materia','Total registros','Faltas'], ['materia','total','faltas'])}
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="icon">🔄</span><h2>Recuperatorios</h2></div>
-          <div class="card-body" style="overflow-x:auto;">
-            ${tablaSimple(d.recuperatorios, ['Materia','Período','Fecha','Turno','Estado'], ['materia','periodo','fecha','turno','estado'])}
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="icon">⚠️</span><h2>Sanciones</h2></div>
-          <div class="card-body" style="overflow-x:auto;">
-            ${tablaSimple(d.sanciones, ['Tipo','Descripción','Fecha','Registrado por'], ['tipo','descripcion','fecha','registrado_por'])}
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="icon">🏥</span><h2>Atenciones de Enfermería</h2></div>
-          <div class="card-body" style="overflow-x:auto;">
-            ${tablaSimple(d.enfermeria, ['Fecha','Motivo','Hora','Observaciones','Atendido por'], ['fecha','motivo','hora','observaciones','atendido_por'])}
-          </div>
-        </div>
-
-        ${seccionEconomica(d)}
-
-        <div class="card">
-          <div class="card-header"><span class="icon">🍽️</span><h2>Servicios Reservados</h2></div>
-          <div class="card-body" style="overflow-x:auto;">
-            ${tablaSimple(d.servicios, ['Servicio','Mes','Año','Estado'], ['servicio','mes','anio','estado'])}
-          </div>
-        </div>
-      `;
-      contenido.innerHTML = html;
+      contenido.innerHTML = renderLegajo(data);
+      history.replaceState(null, '', `?alumno_id=${encodeURIComponent(alumno_id)}`);
     } catch {
       contenido.innerHTML = '<div class="card"><div class="card-body"><p class="empty-msg">Error al cargar el legajo.</p></div></div>';
     }
-  });
-  <?php endif; ?>
+  }
+
+  // ── Render ────────────────────────────────────────────────────
+  function card(id, icon, titulo, cuerpo) {
+    return `<div class="card" id="${id}"><div class="card-header"><span class="icon">${icon}</span><h2>${titulo}</h2></div>
+            <div class="card-body" style="overflow-x:auto;">${cuerpo}</div></div>`;
+  }
+  function dato(label, valor) {
+    return `<div class="dato"><span>${label}</span><strong>${valor === null || valor === undefined || valor === '' ? '—' : esc(valor)}</strong></div>`;
+  }
+  function indicador(valor, label, clase) {
+    return `<div class="indicador ${clase || ''}"><b>${valor}</b><span>${label}</span></div>`;
+  }
+  const pesos = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+  function renderLegajo(d) {
+    const r = d.resumen;
+    const cursoStr = d.curso ? `${d.curso.curso} · Nivel ${d.curso.nivel_educativo}` : 'Sin curso asignado';
+    const badges = [
+      d.alumno.activo ? '<span class="badge badge-verde">Activo</span>' : '<span class="badge badge-rojo">Suspendido</span>',
+      d.curso && d.curso.condicion === 'pendiente_regularizacion' ? '<span class="badge badge-rojo">Pendiente de regularización</span>' : '',
+    ].join('');
+
+    let h = `
+      <div class="solo-impresion"><strong>Educar para Transformar</strong> · Legajo del alumno · generado el ${esc(d.generado)}</div>
+      <div class="card"><div class="card-body">
+        <div class="alumno-header" style="margin-bottom:0;flex-wrap:wrap;">
+          <div class="alumno-avatar">${iniciales2(d.alumno.nombre)}</div>
+          <div class="alumno-datos">
+            <strong>${esc(d.alumno.nombre)}</strong>
+            <span>${esc(cursoStr)}${d.datos && d.datos.dni ? ' · DNI ' + esc(d.datos.dni) : ''}${d.datos && d.datos.edad !== undefined ? ' · ' + d.datos.edad + ' años' : ''}</span>
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.35rem;">${badges}</div>
+          </div>
+          <div class="legajo-toolbar">
+            <button class="btn-sec" onclick="window.print()">🖨️ Imprimir / PDF</button>
+            ${ES_ADMIN ? `<a class="btn-sec" href="alumnos.php?editar=${d.alumno.id}">✏️ Editar datos</a>` : ''}
+          </div>
+        </div>
+      </div></div>
+
+      <nav class="indice">
+        <a href="#sec-datos">Datos personales</a><a href="#sec-familia">Familia</a><a href="#sec-salud">Salud</a>
+        <a href="#sec-materias">Rendimiento</a><a href="#sec-notas">Calificaciones</a><a href="#sec-asistencia">Asistencia</a>
+        <a href="#sec-recups">Recuperatorios</a><a href="#sec-sanciones">Sanciones</a><a href="#sec-actividades">Deportes y servicios</a>
+        <a href="#sec-comunicacion">Comunicación</a>${Array.isArray(d.cuotas) ? '<a href="#sec-economica">Situación económica</a>' : ''}
+      </nav>
+
+      <div class="indicadores">
+        ${indicador(r.promedio_general ?? '—', 'Promedio general', r.promedio_general === null ? '' : (r.promedio_general >= r.nota_aprobacion ? 'ok' : 'mal'))}
+        ${indicador(r.asistencia_pct !== null ? r.asistencia_pct + '%' : '—', 'Asistencia', r.asistencia_pct === null ? '' : (r.asistencia_pct >= 85 ? 'ok' : (r.asistencia_pct >= 75 ? 'warn' : 'mal')))}
+        ${indicador(`${r.materias_riesgo}/${r.materias_total}`, 'Materias en riesgo', r.materias_riesgo ? 'mal' : 'ok')}
+        ${indicador(r.faltas_total, 'Faltas totales', '')}
+        ${indicador(r.recups_pendientes, 'Recup. pendientes', r.recups_pendientes ? 'warn' : 'ok')}
+        ${indicador(r.sanciones, 'Sanciones', r.sanciones ? 'warn' : 'ok')}
+        ${Array.isArray(d.cuotas) ? indicador(Number(d.deuda_total) > 0 ? pesos(d.deuda_total) : 'Al día', 'Deuda', Number(d.deuda_total) > 0 ? 'mal' : 'ok') : ''}
+      </div>`;
+
+    // Datos personales
+    const p = d.datos;
+    let personales = '';
+    if (!p) {
+      personales += `<div class="aviso aviso-falta">Este alumno todavía no tiene cargados sus datos personales (DNI, nacimiento, domicilio, contactos).
+        ${ES_ADMIN ? `<a href="alumnos.php?editar=${d.alumno.id}">Cargarlos desde Gestión de Alumnos</a>.` : 'Pedile a administración que los complete.'}</div>`;
+    }
+    personales += `<div class="datos-grid">
+      ${dato('Nombre completo', d.alumno.nombre)}
+      ${dato('DNI', p && p.dni)}
+      ${dato('Fecha de nacimiento', p && p.fecha_nacimiento_ar ? `${p.fecha_nacimiento_ar} (${p.edad} años)` : null)}
+      ${dato('Domicilio', p && p.domicilio)}
+      ${dato('Teléfono', p && p.telefono)}
+      ${dato('Email de contacto', p && p.email)}
+      ${dato('Curso actual', d.curso ? d.curso.curso : 'Sin curso')}
+      ${dato('Nivel', d.curso ? d.curso.nivel_educativo : null)}
+      ${dato('Condición', d.curso ? (d.curso.condicion === 'pendiente_regularizacion' ? 'Pendiente de regularización' : 'Regular') : null)}
+      ${dato('Usuario del sistema', d.alumno.usuario)}
+      ${dato('Alta en el sistema', d.alumno.alta)}
+      ${dato('Ingreso por inscripción', p && p.fecha_solicitud ? `Solicitud del ${p.fecha_solicitud} (${p.nivel_solicitado})` : 'Alta directa')}
+    </div>`;
+    h += card('sec-datos', '👤', 'Datos Personales', personales);
+
+    // Familia
+    let familia = `<div class="datos-grid" style="margin-bottom:1rem;">
+      ${dato('Tutor declarado', p && p.tutor_nombre)}
+      ${dato('Contacto de emergencia', p && p.contacto_emergencia)}
+    </div>
+    <div class="seccion-titulo">Padres / tutores con acceso al portal</div>
+    ${tablaSimple(d.tutores.map(t => ({ nombre: t.nombre, usuario: t.usuario, estado: Number(t.activo) ? 'Activo' : 'Suspendido' })),
+       ['Nombre', 'Usuario', 'Estado'], ['nombre', 'usuario', 'estado'])}`;
+    h += card('sec-familia', '👨‍👩‍👧', 'Familia y Contactos', familia);
+
+    // Salud
+    let salud = `<div class="datos-grid" style="margin-bottom:1rem;">${dato('Obra social', p && p.obra_social)}</div>`;
+    salud += p && p.observaciones_salud
+      ? `<div class="aviso aviso-salud"><strong>⚕️ A tener en cuenta:</strong> ${esc(p.observaciones_salud)}</div>`
+      : '<p class="empty-msg" style="text-align:left;">Sin observaciones de salud registradas.</p>';
+    salud += `<div class="seccion-titulo">Atenciones de enfermería</div>
+      ${tablaSimple(d.enfermeria, ['Fecha','Hora','Motivo','Observaciones','Atendido por'], ['fecha','hora','motivo','observaciones','atendido_por'])}`;
+    h += card('sec-salud', '🏥', 'Salud', salud);
+
+    // Rendimiento por materia
+    h += card('sec-materias', '📈', 'Rendimiento por Materia', tablaSimple(d.materias.map(m => ({
+        materia: m.materia, docente: m.docente || 'Sin docente',
+        promedio: m.promedio === null ? '—' : { html: `<span class="${m.promedio < r.nota_aprobacion ? 'nota-baja' : ''}">${m.promedio}</span>` },
+        evaluaciones: m.evaluaciones, faltas: m.faltas, recups: m.recups_pendientes || '—',
+        situacion: { html: m.situacion === 'Aprobando' ? '<span class="badge badge-verde">Aprobando</span>'
+                         : (m.situacion === 'En riesgo' ? '<span class="badge badge-rojo">En riesgo</span>' : '<span class="badge badge-gris">Sin notas</span>') },
+      })), ['Materia','Docente','Promedio','Evaluaciones','Faltas','Recup. pend.','Situación'],
+      ['materia','docente','promedio','evaluaciones','faltas','recups','situacion']));
+
+    // Calificaciones
+    h += card('sec-notas', '📊', 'Calificaciones', tablaSimple(d.calificaciones.map(c => ({
+        materia: c.materia, trimestre: c.trimestre, evaluacion: c.evaluacion,
+        nota: { html: `<span class="${c.nota < r.nota_aprobacion ? 'nota-baja' : ''}">${c.nota}</span>` }, fecha: c.fecha,
+      })), ['Materia','Trimestre','Evaluación','Nota','Fecha'], ['materia','trimestre','evaluacion','nota','fecha']));
+
+    // Asistencia
+    h += card('sec-asistencia', '📋', `Asistencia por Materia <small style="font-weight:600;color:#6B7280;">(límite: ${r.limite_faltas} faltas)</small>`,
+      tablaSimple(d.asistencia.map(a => ({
+        materia: a.materia, presentes: a.presentes, tardes: a.tardes, faltas: a.faltas, total: a.total,
+        pct: a.porcentaje !== null ? a.porcentaje + '%' : '—',
+        semaforo: { html: `<span class="badge ${a.faltas >= r.limite_faltas ? 'badge-rojo' : (r.limite_faltas - a.faltas <= 2 ? 'badge-amarillo' : 'badge-verde')}">${esc(a.semaforo)}</span>` },
+      })), ['Materia','Presentes','Tardes','Faltas','Clases','% asistencia','Estado'],
+      ['materia','presentes','tardes','faltas','total','pct','semaforo']));
+
+    // Recuperatorios
+    h += card('sec-recups', '🔄', 'Recuperatorios', tablaSimple(d.recuperatorios.map(x => ({
+        materia: x.materia, periodo: x.periodo, fecha: x.fecha || 'A confirmar',
+        turno: x.turno ? (x.turno === 'mañana' ? 'Mañana' : 'Tarde') : '—', nota: x.nota ?? '—',
+        estado: { html: x.estado === 'aprobado' ? '<span class="badge badge-verde">Aprobado</span>'
+                    : (x.estado === 'desaprobado' ? '<span class="badge badge-rojo">Desaprobado</span>' : '<span class="badge badge-amarillo">Pendiente</span>') },
+      })), ['Materia','Período','Fecha','Turno','Nota','Estado'], ['materia','periodo','fecha','turno','nota','estado']));
+
+    // Sanciones
+    const TIPOS = { apercibimiento: 'Apercibimiento', suspension: 'Suspensión', otra: 'Otra' };
+    h += card('sec-sanciones', '⚠️', 'Sanciones', tablaSimple(d.sanciones.map(s => ({ ...s, tipo: TIPOS[s.tipo] || s.tipo })),
+      ['Fecha','Tipo','Descripción','Registrado por'], ['fecha','tipo','descripcion','registrado_por']));
+
+    // Deportes y servicios
+    h += card('sec-actividades', '⚽', 'Deportes y Servicios',
+      `<div class="seccion-titulo" style="margin-top:0;">Instalaciones deportivas</div>
+       ${tablaSimple(d.deportes, ['Deporte','Horario','Inscripto desde'], ['deporte','horario','desde'])}
+       <div class="seccion-titulo">Servicios reservados (comedor / transporte)</div>
+       ${tablaSimple(d.servicios.map(s => ({ servicio: s.servicio === 'comedor' ? 'Comedor' : 'Transporte', periodo: `${MESES[s.mes]} ${s.anio}`, estado: s.estado })),
+         ['Servicio','Mes','Estado'], ['servicio','periodo','estado'])}`);
+
+    // Comunicación con la familia
+    h += card('sec-comunicacion', '💬', 'Comunicación con la Familia',
+      `<div class="seccion-titulo" style="margin-top:0;">Consultas sobre notas</div>
+       ${tablaSimple(d.consultas.map(c => ({ fecha: c.fecha, materia: `${c.materia} · ${c.evaluacion} (${c.nota})`, padre: c.padre,
+           mensaje: c.mensaje, respuesta: c.respuesta || (c.estado === 'pendiente' ? 'Sin responder' : '—') })),
+         ['Fecha','Evaluación','Consultó','Consulta','Respuesta'], ['fecha','materia','padre','mensaje','respuesta'])}
+       <div class="seccion-titulo">Últimas notificaciones enviadas</div>
+       ${tablaSimple(d.notificaciones.map(n => ({ ...n, tipo: n.tipo.replace('_', ' ') })), ['Fecha','Tipo','Mensaje'], ['fecha','tipo','mensaje'])}`);
+
+    h += seccionEconomica(d);
+    return h;
+  }
 
   // RFG12/RFG16: situación económica (el backend solo la envía al admin).
   function seccionEconomica(d) {
@@ -319,29 +451,29 @@ $conn->close();
     const filas = d.cuotas.map(c => ({
       concepto: c.concepto === 'matricula' ? 'Matrícula' : 'Cuota',
       periodo: `${String(c.mes).padStart(2,'0')}/${c.anio}`,
-      importe: '$' + Number(c.importe).toLocaleString('es-AR'),
-      recargo: Number(c.recargo) > 0 ? '$' + Number(c.recargo).toLocaleString('es-AR') : '—',
+      importe: pesos(c.importe),
+      recargo: Number(c.recargo) > 0 ? pesos(c.recargo) : '—',
       vencimiento: c.vencimiento,
-      estado: c.estado === 'pagada' ? `Pagada (${c.fecha_pago || '—'})` : 'Pendiente',
+      estado: { html: c.estado === 'pagada'
+        ? `<span class="badge badge-verde">Pagada ${esc(c.fecha_pago || '')}</span>${c.metodo_pago ? `<br><small>${esc(c.metodo_pago)}</small>` : ''}`
+        : (c.vencida ? '<span class="badge badge-rojo">Vencida</span>' : '<span class="badge badge-amarillo">Pendiente</span>') },
     }));
     const deuda = Number(d.deuda_total) > 0
-      ? `<p style="margin-bottom:.7rem;font-weight:800;color:#991B1B;">Deuda pendiente: $${Number(d.deuda_total).toLocaleString('es-AR')}</p>`
+      ? `<p style="margin-bottom:.7rem;font-weight:800;color:#991B1B;">Deuda pendiente: ${pesos(d.deuda_total)}</p>`
       : '<p style="margin-bottom:.7rem;font-weight:800;color:#065F46;">Sin deuda pendiente.</p>';
-    return `
-        <div class="card">
-          <div class="card-header"><span class="icon">💳</span><h2>Situación Económica</h2></div>
-          <div class="card-body" style="overflow-x:auto;">
-            ${deuda}
-            ${tablaSimple(filas, ['Concepto','Período','Importe','Recargo','Vencimiento','Estado'], ['concepto','periodo','importe','recargo','vencimiento','estado'])}
-          </div>
-        </div>`;
+    return card('sec-economica', '💳', 'Situación Económica',
+      deuda + tablaSimple(filas, ['Concepto','Período','Importe','Recargo','Vencimiento','Estado'], ['concepto','periodo','importe','recargo','vencimiento','estado']));
   }
 
+  // Celdas: texto plano (se escapa) o { html } para badges ya armados.
   function tablaSimple(filas, cabeceras, campos) {
     if (!filas || !filas.length) return '<p class="empty-msg">Sin registros.</p>';
     let h = '<table><thead><tr>' + cabeceras.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
     filas.forEach(f => {
-      h += '<tr>' + campos.map(c => `<td>${esc(f[c] ?? '—')}</td>`).join('') + '</tr>';
+      h += '<tr>' + campos.map(c => {
+        const v = f[c];
+        return `<td>${v && typeof v === 'object' && 'html' in v ? v.html : esc(v ?? '—')}</td>`;
+      }).join('') + '</tr>';
     });
     return h + '</tbody></table>';
   }

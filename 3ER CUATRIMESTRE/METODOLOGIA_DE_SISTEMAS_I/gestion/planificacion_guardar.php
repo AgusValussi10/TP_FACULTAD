@@ -1,8 +1,10 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
 requerir_rol('docente');
+errores_como_json();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -17,7 +19,7 @@ $anio         = (int) ($_POST['anio'] ?? 0);
 $contenidos   = trim($_POST['contenidos'] ?? '');
 $observaciones = trim($_POST['observaciones'] ?? '');
 
-if ($materia_id <= 0 || $anio < 2024 || $anio > 2100 || strlen($contenidos) < 20) {
+if ($materia_id <= 0 || $anio < 2024 || $anio > 2100 || mb_strlen($contenidos) < 20) {
     echo json_encode(['success' => false, 'message' => 'Datos inválidos. Los contenidos deben tener al menos 20 caracteres.']);
     exit;
 }
@@ -35,7 +37,7 @@ $obs = $observaciones !== '' ? $observaciones : null;
 $stmt = $conn->prepare(
     "INSERT INTO planificaciones (materia_id, anio, contenidos, observaciones)
      VALUES (?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE contenidos = VALUES(contenidos), observaciones = VALUES(observaciones)"
+     ON DUPLICATE KEY UPDATE contenidos = VALUES(contenidos), observaciones = VALUES(observaciones), actualizado_en = NOW()"
 );
 $stmt->bind_param('iiss', $materia_id, $anio, $contenidos, $obs);
 $ok = $stmt->execute();

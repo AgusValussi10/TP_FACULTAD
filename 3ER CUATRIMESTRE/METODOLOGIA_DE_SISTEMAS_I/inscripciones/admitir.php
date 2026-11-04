@@ -89,7 +89,7 @@ if (strlen($password) < 4) {
 }
 
 // RN03: validar requisitos académicos antes de admitir (RFG04).
-$sol = $conn->prepare("SELECT nivel_educativo, fecha_nacimiento FROM solicitudes_inscripcion WHERE id = ?");
+$sol = $conn->prepare("SELECT nivel_educativo, fecha_nacimiento, nombre_tutor, telefono, email FROM solicitudes_inscripcion WHERE id = ?");
 $sol->bind_param('i', $id);
 $sol->execute();
 $solicitud = $sol->get_result()->fetch_assoc();
@@ -186,6 +186,29 @@ if ($curso_id > 0) {
         abortarAdmision($conn, 'No se pudo inscribir al alumno en el curso.');
     }
 }
+
+// Legajo: los datos de la solicitud pasan a los datos personales del alumno
+// (fecha de nacimiento, tutor y contacto). DNI y domicilio se completan desde
+// Gestión de Alumnos porque el formulario público no los pide.
+$datos = $conn->prepare(
+    "INSERT INTO alumnos_datos (alumno_id, fecha_nacimiento, telefono, email, tutor_nombre, contacto_emergencia, solicitud_id, actualizado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
+);
+$contacto = trim($solicitud['nombre_tutor'] . ' · ' . $solicitud['telefono'], ' ·');
+$datos->bind_param(
+    'isssssi',
+    $nuevoAlumnoId,
+    $solicitud['fecha_nacimiento'],
+    $solicitud['telefono'],
+    $solicitud['email'],
+    $solicitud['nombre_tutor'],
+    $contacto,
+    $id
+);
+if (!$datos->execute()) {
+    abortarAdmision($conn, 'No se pudieron guardar los datos personales del alumno.');
+}
+$datos->close();
 
 $conn->commit();
 $conn->close();

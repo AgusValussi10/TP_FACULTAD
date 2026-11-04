@@ -39,10 +39,13 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── schema_sprint3.sql      ← Sprint 3: planificaciones, recuperatorios
 │   ├── schema_sprint4.sql      ← Sprint 4: sanciones; agrega columna capacidad a cursos
 │   ├── schema_sprint5.sql      ← Sprint 5: deportes, inscripciones_deportivas, cuotas; agrega alumno_curso.condicion
+│   ├── schema_sprint6.sql      ← Sprint 6 (sin USE): RFG14 columnas de sanciones (días de suspensión, sin_contacto)
+│   ├── schema_legajo.sql       ← alumnos_datos: datos personales del legajo (DNI, nacimiento, contactos, salud)
+│   ├── seed_legajo.php         ← Datos personales de demo para los 10 alumnos (idempotente, no pisa ediciones)
 │   ├── setup_demo.php          ← Usuarios base de demo (admin, 2 alumnos, 2 docentes, 2 padres, enfermeria)
 │   ├── seed_datos.php          ← Seed masivo: 13 usuarios nuevos + todos los datos de demostración (secciones 1–18)
 │   └── seed_parte2.php         ← Continuación del seed desde sección 11 (útil si seed_datos falla a mitad)
-├── init_db.php                 ← Corre en el deploy (Render): crea tablas públicas, Sprint 5, consultas_notas (si existe calificaciones), agrega columnas faltantes y elimina materias duplicadas
+├── init_db.php                 ← Corre en el deploy (Render): crea tablas públicas, Sprint 3/4 (planificaciones, recuperatorios, sanciones), Sprint 5, alumnos_datos, consultas_notas; agrega columnas faltantes y elimina materias duplicadas
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -65,14 +68,18 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── enfermeria.php                 ← UI registro de atenciones (enfermería)
 │   ├── enfermeria_alumnos.php         ← GET → lista de alumnos para enfermería
 │   ├── enfermeria_guardar.php         ← POST → guardar atención
-│   ├── planificacion.php              ← UI planificación anual (docente)
-│   ├── planificacion_guardar.php      ← POST → guardar planificación
-│   ├── planificacion_listar.php       ← GET → JSON planificaciones
-│   ├── recuperatorios.php             ← UI gestión de recuperatorios (docente)
-│   ├── recuperatorio_guardar.php      ← POST → guardar recuperatorio
-│   ├── recuperatorio_listar.php       ← GET → JSON recuperatorios
-│   ├── legajo.php                     ← UI legajo completo del alumno (admin/docente)
-│   ├── legajo_listar.php              ← GET → JSON datos de legajo (situación económica solo para admin)
+│   ├── planificacion.php              ← UI planificación anual: docente carga/edita; admin ve el control de todas (cargadas/pendientes)
+│   ├── planificacion_guardar.php      ← POST docente → guardar planificación
+│   ├── planificacion_listar.php       ← GET docente (su materia) / admin (todas las materias del año, filtro curso)
+│   ├── recuperatorios.php             ← UI recuperatorios: docente programa/edita/califica/elimina; admin ve todos (solo lectura)
+│   ├── recuperatorio_guardar.php      ← POST docente → crear (sin id) o editar (id); estado sale de la nota; notifica al padre
+│   ├── recuperatorio_eliminar.php     ← POST docente → eliminar un recuperatorio de sus materias
+│   ├── sanciones.php                  ← UI sanciones disciplinarias (admin y docente) — RFG14
+│   ├── sanciones_guardar.php          ← POST admin/docente → registrar sanción y notificar al padre
+│   ├── sanciones_listar.php           ← GET admin (todas) / docente (sus cursos) → JSON con filtros
+│   ├── recuperatorio_listar.php       ← GET docente (?materia_id) / admin (?curso_id&estado)
+│   ├── legajo.php                     ← UI legajo completo (admin/docente), ?alumno_id=N lo abre directo, imprimible
+│   ├── legajo_listar.php              ← GET → JSON legajo completo (situación económica solo para admin)
 │   ├── consulta_nota_guardar.php      ← POST padre → consulta sobre una calificación (RFG07)
 │   ├── consulta_nota_listar.php       ← GET padre (sus consultas) / docente (las de sus materias) → JSON
 │   ├── consulta_nota_responder.php    ← POST docente → responder consulta y notificar al padre
@@ -88,9 +95,9 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── vacantes_actualizar.php        ← POST → actualizar puesto vacante
 │   ├── vacantes_listar.php            ← GET → JSON puestos vacantes
 │   ├── roles_listar.php               ← GET → JSON roles disponibles
-│   ├── alumnos.php                    ← UI ABM de alumnos (admin) — alta/baja/modificación
+│   ├── alumnos.php                    ← UI ABM de alumnos (admin) — alta/baja/modificación + datos del legajo; ?editar=N abre el modal
 │   ├── alumnos_listar.php             ← GET → JSON lista de alumnos con curso
-│   ├── alumno_guardar.php             ← POST → crear o actualizar alumno
+│   ├── alumno_guardar.php             ← POST → crear o actualizar alumno y sus datos personales (alumnos_datos)
 │   └── alumno_eliminar.php            ← POST → suspender/reactivar/eliminar alumno
 ├── noticias/
 │   ├── listar.php              ← GET público → JSON de noticias publicadas
@@ -128,7 +135,7 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 ├── ci/
 │   ├── preparar_bd.sh          ← Recrea una base de prueba con los schemas en orden + seed (lo usa el pipeline)
 │   └── pipeline_local.sh       ← Corre lint + base + tests en local y mide cada etapa
-├── tests/                      ← Tests de integración (PHPUnit) de RFG07 por HTTP con sesiones reales
+├── tests/                      ← Tests de integración (PHPUnit) por HTTP con sesiones reales: RFG04, RFG05, RFG06, RFG07, RFG16
 ├── phpunit.xml
 ├── metricas/
 │   ├── metricas_git.py         ← Métricas de entrega desde el historial de git (TP Unidad 4)
@@ -142,8 +149,33 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 · Lint PHP → 2 · Tests RFG07
 (MariaDB 10.11 como servicio) → 3 · Build de la imagen Docker; en `main` publica
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
-Auto-Deploy = "After CI Checks Pass". Correr los tests en local:
-`MYSQLHOST=127.0.0.1 MYSQLUSER=root bash ci/pipeline_local.sh` (borra y recrea la base `educar_db`).
+Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
+
+**Tests de integración** (`phpunit.xml`, 52 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+`RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14) y `LegajoTest` (RFG16). Usan `tests/HttpClient.php`
+(un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
+`php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
+rearmar la base.
+
+**Correrlos en local SIEMPRE sobre una base aparte** (`ci/preparar_bd.sh` hace `DROP DATABASE` de `$MYSQLDATABASE`;
+sin la variable, borra `educar_db`):
+```bash
+MYSQLHOST=127.0.0.1 MYSQLUSER=root MYSQLDATABASE=educar_test bash ci/pipeline_local.sh   # lint + base + tests
+MYSQLHOST=127.0.0.1 MYSQLUSER=root MYSQLDATABASE=educar_test phpunit                      # solo tests, base ya armada
+```
+`preparar_bd.sh` quita la línea `USE educar_db;` de los `schema_sprint*.sql` al aplicarlos (antes, con otra base,
+esos schemas y sus seeds terminaban en `educar_db`).
+
+**En Windows con XAMPP** (Git Bash): XAMPP trae **PHP 8.0.30** y MariaDB 10.4, fuera del PATH. CI y Render usan 8.2;
+por eso `db_config.php` fija `mysqli_report(... STRICT)` (excepciones, como el default de 8.1+). Herramientas:
+- Composer en `~/bin/composer` (wrapper de `composer.phar` con `/c/xampp/php/php.exe`); `phpcs` 3.13 y
+  `phpunit` 9.6 instalados con `composer global require` en `%APPDATA%\Composer\vendor\bin`.
+- El PATH va en este orden: `%APPDATA%/Composer/vendor/bin` **antes** de `/c/xampp/php`, porque XAMPP trae un
+  PHPUnit viejo de PEAR que no anda en PHP 8. Más `/c/xampp/mysql/bin` para el cliente `mysql`.
+- Pre-commit (Husky 9, `.husky/pre-commit` en la raíz del repo): corre `php -l` y `phpcs` con `phpcs.xml` sobre los PHP
+  del sistema que entran al commit. Se activa con `npm install` en la raíz (`core.hooksPath = .husky/_`). Husky carga
+  `~/.config/husky/init.sh` antes de cada hook: ahí se exporta el PATH de arriba. Errores marcados con `[x]` se
+  corrigen con `phpcbf`. No usar `--no-verify`.
 
 Servidor: `start.sh` levanta `php -S` con `PHP_CLI_SERVER_WORKERS=4` (configurable en Render).
 `requerir_rol()` cierra la sesión (`session_write_close()`) apenas valida el rol: los endpoints de
@@ -167,6 +199,9 @@ Port:     MYSQLPORT     → 3306                (prod: 3307)
 Charset:  utf8
 Timezone: America/Argentina/Buenos_Aires (-03:00)
 ```
+
+Activa `mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT)` antes de conectar (default desde PHP 8.1; se fija
+para que PHP 8.0 se comporte igual). El error de conexión se captura con `try/catch` y responde HTTP 500 + JSON.
 
 ### Acceso con MySQL Workbench
 
@@ -363,6 +398,7 @@ Datos de conexión:
 | anio | SMALLINT UNSIGNED | |
 | contenidos | TEXT | |
 | observaciones | TEXT NULL | |
+| actualizado_en | DATETIME NULL | Última edición (DATETIME y no TIMESTAMP: MySQL 5.5 admite un solo TIMESTAMP con CURRENT_TIMESTAMP) |
 | — | UNIQUE | (materia_id, anio) — un plan por materia/año |
 
 **`recuperatorios`** — `schema_sprint3.sql`
@@ -374,7 +410,8 @@ Datos de conexión:
 | periodo | ENUM | '1er Trimestre', '2do Trimestre', '3er Trimestre', 'Anual' |
 | fecha | DATE NULL | |
 | turno | ENUM NULL | 'mañana', 'tarde' |
-| estado | ENUM | 'pendiente', 'aprobado', 'desaprobado' |
+| estado | ENUM | 'pendiente', 'aprobado', 'desaprobado' — lo calcula el backend a partir de la nota |
+| nota | TINYINT NULL | Nota del recuperatorio (agregada nov/2026) |
 | — | UNIQUE | (alumno_id, materia_id, periodo) |
 
 **`consultas_notas`** — `schema_sprint3.sql` (RFG07)
@@ -395,7 +432,13 @@ Datos de conexión:
 - `cuotas`: alumno_id, concepto ('matricula'/'cuota'), mes, anio, importe, recargo, fecha_vencimiento, estado ('pendiente'/'pagada'), fecha_pago, metodo_pago (ENUM efectivo/transferencia/tarjeta_debito/tarjeta_credito/otro, NULL en pagos anteriores al recibo), referencia_pago (opcional, 60 chars), registrado_por (admin que cobró) — UNIQUE (alumno_id, concepto, mes, anio).
 - `alumno_curso.condicion`: ENUM 'regular' / 'pendiente_regularizacion' (RFG13).
 
-**`sanciones`** — `schema_sprint4.sql`
+**`alumnos_datos`** — `schema_legajo.sql` (lo crea `init_db.php`)
+Datos personales del legajo, 1:1 con `usuarios` (rol alumno). Todo opcional: dni (UNIQUE), fecha_nacimiento,
+domicilio, telefono, email, tutor_nombre, contacto_emergencia, obra_social, observaciones_salud, solicitud_id
+(solicitud de inscripción de origen), actualizado_en. Se completa al admitir (fecha de nacimiento, tutor, teléfono y
+email salen de la solicitud) y desde el ABM de alumnos (DNI, domicilio, salud, etc.).
+
+**`sanciones`** — `schema_sprint4.sql` (+ columnas de `schema_sprint6.sql`, RFG14; las agrega `init_db.php`)
 | Campo | Tipo | Notas |
 |---|---|---|
 | id | INT PK AUTO | |
@@ -405,6 +448,8 @@ Datos de conexión:
 | fecha | DATE | |
 | registrado_por | INT FK | → usuarios(id) |
 | created_at | TIMESTAMP | |
+| dias_suspension | TINYINT UNSIGNED NULL | Solo si tipo = suspension (1–`SUSPENSION_DIAS_MAX`) |
+| sin_contacto | TINYINT(1) | 1 = el alumno no tenía padre vinculado: administración avisa por otro medio |
 
 ---
 
@@ -477,7 +522,8 @@ Destruye la sesión completa y redirige a `/`.
 - **Noticias:** crear, editar, cambiar estado (borrador/publicada/archivada), eliminar
 - **Puestos vacantes:** crear nuevos puestos, activar/desactivar puestos
 - **Postulaciones:** ver todas, cambiar estado (pendiente/revisado/seleccionado/rechazado), eliminar
-- **Sistema (barra de accesos rápidos):** ABM de alumnos, legajo (con situación económica), vacantes por curso, materias, cuotas y pagos
+- **Sistema (barra de accesos rápidos):** ABM de alumnos, legajo (con situación económica), vacantes por curso, materias, cuotas y pagos, sanciones
+- **Sanciones (RFG14):** registrar a cualquier alumno y listar todas con filtros (`gestion/sanciones.php`)
 - **Recibos:** al registrar un pago elige la forma de pago (obligatoria) y una referencia opcional; puede descargar el recibo en PDF al instante y reimprimirlo después desde la lista de cuotas
 
 **No puede (por diseño del TP):**
@@ -497,6 +543,7 @@ Destruye la sesión completa y redirige a `/`.
 - Gestionar planificación anual por materia (`gestion/planificacion.php`)
 - Gestionar exámenes recuperatorios por materia (`gestion/recuperatorios.php`)
 - Ver y responder consultas de padres sobre notas de sus materias (`gestion/consultas_notas.php`)
+- Registrar sanciones a alumnos de los cursos donde dicta y ver las de esos cursos (`gestion/sanciones.php`)
 
 **No puede:**
 - Cambiar estados de solicitudes ni contenido del sitio
@@ -538,6 +585,7 @@ Destruye la sesión completa y redirige a `/`.
 - Ver notificaciones de enfermería
 - Consultar una calificación al docente y ver la respuesta (RFG07, botón "Consultar" en el boletín)
 - Inscribir al hijo en instalaciones deportivas (`gestion/deportes.php`)
+- Recibir la notificación de cada sanción registrada a sus hijos
 - Ver aviso de pendiente de regularización por cuotas vencidas
 
 **No puede:**
@@ -712,7 +760,8 @@ Footer bg:           #1e293b
 | Sprint 3 | RFG05/06/07 | ✅ Completo (RF07: consultas padre → docente) | Agustín |
 | Sprint 4 | RFG08/15/16 | ✅ Completo (legajo con situación económica) | Agustín |
 | Sprint 5 | RFG11/12/13 | 🟡 Implementado (deportes, cuotas/mora, regularización) — falta validar en producción | Fabrizio |
-| Sprint 6 | RFG17/18/19 | ❌ Pendiente | — |
+| Sprint 6 | RFG14/17/18 | 🟡 En curso: RFG14 sanciones (ramas `feat/rfg14a-sanciones-registro` y `feat/rfg14b-sanciones-anulacion`); RFG17 y RFG18 pendientes | Fabrizio |
+| Sprint 7 | RFG19 (desafío) | ❌ Pendiente | — |
 
 > Verificación (26/10/2026): se probó en local con PHP 8.2 + MariaDB de XAMPP (`php.exe` dentro de `xampp/php`, fuera del PATH) los flujos de pago/recibo, consultas sobre notas, legajo e `init_db.php`. No se probó en Render ni con los datos del seed.
 
@@ -730,11 +779,58 @@ Footer bg:           #1e293b
 
 | # | Descripción | RF/HU relacionado | Prioridad |
 |---|---|---|---|
-| 1 | Sprint 6 (RFG17/18/19) sin implementar | RFG17/18/19 | Pendiente |
+| 1 | Sin implementar: RFG17 (reportes), RFG18 (licencias y suplencias) y RFG19 (cuotas para padre/docente) | RFG17/18/19 | Pendiente |
 | 2 | Recuperación de contraseña: modal sin backend | — | Media |
 | 3 | Validar en producción los cambios nuevos: tabla `consultas_notas` (se crea en `init_db.php` solo si ya existe `calificaciones`; si no, correr `schema_sprint3.sql`) y legajo con cuotas | RFG07/RFG16 | Alta |
 | 4 | Constantes asumidas sin confirmar con el equipo: `EDAD_MINIMA_INICIAL`, `LIMITE_FALTAS`, `PORCENTAJE_RECARGO_MORA` (10%), `DIAS_LIMITE_REGULARIZACION` (60), `DIA_LIMITE_RESERVA_SERVICIOS` (25) | varios | Media |
+| 6 | Reglas de recuperatorios asumidas (lunes a viernes, sin fechas pasadas, estado por nota) — confirmar con el equipo | RFG06 | Media |
+| 7 | El padre ve los recuperatorios solo por notificaciones: no tiene una sección propia en su portal (el alumno sí la tiene) | RFG06 | Baja |
+| 8 | Cypress (`cypress/e2e/rfg04_admision.cy.js`) no se corrió en la verificación del PR #13 | RFG04 | Baja |
+| 9 | Reglas asumidas de sanciones (confirmar): hasta 30 días después del hecho (`SANCION_DIAS_ATRAS_MAX`), suspensión de 1 a 30 días (`SUSPENSION_DIAS_MAX`) | RFG14 | Media |
 | 5 | `seed_datos.php` no es idempotente con materias (la clave única `uq_materia_curso` y la limpieza las aplica `init_db.php`) | Seed/BD | Baja |
+
+### Sesión 03/11/2026 — rama `fix/planificaciones-recuperatorios-legajo`
+
+Lo que se vio en clase: "planificaciones y recuperatorios no andan" y "el legajo no muestra toda la info del alumno".
+
+Causas encontradas y arreglos:
+1. **Admin rebotaba a la landing:** el portal admin tiene botones a Planificaciones y Recuperatorios, pero esas páginas
+   solo aceptaban rol docente (`header('Location: /')`). Ahora el admin entra a una vista propia: control de
+   planificaciones por año/curso (cargadas vs. pendientes, ver contenidos) y listado de todos los recuperatorios con filtros.
+2. **Tablas faltantes en Render:** `planificaciones`, `recuperatorios` y `sanciones` solo se creaban corriendo
+   `schema_sprint3/4.sql` a mano (que hacen `USE educar_db`). Si faltaban, los endpoints tiraban excepción. Ahora las crea
+   `init_db.php` en cada deploy (idempotente, probado sobre una base sin ellas).
+3. **Errores invisibles:** en planificación el mensaje estaba dentro del formulario oculto (si fallaba "Cargar" no se veía
+   nada) y los endpoints no usaban `errores_como_json()`. Corregido en planificación, recuperatorios y legajo.
+4. **Recuperatorios del docente rediseñado:** el listado repetía al alumno una vez por recuperatorio y cambiar el período
+   creaba otro registro en lugar de editar. Ahora: formulario para programar/editar, tabla de recuperatorios con
+   Editar/Eliminar, tabla de alumnos con promedio y botón "+ Programar". Reglas (asumidas, confirmar con el equipo):
+   lunes a viernes; al programar/reprogramar no se aceptan fechas pasadas; la nota exige fecha ya ocurrida; el estado sale
+   de la nota (`NOTA_APROBACION`); uno por alumno/materia/período. Se notifica al padre al programar, reprogramar y al
+   cargar la nota (`tipo = 'recuperatorio'`). Resaltados en rojo los pendientes con fecha pasada (falta la nota).
+5. **Legajo completo:** nueva tabla `alumnos_datos` + campos en el ABM de alumnos. El legajo muestra indicadores
+   (promedio, % asistencia, materias en riesgo, faltas, recuperatorios, sanciones, deuda), datos personales, familia y
+   contactos (tutor declarado + padres con usuario), salud (obra social, observaciones, enfermería), rendimiento por
+   materia con docente, calificaciones con trimestre, asistencia con presentes/tardes/faltas/%/semáforo, recuperatorios
+   con nota, sanciones, deportes y servicios, consultas de notas y notificaciones, y situación económica (solo admin).
+   Botones "Imprimir / PDF" y "Editar datos"; el ABM tiene botón "Legajo" por alumno.
+
+**Para producción (Render) después del merge:** el deploy corre `init_db.php` solo; después abrir una vez
+`/database/seed_legajo.php` para cargar los datos personales de demo. Probado en local con PHP 8.3 + MariaDB 10.11
+(flujos de admin y docente en Chromium con Playwright).
+
+**Verificación en Windows (03/11/2026, PR #13, sin mergear):** pipeline local sobre `educar_test` (PHP 8.0 + MariaDB
+10.4 de XAMPP) y CI (PHP 8.2 + MariaDB 10.11): 42 tests OK; SonarCloud OK; prueba manual completa de la lista del PR OK.
+Lo que apareció al verificar (commits aparte en la misma rama):
+- **ABM pisaba el legajo de otro alumno con DNI repetido:** `INSERT … ON DUPLICATE KEY UPDATE` sobre `alumnos_datos`
+  (dos claves únicas: `alumno_id` y `uq_alumno_dni`) actualizaba la fila del dueño del DNI y le borraba los datos.
+  Ahora `SELECT … FOR UPDATE` + `UPDATE`/`INSERT` explícito; el DNI repetido da error y rollback. **No usar
+  `ON DUPLICATE KEY UPDATE` en tablas con más de una clave única.**
+- `ci/preparar_bd.sh` aplicaba los `schema_sprint*.sql` sobre `educar_db` aunque se pidiera otra base (`USE educar_db`).
+- `db_config.php` con `mysqli_report` para PHP 8.0; `phpcs` corregido en los archivos del fix; `<label for>` en el
+  formulario de Gestión de Alumnos (SonarCloud lo marcaba como bug de accesibilidad).
+- Tests nuevos: `RecuperatoriosTest`, `PlanificacionTest`, `LegajoTest` (ver "Tests de integración" arriba).
+- Cypress (`cypress/e2e/`) no se corrió en esta verificación.
 
 ### Próximos pasos (cierre de sesión 26/10/2026)
 
@@ -749,7 +845,7 @@ Por prioridad:
 
 Ojo con git: el repo real está en `TP_FACULTAD/`, no en esta carpeta. Si aparece un `.git` dentro de `METODOLOGIA_DE_SISTEMAS_I/` (pasó una vez, de origen desconocido) los commits van a ese repo anidado y no al real; borrarlo antes de commitear. Aún no se hizo `git push` de los commits de esta sesión.
 
-Herramientas locales: PHP 8.2 y MariaDB de XAMPP (`xampp/php/php.exe`, `xampp/mysql`) sirven para lintear y probar; el `educar_db` local es de desarrollo, usar una base temporal para pruebas.
+Herramientas locales: PHP 8.0.30 y MariaDB 10.4 de XAMPP (`xampp/php/php.exe`, `xampp/mysql`) sirven para lintear y probar (ver "En Windows con XAMPP" arriba); el `educar_db` local es de desarrollo, para pruebas usar `educar_test`.
 
 ### Notas técnicas importantes
 
@@ -812,4 +908,5 @@ Herramientas locales: PHP 8.2 y MariaDB de XAMPP (`xampp/php/php.exe`, `xampp/my
 8. `database/seed_datos.php` (seed masivo via navegador — secciones 1–18)
    - Si falla en la sección 11: correr `database/seed_parte2.php` para continuar desde ahí
 9. `database/schema_sprint5.sql` (deportes, cuotas, condición) — en producción lo cubre `init_db.php`
-10. La tabla `consultas_notas` está al final de `schema_sprint3.sql`; si ese schema ya se corrió antes, ejecutar solo ese bloque (o dejar que `init_db.php` la cree)
+10. `database/schema_sprint6.sql` (columnas de sanciones, RFG14) — en producción lo cubre `init_db.php`
+11. La tabla `consultas_notas` está al final de `schema_sprint3.sql`; si ese schema ya se corrió antes, ejecutar solo ese bloque (o dejar que `init_db.php` la cree)

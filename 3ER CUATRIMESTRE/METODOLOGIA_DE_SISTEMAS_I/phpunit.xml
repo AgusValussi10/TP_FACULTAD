@@ -8,5 +8,17 @@
         <testsuite name="RFG04 - Admisión con requisitos académicos">
             <file>tests/AdmisionTest.php</file>
         </testsuite>
+        <testsuite name="RFG05 - Planificación anual">
+            <file>tests/PlanificacionTest.php</file>
+        </testsuite>
+        <testsuite name="RFG06 - Recuperatorios">
+            <file>tests/RecuperatoriosTest.php</file>
+        </testsuite>
+        <testsuite name="RFG14 - Sanciones disciplinarias">
+            <file>tests/SancionesTest.php</file>
+        </testsuite>
+        <testsuite name="RFG16 - Legajo del alumno">
+            <file>tests/LegajoTest.php</file>
+        </testsuite>
     </testsuites>
 </phpunit>

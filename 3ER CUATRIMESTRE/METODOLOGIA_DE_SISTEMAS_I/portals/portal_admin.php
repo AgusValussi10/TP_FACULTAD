@@ -25,7 +25,9 @@ $res2 = $conn->query(
      ORDER BY FIELD(estado,'pendiente','contactado','admitido','rechazado'), created_at DESC"
 );
 if ($res2) {
-    while ($r = $res2->fetch_assoc()) $solicitudes[] = $r;
+    while ($r = $res2->fetch_assoc()) {
+        $solicitudes[] = $r;
+    }
 }
 
 $opiniones = [];
@@ -37,12 +39,18 @@ $res3 = $conn->query(
      ORDER BY FIELD(estado,'pendiente','aprobado','rechazado'), created_at DESC"
 );
 if ($res3) {
-    while ($r = $res3->fetch_assoc()) $opiniones[] = $r;
+    while ($r = $res3->fetch_assoc()) {
+        $opiniones[] = $r;
+    }
 }
 
 $puestos = [];
 $res4 = $conn->query("SELECT id, titulo, descripcion, tipo, urgente, activo FROM puestos_vacantes ORDER BY created_at ASC");
-if ($res4) while ($r = $res4->fetch_assoc()) $puestos[] = $r;
+if ($res4) {
+    while ($r = $res4->fetch_assoc()) {
+        $puestos[] = $r;
+    }
+}
 
 $postulaciones = [];
 $res5 = $conn->query(
@@ -54,7 +62,11 @@ $res5 = $conn->query(
      JOIN puestos_vacantes v ON v.id = p.puesto_id
      ORDER BY FIELD(p.estado,'pendiente','revisado','seleccionado','rechazado'), p.created_at DESC"
 );
-if ($res5) while ($r = $res5->fetch_assoc()) $postulaciones[] = $r;
+if ($res5) {
+    while ($r = $res5->fetch_assoc()) {
+        $postulaciones[] = $r;
+    }
+}
 
 $consultas = [];
 $res6 = $conn->query(
@@ -64,10 +76,17 @@ $res6 = $conn->query(
      FROM consultas
      ORDER BY FIELD(estado,'pendiente','leida','respondida','archivada'), created_at DESC"
 );
-if ($res6) while ($r = $res6->fetch_assoc()) $consultas[] = $r;
+if ($res6) {
+    while ($r = $res6->fetch_assoc()) {
+        $consultas[] = $r;
+    }
+}
 
-$con_stats = ['total'=>0,'pendiente'=>0,'leida'=>0,'respondida'=>0,'archivada'=>0];
-foreach ($consultas as $consulta) { $con_stats[$consulta['estado']]++; $con_stats['total']++; }
+$con_stats = ['total' => 0,'pendiente' => 0,'leida' => 0,'respondida' => 0,'archivada' => 0];
+foreach ($consultas as $consulta) {
+    $con_stats[$consulta['estado']]++;
+    $con_stats['total']++;
+}
 
 $noticias = [];
 $res7 = $conn->query(
@@ -79,10 +98,17 @@ $res7 = $conn->query(
      FROM noticias
      ORDER BY FIELD(estado,'publicada','borrador','archivada'), created_at DESC"
 );
-if ($res7) while ($r = $res7->fetch_assoc()) $noticias[] = $r;
+if ($res7) {
+    while ($r = $res7->fetch_assoc()) {
+        $noticias[] = $r;
+    }
+}
 
-$not_stats = ['total'=>0,'borrador'=>0,'publicada'=>0,'archivada'=>0];
-foreach ($noticias as $noticia) { $not_stats[$noticia['estado']]++; $not_stats['total']++; }
+$not_stats = ['total' => 0,'borrador' => 0,'publicada' => 0,'archivada' => 0];
+foreach ($noticias as $noticia) {
+    $not_stats[$noticia['estado']]++;
+    $not_stats['total']++;
+}
 
 $conn->close();
 ?>
@@ -399,6 +425,7 @@ $conn->close();
     <a href="../gestion/planificacion.php" class="ar-btn"><span class="ar-icon">📁</span> Planificaciones</a>
     <a href="../gestion/recuperatorios.php" class="ar-btn"><span class="ar-icon">🔄</span> Recuperatorios</a>
     <a href="../gestion/cuotas.php"        class="ar-btn"><span class="ar-icon">💳</span> Cuotas y Pagos</a>
+    <a href="../gestion/sanciones.php"     class="ar-btn"><span class="ar-icon">⚠️</span> Sanciones</a>
   </div>
 </div>
 
@@ -447,9 +474,9 @@ $conn->close();
       <h2>Solicitudes de Inscripción</h2>
     </div>
     <div class="card-body">
-      <?php if (empty($solicitudes)): ?>
+      <?php if (empty($solicitudes)) : ?>
         <p class="empty-msg">No hay solicitudes registradas aún.</p>
-      <?php else: ?>
+      <?php else : ?>
       <table id="tabla-solicitudes">
         <thead>
           <tr>
@@ -466,7 +493,7 @@ $conn->close();
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($solicitudes as $solicitud): ?>
+          <?php foreach ($solicitudes as $solicitud) : ?>
           <tr id="row-<?= $solicitud['id'] ?>" class="row-<?= $solicitud['estado'] ?>" data-nombre="<?= htmlspecialchars($solicitud['nombre_alumno']) ?>" data-apellido="<?= htmlspecialchars($solicitud['apellido_alumno']) ?>" data-nivel="<?= htmlspecialchars($solicitud['nivel_educativo']) ?>" data-nacimiento="<?= $solicitud['fecha_nacimiento'] ?>">
             <td><?= $solicitud['id'] ?></td>
             <td><strong><?= htmlspecialchars($solicitud['apellido_alumno'] . ', ' . $solicitud['nombre_alumno']) ?></strong></td>
@@ -481,16 +508,16 @@ $conn->close();
             </td>
             <td>
               <div class="acciones" id="acciones-<?= $solicitud['id'] ?>">
-                <?php if ($solicitud['estado'] !== 'contactado'): ?>
+                <?php if ($solicitud['estado'] !== 'contactado') : ?>
                   <button class="btn-accion btn-contactado" onclick="cambiarEstado(<?= $solicitud['id'] ?>,'contactado')">Contactado</button>
                 <?php endif; ?>
-                <?php if ($solicitud['estado'] !== 'admitido'): ?>
+                <?php if ($solicitud['estado'] !== 'admitido') : ?>
                   <button class="btn-accion btn-admitido"   onclick="abrirModalAdmitir(<?= $solicitud['id'] ?>)">Admitir</button>
                 <?php endif; ?>
-                <?php if ($solicitud['estado'] !== 'rechazado'): ?>
+                <?php if ($solicitud['estado'] !== 'rechazado') : ?>
                   <button class="btn-accion btn-rechazado"  onclick="cambiarEstado(<?= $solicitud['id'] ?>,'rechazado')">Rechazar</button>
                 <?php endif; ?>
-                <?php if ($solicitud['estado'] !== 'pendiente'): ?>
+                <?php if ($solicitud['estado'] !== 'pendiente') : ?>
                   <button class="btn-accion btn-pendiente"  onclick="cambiarEstado(<?= $solicitud['id'] ?>,'pendiente')">↩ Pendiente</button>
                 <?php endif; ?>
               </div>
@@ -510,11 +537,11 @@ $conn->close();
 
     <!-- Stats opiniones -->
     <?php
-      $op_stats = ['total'=>0,'pendiente'=>0,'aprobado'=>0,'rechazado'=>0];
-      foreach ($opiniones as $opinion) {
-          $op_stats[$opinion['estado']]++;
-          $op_stats['total']++;
-      }
+      $op_stats = ['total' => 0,'pendiente' => 0,'aprobado' => 0,'rechazado' => 0];
+    foreach ($opiniones as $opinion) {
+        $op_stats[$opinion['estado']]++;
+        $op_stats['total']++;
+    }
     ?>
     <div class="stats-grid" style="margin-top:2rem;">
       <div class="stat-card total">
@@ -541,10 +568,9 @@ $conn->close();
         <h2>Opiniones recibidas</h2>
       </div>
       <div class="card-body">
-        <?php if (empty($opiniones)): ?>
+        <?php if (empty($opiniones)) : ?>
           <p class="empty-msg">No hay opiniones registradas aún.</p>
-        <?php else: ?>
-
+        <?php else : ?>
         <!-- Barra de ordenamiento -->
         <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap;">
           <span style="font-size:.83rem;font-weight:700;color:#6B7280;">Ordenar:</span>
@@ -568,12 +594,12 @@ $conn->close();
             <?php
             $meses_es = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-            foreach ($opiniones as $opinion):
-              $periodo = $meses_es[(int)$opinion['mes']] . ' ' . $opinion['anio'];
-              $rowCls  = $opinion['estado'] === 'aprobado' ? 'row-admitido' : ($opinion['estado'] === 'rechazado' ? 'row-rechazado' : '');
-              $badgeCls = $opinion['estado'] === 'aprobado' ? 'admitido' : $opinion['estado'];
-              $badgeLbl = $opinion['estado'] === 'aprobado' ? 'Aprobada' : ucfirst($opinion['estado']);
-            ?>
+            foreach ($opiniones as $opinion) :
+                $periodo = $meses_es[(int)$opinion['mes']] . ' ' . $opinion['anio'];
+                $rowCls  = $opinion['estado'] === 'aprobado' ? 'row-admitido' : ($opinion['estado'] === 'rechazado' ? 'row-rechazado' : '');
+                $badgeCls = $opinion['estado'] === 'aprobado' ? 'admitido' : $opinion['estado'];
+                $badgeLbl = $opinion['estado'] === 'aprobado' ? 'Aprobada' : ucfirst($opinion['estado']);
+                ?>
             <tr id="op-row-<?= $opinion['id'] ?>" class="<?= $rowCls ?>" data-ts="<?= $opinion['ts'] ?>" data-desc="<?= htmlspecialchars($opinion['nombre']) ?>">
               <td><?= $opinion['id'] ?></td>
               <td><span class="nombre-opinion"><?= htmlspecialchars($opinion['nombre']) ?></span></td>
@@ -585,9 +611,15 @@ $conn->close();
               </td>
               <td>
                 <div class="acciones" id="op-acc-<?= $opinion['id'] ?>">
-                  <?php if ($opinion['estado'] !== 'aprobado'):  ?><button class="btn-accion btn-admitido"  onclick="opinionAccion(<?= $opinion['id'] ?>,'aprobado')">Aprobar</button><?php endif; ?>
-                  <?php if ($opinion['estado'] !== 'rechazado'): ?><button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $opinion['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
-                  <?php if ($opinion['estado'] !== 'pendiente'): ?><button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $opinion['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                  <?php if ($opinion['estado'] !== 'aprobado') :
+                        ?><button class="btn-accion btn-admitido"  onclick="opinionAccion(<?= $opinion['id'] ?>,'aprobado')">Aprobar</button><?php
+                  endif; ?>
+                  <?php if ($opinion['estado'] !== 'rechazado') :
+                        ?><button class="btn-accion btn-rechazado" onclick="opinionAccion(<?= $opinion['id'] ?>,'rechazado')">Rechazar</button><?php
+                  endif; ?>
+                  <?php if ($opinion['estado'] !== 'pendiente') :
+                        ?><button class="btn-accion btn-pendiente" onclick="opinionAccion(<?= $opinion['id'] ?>,'pendiente')">↩ Pendiente</button><?php
+                  endif; ?>
                   <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('opinion',<?= $opinion['id'] ?>,<?= htmlspecialchars(json_encode($opinion['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
@@ -616,12 +648,14 @@ $conn->close();
             <tr><th>#</th><th>Puesto</th><th>Descripción</th><th>Tipo</th><th>Visible en web</th></tr>
           </thead>
           <tbody>
-          <?php foreach ($puestos as $p): ?>
+          <?php foreach ($puestos as $p) : ?>
             <tr id="puesto-row-<?= $p['id'] ?>" class="<?= $p['activo'] ? 'row-admitido' : '' ?>">
               <td><?= $p['id'] ?></td>
               <td>
                 <strong><?= htmlspecialchars($p['titulo']) ?></strong>
-                <?php if ($p['urgente']): ?><span class="puesto-tag urgente">Urgente</span><?php endif; ?>
+                <?php if ($p['urgente']) :
+                    ?><span class="puesto-tag urgente">Urgente</span><?php
+                endif; ?>
               </td>
               <td><span class="exp-txt"><?= htmlspecialchars($p['descripcion']) ?></span></td>
               <td>
@@ -683,9 +717,9 @@ $conn->close();
         <h2>Postulaciones recibidas</h2>
       </div>
       <div class="card-body">
-        <?php if (empty($postulaciones)): ?>
+        <?php if (empty($postulaciones)) : ?>
           <p class="empty-msg">No hay postulaciones registradas aún.</p>
-        <?php else: ?>
+        <?php else : ?>
         <table>
           <thead>
             <tr>
@@ -695,18 +729,18 @@ $conn->close();
             </tr>
           </thead>
           <tbody>
-          <?php foreach ($postulaciones as $p):
-            $rowCls = match($p['estado']) {
-                'seleccionado' => 'row-admitido',
-                'rechazado'    => 'row-rechazado',
-                'revisado'     => 'row-contactado',
-                default        => ''
-            };
-          ?>
-            <tr id="post-row-<?= $p['id'] ?>" class="<?= $rowCls ?>" data-desc="<?= htmlspecialchars($p['apellido'].', '.$p['nombre']) ?>">
+            <?php foreach ($postulaciones as $p) :
+                $rowCls = match ($p['estado']) {
+                    'seleccionado' => 'row-admitido',
+                    'rechazado'    => 'row-rechazado',
+                    'revisado'     => 'row-contactado',
+                    default        => ''
+                };
+    ?>
+            <tr id="post-row-<?= $p['id'] ?>" class="<?= $rowCls ?>" data-desc="<?= htmlspecialchars($p['apellido'] . ', ' . $p['nombre']) ?>">
               <td><?= $p['id'] ?></td>
               <td style="white-space:nowrap"><strong><?= htmlspecialchars($p['puesto_titulo']) ?></strong></td>
-              <td><?= htmlspecialchars($p['apellido'].', '.$p['nombre']) ?></td>
+              <td><?= htmlspecialchars($p['apellido'] . ', ' . $p['nombre']) ?></td>
               <td><?= htmlspecialchars($p['dni']) ?></td>
               <td><?= htmlspecialchars($p['email']) ?></td>
               <td><?= htmlspecialchars($p['telefono']) ?></td>
@@ -720,15 +754,23 @@ $conn->close();
               </td>
               <td>
                 <div class="acciones" id="post-acc-<?= $p['id'] ?>">
-                  <?php if ($p['estado'] !== 'revisado'):    ?><button class="btn-accion btn-contactado" onclick="postAccion(<?= $p['id'] ?>,'revisado')">Revisado</button><?php endif; ?>
-                  <?php if ($p['estado'] !== 'seleccionado'):?><button class="btn-accion btn-admitido"   onclick="postAccion(<?= $p['id'] ?>,'seleccionado')">Seleccionar</button><?php endif; ?>
-                  <?php if ($p['estado'] !== 'rechazado'):   ?><button class="btn-accion btn-rechazado"  onclick="postAccion(<?= $p['id'] ?>,'rechazado')">Rechazar</button><?php endif; ?>
-                  <?php if ($p['estado'] !== 'pendiente'):   ?><button class="btn-accion btn-pendiente"  onclick="postAccion(<?= $p['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
-                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('postulacion',<?= $p['id'] ?>,<?= htmlspecialchars(json_encode($p['apellido'].', '.$p['nombre'])) ?>)">🗑️ Eliminar</button>
+                  <?php if ($p['estado'] !== 'revisado') :
+                        ?><button class="btn-accion btn-contactado" onclick="postAccion(<?= $p['id'] ?>,'revisado')">Revisado</button><?php
+                  endif; ?>
+                  <?php if ($p['estado'] !== 'seleccionado') :
+                        ?><button class="btn-accion btn-admitido"   onclick="postAccion(<?= $p['id'] ?>,'seleccionado')">Seleccionar</button><?php
+                  endif; ?>
+                  <?php if ($p['estado'] !== 'rechazado') :
+                        ?><button class="btn-accion btn-rechazado"  onclick="postAccion(<?= $p['id'] ?>,'rechazado')">Rechazar</button><?php
+                  endif; ?>
+                  <?php if ($p['estado'] !== 'pendiente') :
+                        ?><button class="btn-accion btn-pendiente"  onclick="postAccion(<?= $p['id'] ?>,'pendiente')">↩ Pendiente</button><?php
+                  endif; ?>
+                  <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('postulacion',<?= $p['id'] ?>,<?= htmlspecialchars(json_encode($p['apellido'] . ', ' . $p['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
             </tr>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
           </tbody>
         </table>
         <?php endif; ?>
@@ -769,9 +811,9 @@ $conn->close();
         <h2>Consultas recibidas</h2>
       </div>
       <div class="card-body" id="consultas-card-body">
-        <?php if (empty($consultas)): ?>
+        <?php if (empty($consultas)) : ?>
           <p class="empty-msg" id="consultas-empty">No hay consultas registradas aún.</p>
-        <?php else: ?>
+        <?php else : ?>
         <table id="tabla-consultas">
           <thead>
             <tr>
@@ -786,14 +828,14 @@ $conn->close();
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($consultas as $consulta):
-              $rowCls = match($consulta['estado']) {
-                'leida'      => 'row-contactado',
-                'respondida' => 'row-admitido',
-                'archivada'  => 'row-rechazado',
-                default      => ''
-              };
-            ?>
+            <?php foreach ($consultas as $consulta) :
+                $rowCls = match ($consulta['estado']) {
+                    'leida'      => 'row-contactado',
+                    'respondida' => 'row-admitido',
+                    'archivada'  => 'row-rechazado',
+                    default      => ''
+                };
+    ?>
             <tr id="con-row-<?= $consulta['id'] ?>" class="<?= $rowCls ?>" data-desc="<?= htmlspecialchars($consulta['nombre']) ?>">
               <td><?= $consulta['id'] ?></td>
               <td><strong><?= htmlspecialchars($consulta['nombre']) ?></strong></td>
@@ -806,10 +848,18 @@ $conn->close();
               </td>
               <td>
                 <div class="acciones" id="con-acc-<?= $consulta['id'] ?>">
-                  <?php if ($consulta['estado'] !== 'leida'):      ?><button class="btn-accion btn-contactado" onclick="conAccion(<?= $consulta['id'] ?>,'leida')">Leída</button><?php endif; ?>
-                  <?php if ($consulta['estado'] !== 'respondida'): ?><button class="btn-accion btn-admitido"   onclick="conAccion(<?= $consulta['id'] ?>,'respondida')">Respondida</button><?php endif; ?>
-                  <?php if ($consulta['estado'] !== 'archivada'):  ?><button class="btn-accion btn-rechazado"  onclick="conAccion(<?= $consulta['id'] ?>,'archivada')">Archivar</button><?php endif; ?>
-                  <?php if ($consulta['estado'] !== 'pendiente'):  ?><button class="btn-accion btn-pendiente"  onclick="conAccion(<?= $consulta['id'] ?>,'pendiente')">↩ Pendiente</button><?php endif; ?>
+                  <?php if ($consulta['estado'] !== 'leida') :
+                        ?><button class="btn-accion btn-contactado" onclick="conAccion(<?= $consulta['id'] ?>,'leida')">Leída</button><?php
+                  endif; ?>
+                  <?php if ($consulta['estado'] !== 'respondida') :
+                        ?><button class="btn-accion btn-admitido"   onclick="conAccion(<?= $consulta['id'] ?>,'respondida')">Respondida</button><?php
+                  endif; ?>
+                  <?php if ($consulta['estado'] !== 'archivada') :
+                        ?><button class="btn-accion btn-rechazado"  onclick="conAccion(<?= $consulta['id'] ?>,'archivada')">Archivar</button><?php
+                  endif; ?>
+                  <?php if ($consulta['estado'] !== 'pendiente') :
+                        ?><button class="btn-accion btn-pendiente"  onclick="conAccion(<?= $consulta['id'] ?>,'pendiente')">↩ Pendiente</button><?php
+                  endif; ?>
                   <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('consulta',<?= $consulta['id'] ?>,<?= htmlspecialchars(json_encode($consulta['nombre'])) ?>)">🗑️ Eliminar</button>
                 </div>
               </td>
@@ -919,9 +969,9 @@ $conn->close();
       </div>
 
       <div class="card-body" id="not-card-body">
-        <?php if (empty($noticias)): ?>
+        <?php if (empty($noticias)) : ?>
           <p class="empty-msg" id="not-empty">No hay noticias registradas aún.</p>
-        <?php else: ?>
+        <?php else : ?>
         <table id="tabla-noticias">
           <thead>
             <tr>
@@ -935,20 +985,20 @@ $conn->close();
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($noticias as $noticia):
-              $rowCls = match($noticia['estado']) {
-                'publicada' => 'row-admitido',
-                'archivada' => 'row-rechazado',
-                default     => ''
-              };
+            <?php foreach ($noticias as $noticia) :
+                $rowCls = match ($noticia['estado']) {
+                    'publicada' => 'row-admitido',
+                    'archivada' => 'row-rechazado',
+                    default     => ''
+                };
               $catCls = 'cat-' . $noticia['categoria'];
-              $catLabel = ['institucional'=>'🏫 Institucional','academica'=>'📚 Académica','deportiva'=>'⚽ Deportiva','cultural'=>'🎭 Cultural','general'=>'📰 General'][$noticia['categoria']] ?? ucfirst($noticia['categoria']);
-            ?>
+              $catLabel = ['institucional' => '🏫 Institucional','academica' => '📚 Académica','deportiva' => '⚽ Deportiva','cultural' => '🎭 Cultural','general' => '📰 General'][$noticia['categoria']] ?? ucfirst($noticia['categoria']);
+    ?>
             <tr id="not-row-<?= $noticia['id'] ?>" class="<?= $rowCls ?>">
               <td><?= $noticia['id'] ?></td>
               <td>
                 <span class="noticia-titulo"><?= htmlspecialchars($noticia['titulo']) ?></span>
-                <?php if ($noticia['resumen']): ?>
+                <?php if ($noticia['resumen']) : ?>
                   <br><span class="noticia-resumen"><?= htmlspecialchars($noticia['resumen']) ?></span>
                 <?php endif; ?>
               </td>
@@ -961,13 +1011,13 @@ $conn->close();
               <td>
                 <div class="acciones" id="not-acc-<?= $noticia['id'] ?>">
                   <button class="btn-accion btn-contactado" onclick="abrirEditarNoticia(<?= $noticia['id'] ?>)">✏️ Editar</button>
-                  <?php if ($noticia['estado'] !== 'publicada'): ?>
+                  <?php if ($noticia['estado'] !== 'publicada') : ?>
                     <button class="btn-accion btn-admitido" onclick="cambiarEstadoNoticia(<?= $noticia['id'] ?>, 'publicada')">Publicar</button>
                   <?php endif; ?>
-                  <?php if ($noticia['estado'] === 'publicada'): ?>
+                  <?php if ($noticia['estado'] === 'publicada') : ?>
                     <button class="btn-accion btn-pendiente" onclick="cambiarEstadoNoticia(<?= $noticia['id'] ?>, 'borrador')">Despublicar</button>
                   <?php endif; ?>
-                  <?php if ($noticia['estado'] !== 'archivada'): ?>
+                  <?php if ($noticia['estado'] !== 'archivada') : ?>
                     <button class="btn-accion btn-rechazado" onclick="cambiarEstadoNoticia(<?= $noticia['id'] ?>, 'archivada')">Archivar</button>
                   <?php endif; ?>
                   <button class="btn-accion" style="background:#FEE2E2;color:#991B1B;" onclick="confirmarEliminar('noticia',<?= $noticia['id'] ?>,<?= htmlspecialchars(json_encode($noticia['titulo'])) ?>)">🗑️ Eliminar</button>
@@ -1833,7 +1883,7 @@ $conn->close();
 
   // Cache local de datos de noticias para el modal de edición
   const _notData = {};
-  <?php foreach ($noticias as $n): ?>
+  <?php foreach ($noticias as $n) : ?>
   _notData[<?= $n['id'] ?>] = {
     titulo:     <?= json_encode($n['titulo']) ?>,
     resumen:    <?= json_encode($n['resumen']) ?>,

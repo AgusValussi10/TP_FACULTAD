@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS planificaciones (
     contenidos    TEXT NOT NULL,
     observaciones TEXT,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en DATETIME NULL DEFAULT NULL,  -- última edición (DATETIME: MySQL 5.5 admite un solo TIMESTAMP con CURRENT_TIMESTAMP)
     UNIQUE KEY uq_plan (materia_id, anio),
     FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS recuperatorios (
     fecha      DATE NULL,
     turno      ENUM('mañana','tarde') NULL,
     estado     ENUM('pendiente','aprobado','desaprobado') NOT NULL DEFAULT 'pendiente',
+    nota       TINYINT UNSIGNED NULL DEFAULT NULL,  -- nota del recuperatorio; define aprobado/desaprobado
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_recup (alumno_id, materia_id, periodo),
     FOREIGN KEY (alumno_id)  REFERENCES usuarios(id) ON DELETE CASCADE,
