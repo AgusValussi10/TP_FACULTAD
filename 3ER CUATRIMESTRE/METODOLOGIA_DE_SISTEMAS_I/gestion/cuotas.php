@@ -1,4 +1,5 @@
 <?php
+
 require_once '../auth/session.php';
 require_once __DIR__ . '/helpers.php';
 if (($_SESSION['rol'] ?? '') !== 'admin') {
@@ -105,6 +106,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
     .badge-verde  { background: #d1fae5; color: #065F46; }
     .badge-rojo   { background: #fee2e2; color: #991B1B; }
     .badge-amarillo { background: #fef3c7; color: #92400E; }
+    .badge-gris     { background: #E5E7EB; color: #374151; }
     .msg { margin: .6rem 0; font-weight: 700; font-size: .88rem; min-height: 1.2em; }
     .empty-msg { color: #9CA3AF; font-size: .9rem; text-align: center; padding: 1.5rem 0; }
     .pago-inline { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
@@ -187,6 +189,17 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
     <div class="card-header"><span class="icon">💳</span><h2>Cuotas de <span id="cuotas-alumno-nombre"></span></h2></div>
     <div class="card-body">
       <div id="aviso-pago"></div>
+      <div class="form-row">
+        <label for="filtro-estado">Estado
+          <select id="filtro-estado">
+            <option value="">Todas</option>
+            <option value="impaga">Impagas (vencidas)</option>
+            <option value="proxima_a_vencer">Próximas a vencer</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="pagada">Pagadas</option>
+          </select>
+        </label>
+      </div>
       <table>
         <thead>
           <tr><th>Concepto</th><th>Período</th><th>Importe</th><th>Recargo</th><th>Estado</th><th>Fecha de pago</th><th>Acción</th></tr>
@@ -204,6 +217,18 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
   // Misma lista que METODOS_PAGO en gestion/helpers.php.
   const METODOS_PAGO = <?= json_encode(METODOS_PAGO, JSON_UNESCAPED_UNICODE) ?>;
   const opcionesMetodo = Object.entries(METODOS_PAGO).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+  // RFG19: estado visual de cada cuota → [texto, clase del badge].
+  const ESTADOS = {
+    impaga: ['Impaga (vencida)', 'badge-rojo'], proxima_a_vencer: ['Próxima a vencer', 'badge-amarillo'],
+    pendiente: ['Pendiente', 'badge-gris'], pagada: ['Pagada', 'badge-verde'],
+  };
+  function filtrarPorEstado() {
+    const estado = document.getElementById('filtro-estado').value;
+    document.querySelectorAll('#tbody-cuotas tr[data-estado]').forEach(tr => {
+      tr.style.display = !estado || tr.dataset.estado === estado ? '' : 'none';
+    });
+  }
+  document.getElementById('filtro-estado').addEventListener('change', filtrarPorEstado);
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const selMes = document.getElementById('sel-mes');
   MESES.forEach((m, i) => {
@@ -331,9 +356,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
 
       const hoy = new Date().toISOString().slice(0, 10);
       tbodyCuotas.innerHTML = data.cuotas.map(c => {
-        const estadoBadge = c.estado === 'pagada'
-          ? '<span class="badge badge-verde">Pagada</span>'
-          : '<span class="badge badge-amarillo">Pendiente</span>';
+        const estadoBadge = `<span class="badge ${ESTADOS[c.estado_visual][1]}">${ESTADOS[c.estado_visual][0]}</span>`;
         const accion = c.estado === 'pendiente'
           ? `<div class="pago-inline">
                <input type="date" id="fecha-pago-${c.id}" value="${hoy}">
@@ -344,7 +367,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
              </div>`
           : `<a class="btn-sm" href="recibo_pdf.php?cuota_id=${c.id}" target="_blank" rel="noopener">📄 Recibo PDF</a>`;
         return `
-          <tr>
+          <tr data-estado="${c.estado_visual}">
             <td>${c.concepto === 'matricula' ? 'Matrícula' : 'Cuota'}</td>
             <td>${MESES[c.mes - 1]} ${c.anio}</td>
             <td>$${Number(c.importe).toFixed(2)}</td>
@@ -355,6 +378,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
           </tr>
         `;
       }).join('');
+      filtrarPorEstado();
     } catch {
       tbodyCuotas.innerHTML = '<tr><td colspan="7" class="empty-msg">Error de conexión.</td></tr>';
     }
