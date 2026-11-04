@@ -88,7 +88,8 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── consultas_notas.php            ← UI docente: ver y responder consultas sobre notas
 │   ├── cuotas.php                     ← UI cuotas y pagos (admin) — RFG12
 │   ├── cuotas_generar.php / cuotas_listar.php / cuotas_pagar.php / cuotas_recalcular.php
-│   ├── cuotas_estado.php              ← GET RFG19: padre/admin ?alumno_id= → cuotas con estado visual y resumen de deuda
+│   ├── cuotas_estado.php              ← GET RFG19: padre/admin ?alumno_id= → cuotas con estado visual y resumen; docente → estados de sus cursos SIN importes
+│   ├── cuotas_docente.php             ← UI docente (solo lectura): estado de cada cuota de los alumnos de sus cursos — RFG19
 │   ├── recibo_pdf.php                 ← GET admin, o padre para cuotas de sus hijos, ?cuota_id= → recibo PDF (solo cuotas pagadas)
 │   ├── deportes.php                   ← UI inscripción a instalaciones deportivas — RFG11
 │   ├── deportes_guardar.php / deportes_listar.php
@@ -154,7 +155,7 @@ Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 �
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
 Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
 
-**Tests de integración** (`phpunit.xml`, 62 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+**Tests de integración** (`phpunit.xml`, 65 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
 `RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14), `CuotasEstadoTest` (RFG19)
 y `LegajoTest` (RFG16). Usan `tests/HttpClient.php`
 (un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
@@ -533,6 +534,7 @@ Destruye la sesión completa y redirige a `/`.
 - **Postulaciones:** ver todas, cambiar estado (pendiente/revisado/seleccionado/rechazado), eliminar
 - **Sistema (barra de accesos rápidos):** ABM de alumnos, legajo (con situación económica), vacantes por curso, materias, cuotas y pagos, sanciones
 - **Sanciones (RFG14):** registrar a cualquier alumno, listar todas con filtros y anularlas con motivo (`gestion/sanciones.php`)
+- **Cuotas (RFG12/RFG19):** generar, registrar pagos y recibos; en el detalle de cada alumno ve el estado de cada cuota (impaga / próxima a vencer / pendiente / pagada) con badges y filtro por estado
 - **Recibos:** al registrar un pago elige la forma de pago (obligatoria) y una referencia opcional; puede descargar el recibo en PDF al instante y reimprimirlo después desde la lista de cuotas
 
 **No puede (por diseño del TP):**
@@ -553,6 +555,7 @@ Destruye la sesión completa y redirige a `/`.
 - Gestionar exámenes recuperatorios por materia (`gestion/recuperatorios.php`)
 - Ver y responder consultas de padres sobre notas de sus materias (`gestion/consultas_notas.php`)
 - Registrar sanciones a alumnos de los cursos donde dicta y ver las de esos cursos (`gestion/sanciones.php`); no puede anularlas
+- Ver el estado de cada cuota de los alumnos de sus cursos, **sin importes** (`gestion/cuotas_docente.php`, RFG19). No registra pagos ni emite recibos: decisión de diseño por RN14 (cobrar es tarea administrativa)
 
 **No puede:**
 - Cambiar estados de solicitudes ni contenido del sitio
@@ -771,14 +774,14 @@ Footer bg:           #1e293b
 | Sprint 4 | RFG08/15/16 | ✅ Completo (legajo con situación económica) | Agustín |
 | Sprint 5 | RFG11/12/13 | 🟡 Implementado (deportes, cuotas/mora, regularización) — falta validar en producción | Fabrizio |
 | Sprint 6 | RFG14/17/18 | 🟡 En curso: RFG14 sanciones (ramas `feat/rfg14a-sanciones-registro` y `feat/rfg14b-sanciones-anulacion`); RFG17 y RFG18 pendientes | Fabrizio |
-| Sprint 7 | RFG19 (desafío) | 🟡 En curso: estado de cuotas y recibo para el padre (`feat/rfg19a-cuotas-padre`); vista del docente y badges del admin pendientes (19b) | Fabrizio |
+| Sprint 7 | RFG19 (desafío) | 🟡 Implementado (estado de cuotas para padre, docente y admin; recibo para el padre) en `feat/rfg19a-cuotas-padre` y `feat/rfg19b-cuotas-docente-admin` — PR sin mergear | Fabrizio |
 
 > Verificación (26/10/2026): se probó en local con PHP 8.2 + MariaDB de XAMPP (`php.exe` dentro de `xampp/php`, fuera del PATH) los flujos de pago/recibo, consultas sobre notas, legajo e `init_db.php`. No se probó en Render ni con los datos del seed.
 
 ### Estado por portal
 
 - **Portal admin:** inscripciones (con validación de edad/nivel anterior y de vacantes, y asignación a curso), noticias, opiniones, consultas, empleo, legajo (con situación económica), vacantes, ABM de alumnos (`gestion/alumnos.php`), cuotas y pagos, materias. Accesos rápidos al sistema visibles arriba del portal (barra oscura antes de las pestañas).
-- **Portal docente:** asistencia, calificaciones, planificación anual, recuperatorios, consultas sobre notas, sanciones — todos conectados a BD
+- **Portal docente:** asistencia, calificaciones, planificación anual, recuperatorios, consultas sobre notas, sanciones, estado de cuotas (sin importes) — todos conectados a BD
 - **Portal alumno:** boletín por trimestre, asistencia, recuperatorios, aviso de regularización — conectados a BD
 - **Portal padre:** boletín con consulta al docente (RF07), asistencia, servicios (comedor/transporte), deportes, notificaciones, convivencia (sanciones), cuotas con estado y recibo, aviso de regularización — conectados a BD
 - **Portal enfermería:** registro de atenciones conectado a BD
@@ -797,7 +800,7 @@ Footer bg:           #1e293b
 | 7 | El padre ve los recuperatorios solo por notificaciones: no tiene una sección propia en su portal (el alumno sí la tiene) | RFG06 | Baja |
 | 8 | Cypress (`cypress/e2e/rfg04_admision.cy.js`) no se corrió en la verificación del PR #13 | RFG04 | Baja |
 | 9 | Reglas asumidas de sanciones (confirmar): hasta 30 días después del hecho (`SANCION_DIAS_ATRAS_MAX`), suspensión de 1 a 30 días (`SUSPENSION_DIAS_MAX`), solo el admin anula | RFG14 | Media |
-| 10 | Asunciones de RFG19 (confirmar): "próxima a vencer" = vence en 7 días o menos (`DIAS_AVISO_VENCIMIENTO`); el total de una impaga incluye el recargo que correspondería hoy | RFG19 | Media |
+| 10 | Asunciones de RFG19 (confirmar): "próxima a vencer" = vence en 7 días o menos (`DIAS_AVISO_VENCIMIENTO`); el docente solo ve el estado, sin importes ni registro de pagos (RN14); el total de una impaga incluye el recargo que correspondería hoy | RFG19 | Media |
 | 5 | `seed_datos.php` no es idempotente con materias (la clave única `uq_materia_curso` y la limpieza las aplica `init_db.php`) | Seed/BD | Baja |
 
 ### Sesión 03/11/2026 — rama `fix/planificaciones-recuperatorios-legajo`
@@ -876,7 +879,7 @@ Herramientas locales: PHP 8.0.30 y MariaDB 10.4 de XAMPP (`xampp/php/php.exe`, `
 
 **FK enfermería:** `atenciones_enfermeria.atendido_por` referencia `usuarios.id`. Si `sandra.benitez` no existe en la BD, las inserciones fallan. `schema_sprint2.sql` debe correr ANTES de `setup_demo.php` para que el ENUM `'enfermeria'` esté disponible.
 
-**Estado de cuotas (RFG19):** `cuotas_de_alumno($conn, $alumno_id, ?$anio)` en `helpers.php` es el único lugar que arma las cuotas de un alumno para mostrar (patrón Repository; pensada también para la API de la app móvil). Devuelve cada cuota con `estado_visual`, `estado_texto`, importe, recargo, total, vencimiento, fecha y forma de pago, y un `resumen` (`total_adeudado`, `total_vencido`, `impagas`, `proximas_a_vencer`, `proximo_vencimiento`). La usan el portal del padre y `cuotas_estado.php`. `seed_cuotas.php` usa vencimientos relativos a hoy (no el día 10) para que en la demo siempre haya cuotas de todos los estados.
+**Estado de cuotas (RFG19):** `cuotas_de_alumno($conn, $alumno_id, ?$anio)` en `helpers.php` es el único lugar que arma las cuotas de un alumno para mostrar (patrón Repository; pensada también para la API de la app móvil). Devuelve cada cuota con `estado_visual`, `estado_texto`, importe, recargo, total, vencimiento, fecha y forma de pago, y un `resumen` (`total_adeudado`, `total_vencido`, `impagas`, `proximas_a_vencer`, `proximo_vencimiento`). La usan el portal del padre y `cuotas_estado.php`; `cuotas_listar.php` (admin) agrega `estado_visual` con `estado_visual_cuota()`. El docente recibe solo período + estado (sin importes) de los alumnos de sus cursos: las del año en curso y las impagas de años anteriores. `seed_cuotas.php` usa vencimientos relativos a hoy (no el día 10) para que en la demo siempre haya cuotas de todos los estados.
 
 **Constantes en `gestion/helpers.php`:**
 - `EDAD_MINIMA_INICIAL = 3`

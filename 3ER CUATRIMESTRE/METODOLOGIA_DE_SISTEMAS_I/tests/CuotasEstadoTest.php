@@ -8,14 +8,16 @@ use PHPUnit\Framework\TestCase;
  * El estado visual sale de estado + vencimiento: pagada / impaga (vencida) /
  * próxima a vencer (vence en DIAS_AVISO_VENCIMIENTO días o menos) / pendiente.
  * El padre ve las de sus hijos con importes y puede bajar el recibo de las
- * pagadas.
+ * pagadas; el docente ve solo el estado, sin importes, de los alumnos de sus
+ * cursos (decisión de diseño, RN14); el admin ve y registra.
  *
  * Datos del seed: ana.garcia (3°A) es hija de laura.martinez; carlos.lopez (3°A)
- * es de otra familia.
+ * es de otra familia; luciana.campos es de 1°A, donde maria.rodriguez no dicta.
  * El test borra las cuotas de ana.garcia y le crea las suyas.
  */
 class CuotasEstadoTest extends TestCase
 {
+    private const DOCENTES = 'Docentes / Personal / Autoridades';
     private const PADRES   = 'Padres / Tutores';
     private const IMPORTE  = 10000.0;
 
@@ -98,7 +100,50 @@ class CuotasEstadoTest extends TestCase
         $this->assertSame(403, $r['status']);
     }
 
-    // ── Otros roles ──────────────────────────────────────────────────────
+    // ── Docente (opción a: solo estado, sin importes, sus cursos) ─────────
+
+    public function testElDocenteVeElEstadoSinImportesSoloDeSusCursos(): void
+    {
+        $docente = new HttpClient();
+        $docente->login('maria.rodriguez', 'docente123', self::DOCENTES);
+
+        $r = $docente->get('/gestion/cuotas_estado.php?alumno_id=' . self::$anaId);
+
+        $this->assertTrue($r['json']['success'], $r['body']);
+        $alumnos = array_column($r['json']['alumnos'], null, 'alumno_id');
+        $this->assertArrayHasKey(self::$anaId, $alumnos);
+        $this->assertArrayNotHasKey(self::idDe('luciana.campos'), $alumnos, 'Ve alumnos de cursos ajenos');
+        $this->assertSame(1, $alumnos[self::$anaId]['impagas']);
+        foreach (['importe', 'recargo', 'total', 'total_adeudado'] as $clave) {
+            $this->assertStringNotContainsString("\"$clave\"", $r['body'], "El docente recibe $clave");
+        }
+    }
+
+    public function testElDocenteNoPuedeRegistrarPagosNiBajarRecibos(): void
+    {
+        $docente = new HttpClient();
+        $docente->login('maria.rodriguez', 'docente123', self::DOCENTES);
+
+        $r = $docente->post('/gestion/cuotas_pagar.php', ['cuota_id' => self::$ids['impaga'], 'metodo_pago' => 'efectivo']);
+        $this->assertSame(403, $r['status']);
+        $r = $docente->get('/gestion/recibo_pdf.php?cuota_id=' . self::$ids['pagada']);
+        $this->assertSame(403, $r['status']);
+    }
+
+    // ── Admin y otros roles ──────────────────────────────────────────────
+
+    public function testElAdminVeElEstadoVisualEnElDetalle(): void
+    {
+        $admin = new HttpClient();
+        $admin->login('admin', 'admin', self::DOCENTES);
+
+        $r = $admin->get('/gestion/cuotas_listar.php?alumno_id=' . self::$anaId);
+
+        $this->assertTrue($r['json']['success'], $r['body']);
+        $porId = array_column($r['json']['cuotas'], 'estado_visual', 'id');
+        $this->assertSame('impaga', $porId[self::$ids['impaga']]);
+        $this->assertSame('proxima_a_vencer', $porId[self::$ids['proxima_a_vencer']]);
+    }
 
     public function testUnAlumnoRecibe403(): void
     {
