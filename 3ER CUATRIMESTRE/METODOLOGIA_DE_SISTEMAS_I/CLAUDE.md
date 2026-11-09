@@ -20,7 +20,8 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 ├── index.php                   ← Enrutador: inyecta banner de sesión activa sobre index.html
 ├── lib/
 │   ├── fpdf/                   ← FPDF 1.86 (librería PDF sin dependencias, vendorizada; solo fuentes Helvetica)
-│   ├── recibo.php              ← render_recibo(): dibuja el recibo de pago en PDF (no toca BD ni sesión)
+│   ├── recibo.php              ← render_recibo() + piezas comunes de los PDF (pdf_encabezado, pdf_titulo_seccion, pdf_fila, pdf_pie, pdf_institucion)
+│   ├── factura_pdf.php         ← Parte 3: render_factura() (mismo estilo que el recibo)
 │   └── facturacion.php         ← Parte 3: tarifas, generación mensual, pagos, comprobantes y su revisión (única fuente de esas reglas)
 ├── assets/                     ← Imágenes optimizadas en formato AVIF (+ logo.png para los PDF: FPDF no lee AVIF)
 │   ├── edificio.avif
@@ -58,7 +59,8 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── offline.html            ← Pantalla sin conexión
 │   ├── css/app.css · icons/    ← Estilos mobile-first; íconos generados con `node ci/generar_iconos.js`
 │   ├── js/main.js · api.js · util.js · instalar.js · vistas/*.js ← router por hash, cliente API, escape HTML, instalación
-│   └── api/                    ← JSON {success, data, message}: _base.php (sesión, 401/403, renovación de cookie), login, logout, sesion, password, inicio
+│   └── api/                    ← JSON {success, data, message}: _base.php (sesión, 401/403, renovación de cookie), login, logout, sesion, password, inicio,
+│                                  cuotas (RFGm03), facturas + deuda + factura_pdf (RFGm04)
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -172,9 +174,9 @@ Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 �
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
 Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
 
-**Tests de integración** (`phpunit.xml`, 89 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+**Tests de integración** (`phpunit.xml`, 98 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
 `RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14), `CuotasEstadoTest` (RFG19)
-`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest` y `AppAuthTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
+`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest`, `AppAuthTest` y `AppCuentaTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
 (un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
 `php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
 rearmar la base.
@@ -867,6 +869,14 @@ uno, recordado en localStorage); el alumno opera sobre sí mismo. Cambio de cont
 caracteres, distinta de la actual, `password_hash`. Instalación: botón con `beforeinstallprompt` (Android/Chrome) y
 pasos "Compartir → Agregar a inicio" en iOS. El service worker y la instalación necesitan HTTPS: en la LAN por HTTP no
 se registran (se prueban en Render o con un túnel). El logo original mide 262×231: los íconos de 512 quedan algo suavizados.
+
+**Cuotas, facturas e historial (Paso 3, RFGm03/04):** la pantalla Cuotas usa `cuotas_de_alumno()` (RFG19), así que
+muestra lo mismo que la web; el padre baja el recibo de las pagadas (`gestion/recibo_pdf.php`). Facturas filtra por
+rango de períodos (`desde`/`hasta` = `AAAA-MM`, sobre el mes facturado), muestra ítems, pagos y comprobantes y baja la
+factura en PDF (`app/api/factura_pdf.php`, 403 si no es de la familia aunque no exista). "Deuda por concepto" agrega en
+SQL (`GROUP BY` mes, tipo y deporte) facturado / pagado / en proceso / adeudado. Las consultas están en
+`facturas_de_alumno()` y `deuda_por_concepto()` de `lib/facturacion.php`. **Pruebas en navegador:**
+`4TO CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_II/pruebas-app/` (Playwright + Edge, 390 px; fallan si hay scroll horizontal).
 
 **Producción (después del merge):** el deploy corre `init_db.php`; después abrir una vez `/database/seed_parte3.php`
 con sesión de admin (carga tarifas y datos de demo). `laura.martinez` queda con dos hijos (ana.garcia y matias.vega).
