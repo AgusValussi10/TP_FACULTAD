@@ -1,4 +1,5 @@
 <?php
+
 require_once '../auth/session.php';
 if (($_SESSION['rol'] ?? '') !== 'padre') {
     header('Location: /');
@@ -242,8 +243,8 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
       if (data.success) {
         let texto = '';
         if (data.inscriptos.length) texto += `✅ Inscripto en: ${data.inscriptos.join(', ')}. `;
-        if (data.sin_cupo.length) texto += `⚠️ Sin cupo disponible en: ${data.sin_cupo.join(', ')}.`;
-        setMsg(texto || 'No hubo cambios.', data.sin_cupo.length && !data.inscriptos.length ? '#D97706' : '#059669');
+        if (data.rechazados.length) texto += `⚠️ ${data.rechazados.join(' ')}`;
+        setMsg(texto || 'No hubo cambios.', data.rechazados.length && !data.inscriptos.length ? '#D97706' : '#059669');
         cargarEstado();
       } else {
         setMsg(data.message || 'Error al guardar.', '#DC2626');

@@ -1,5 +1,7 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/../lib/inscripciones.php';
 
 header('Content-Type: application/json; charset=utf-8');
 errores_como_json();
@@ -29,49 +31,22 @@ if (!alumno_pertenece_a_padre($conn, $alumno_id, $padre_id)) {
     exit;
 }
 
+// Mismas reglas que la app (lib/inscripciones.php): cupo, máximo de deportes
+// simultáneos (RFGm09) y conflicto de horario. Un deporte rechazado no frena a los demás.
 $inscriptos = [];
-$sin_cupo   = [];
-
-$stmtDeporte = $conn->prepare(
-    "SELECT d.nombre, d.cupo_maximo, COUNT(insc.alumno_id) AS inscriptos_actuales,
-            EXISTS(SELECT 1 FROM inscripciones_deportivas WHERE deporte_id = d.id AND alumno_id = ?) AS ya_inscripto
-     FROM deportes d
-     LEFT JOIN inscripciones_deportivas insc ON insc.deporte_id = d.id
-     WHERE d.id = ?
-     GROUP BY d.id, d.nombre, d.cupo_maximo"
-);
-$stmtInsert = $conn->prepare("INSERT IGNORE INTO inscripciones_deportivas (alumno_id, deporte_id) VALUES (?, ?)");
-
+$rechazados = [];
 foreach ($deportes as $deporte_id) {
     $deporte_id = (int) $deporte_id;
     if ($deporte_id <= 0) {
         continue;
     }
-
-    $stmtDeporte->bind_param('ii', $alumno_id, $deporte_id);
-    $stmtDeporte->execute();
-    $deporte = $stmtDeporte->get_result()->fetch_assoc();
-
-    if (!$deporte) {
-        continue;
+    try {
+        $inscriptos[] = inscribir_deporte($conn, $alumno_id, $deporte_id);
+    } catch (ReglaNegocioException $e) {
+        $rechazados[] = $e->getMessage();
     }
-
-    if ((bool) $deporte['ya_inscripto']) {
-        continue;
-    }
-
-    if ((int) $deporte['inscriptos_actuales'] >= (int) $deporte['cupo_maximo']) {
-        $sin_cupo[] = $deporte['nombre'];
-        continue;
-    }
-
-    $stmtInsert->bind_param('ii', $alumno_id, $deporte_id);
-    $stmtInsert->execute();
-    $inscriptos[] = $deporte['nombre'];
 }
-
-$stmtDeporte->close();
-$stmtInsert->close();
 $conn->close();
 
-echo json_encode(['success' => true, 'inscriptos' => $inscriptos, 'sin_cupo' => $sin_cupo]);
+// "sin_cupo" se mantiene por compatibilidad con la pantalla anterior: ahora trae el motivo de cada rechazo.
+echo json_encode(['success' => true, 'inscriptos' => $inscriptos, 'rechazados' => $rechazados, 'sin_cupo' => $rechazados]);
