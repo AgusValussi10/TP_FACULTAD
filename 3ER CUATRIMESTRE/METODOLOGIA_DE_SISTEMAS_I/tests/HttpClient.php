@@ -29,9 +29,9 @@ class HttpClient
     }
 
     /** @return array{status:int, json:?array, body:string, headers:string[]} */
-    public function get(string $ruta): array
+    public function get(string $ruta, array $headers = []): array
     {
-        return $this->enviar('GET', $ruta);
+        return $this->enviar('GET', $ruta, [], $headers);
     }
 
     /** @return array{status:int, json:?array, body:string} */
@@ -50,7 +50,7 @@ class HttpClient
         return $this->enviar('MULTIPART', $ruta, $datos);
     }
 
-    private function enviar(string $metodo, string $ruta, array $datos = []): array
+    private function enviar(string $metodo, string $ruta, array $datos = [], array $headersPedido = []): array
     {
         $headers = [];
         $ch = curl_init(TEST_BASE_URL . $ruta);
@@ -63,6 +63,7 @@ class HttpClient
             CURLOPT_COOKIEJAR      => $this->cookieJar,
             CURLOPT_COOKIEFILE     => $this->cookieJar,
             CURLOPT_TIMEOUT        => 15,
+            CURLOPT_HTTPHEADER     => $headersPedido,
         ]);
         if ($metodo === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
