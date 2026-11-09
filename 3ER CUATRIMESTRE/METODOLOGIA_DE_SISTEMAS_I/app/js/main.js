@@ -6,9 +6,13 @@ import * as inicio from './vistas/inicio.js';
 import * as cuenta from './vistas/cuenta.js';
 import * as cuotas from './vistas/cuotas.js';
 import * as facturas from './vistas/facturas.js';
+import * as pagar from './vistas/pagar.js';
+import * as pago from './vistas/pago.js';
 
 // Rutas que necesitan sesión. La de login se muestra sola cuando no hay sesión.
-const RUTAS = { inicio, cuotas, facturas, cuenta };
+const RUTAS = { inicio, cuotas, facturas, pagar, pago, cuenta };
+// Rutas sin botón propio en la barra: se marca la sección a la que pertenecen.
+const SECCION = { pagar: 'facturas', pago: 'facturas' };
 const RUTA_INICIAL = 'inicio';
 
 const main = document.getElementById('contenido');
@@ -19,6 +23,11 @@ const ctx = {
   navegar,
   alIniciarSesion,
   cerrarSesion,
+  /** Va a otra pantalla dejando historial (el botón "atrás" del celular vuelve). */
+  ir: (ruta) => { location.hash = '#/' + ruta; },
+  /** Parámetros de la ruta actual: #/pago?id=7 → params().get('id'). */
+  params: () => new URLSearchParams(location.hash.split('?')[1] || ''),
+  refrescar: () => refrescar(),
   /** Alumno elegido (el propio, si es alumno). */
   alumno: () => estado.alumnos.find((a) => a.id === estado.alumnoId) || null,
 };
@@ -99,7 +108,7 @@ function pintarMarco() {
     sel.innerHTML = estado.alumnos.map((a) => html`<option value="${a.id}">${a.nombre}${a.curso ? ' · ' + a.curso : ''}</option>`).join('');
     sel.value = String(estado.alumnoId);
   }
-  const ruta = rutaActual();
+  const ruta = SECCION[rutaActual()] || rutaActual();
   document.querySelectorAll('#nav a').forEach((a) => {
     if (a.dataset.ruta === ruta) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');

@@ -30,7 +30,7 @@ function tarjetaFactura(f, esPadre) {
       <span class="item-der">${pesos(it.importe)}<br>${crudo(badge(it.estado, it.estado_texto))}</span>
     </li>`));
   const pagos = f.pagos.map((p) => crudo(html`<li class="item">
-      <span><strong>${p.numero}</strong> · ${p.fecha}<br>${crudo(badge(p.estado, p.estado_texto))}
+      <span><strong>${crudo(esPadre ? html`<a href="#/pago?id=${p.id}">${p.numero}</a>` : html`${p.numero}`)}</strong> · ${p.fecha}<br>${crudo(badge(p.estado, p.estado_texto))}
         ${crudo(p.motivo_rechazo ? html`<br><span class="sub">Motivo: ${p.motivo_rechazo}</span>` : '')}
         ${crudo(p.comprobantes.length ? html`<br><span class="sub">Comprobantes:</span> ${p.comprobantes.map((c) => crudo(esPadre
           ? html`<a href="/gestion/comprobante_ver.php?id=${c.id}" target="_blank" rel="noopener">${c.nombre}</a> (${pesos(c.monto)}) `
@@ -54,6 +54,7 @@ function tarjetaFactura(f, esPadre) {
       <ul class="lista">${items}</ul>
       ${crudo(f.pagos.length ? html`<h3>Pagos</h3><ul class="lista">${pagos}</ul>` : '')}
     </details>
+    ${crudo(esPadre && f.saldo > 0 ? html`<a class="btn" href="#/pagar?factura=${f.id}">💸 Pagar</a>` : '')}
     <a class="btn btn-sec" href="/app/api/factura_pdf.php?factura_id=${f.id}" target="_blank" rel="noopener">📄 Descargar PDF</a>
   </li>`;
 }

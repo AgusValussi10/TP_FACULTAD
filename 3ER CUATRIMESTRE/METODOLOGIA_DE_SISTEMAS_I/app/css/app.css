@@ -161,3 +161,23 @@ details.plegable[open] > summary { margin-bottom: .4rem; }
 .mes-deuda:last-child { border-bottom: none; }
 .mes-deuda .fila { padding: .15rem 0; border: none; font-size: .92rem; }
 
+
+/* Paso 4: pagar y comprobantes */
+.volver { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; text-decoration: none; }
+.sin-borde { border: none; margin: 0; padding: 0; }
+.sin-borde legend { font-weight: 800; color: var(--gris); margin-bottom: .4rem; }
+.check { display: flex; align-items: flex-start; gap: .7rem; min-height: 48px; padding: .4rem 0; cursor: pointer; }
+.check input { width: 24px; height: 24px; min-height: 0; margin-top: .1rem; accent-color: var(--naranja-texto); flex: none; }
+.check-texto { flex: 1; }
+.check-monto { white-space: nowrap; font-weight: 700; }
+.check-deshabilitado { color: var(--gris-suave); cursor: default; }
+.copiable { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; text-align: right; }
+.copiable strong { overflow-wrap: anywhere; }
+.btn-chico {
+  min-height: 44px; min-width: 44px; padding: .3rem .7rem; border-radius: 9px; border: 2px solid var(--naranja-texto);
+  background: var(--blanco); color: var(--naranja-texto); font: inherit; font-weight: 700; font-size: .85rem; cursor: pointer;
+}
+.etiqueta { font-weight: 700; font-size: .92rem; color: var(--gris); }
+.oculto { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.campo .btn + .oculto + .btn { margin-top: .6rem; }
+.factura .btn + .btn { margin-top: .6rem; }
