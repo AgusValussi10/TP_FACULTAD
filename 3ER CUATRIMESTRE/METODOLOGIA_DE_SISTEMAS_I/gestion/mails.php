@@ -37,7 +37,7 @@ $sugerida = ultimo_dia_habil((int) $hoy->format('n'), (int) $hoy->format('Y'));
         <thead><tr><th>Fecha</th><th>Tipo</th><th>Familia</th><th>Asunto</th><th class="num">Total</th><th>Adjuntos</th><th>Estado</th><th></th></tr></thead>
         <tbody id="tbody"><tr><td colspan="8" class="empty-msg">Cargando…</td></tr></tbody>
       </table>
-      <h3 id="titulo-vista" class="ayuda" style="margin-top:1rem"></h3>
+      <p id="titulo-vista" class="ayuda" style="margin-top:1rem;font-weight:800"></p>
       <iframe id="vista" title="Vista previa del mail" sandbox="" style="width:100%;height:520px;border:1px solid #E5E7EB;border-radius:10px;display:none"></iframe>
     </div>
   </div>

@@ -26,9 +26,9 @@ $hasta = date('Y-m');
         <a class="btn-sm" id="btn-csv" href="#">⬇️ Exportar CSV</a>
       </div>
       <div id="msg" class="msg" role="status"></div>
-      <h3 id="titulo" class="ayuda"></h3>
+      <p id="titulo" class="ayuda"><strong>Elegí un reporte y un período.</strong></p>
       <table>
-        <thead id="thead"></thead>
+        <thead id="thead"><tr><th scope="col">Reporte</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
