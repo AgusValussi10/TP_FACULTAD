@@ -104,3 +104,59 @@ function render_factura(array $d): FPDF
         . 'desde la app. Comprobante interno, no válido como factura fiscal.');
     return $pdf;
 }
+
+/**
+ * Comprobante de pago (RFGm05): lo que el padre eligió pagar y los datos para transferir.
+ *
+ * @param array $d  pago_de_padre() + institucion (pdf_institucion()) + logo (ruta o null)
+ */
+function render_comprobante_pago(array $d): FPDF
+{
+    $pdf = new FPDF('P', 'mm', 'A4');
+    $pdf->SetTitle(pdf_txt('Comprobante de pago N° ' . $d['numero']));
+    $pdf->SetAuthor(pdf_txt($d['institucion']['nombre']));
+    $pdf->SetMargins(15, 15, 15);
+    $pdf->SetAutoPageBreak(false);
+    $pdf->AddPage();
+    pdf_encabezado($pdf, $d['institucion'], $d['logo'] ?? null, 'COMPROBANTE DE PAGO', $d['numero'], $d['emision']);
+
+    $y = 54;
+    pdf_titulo_seccion($pdf, 'Datos', $y);
+    $y += 9;
+    foreach ([['Alumno/a', $d['alumno']], ['Factura', $d['factura'] . ' · ' . $d['periodo']], ['Estado', $d['estado_texto']]] as [$etiqueta, $valor]) {
+        pdf_fila($pdf, $etiqueta, $valor, $y);
+        $y = $pdf->GetY();
+    }
+
+    $y += 6;
+    pdf_titulo_seccion($pdf, 'Ítems a pagar', $y);
+    $filas = array_map(fn ($it) => [$it['descripcion'], pdf_monto($it['importe'])], $d['items']);
+    $y = pdf_tabla($pdf, [['Concepto', 145, 'L'], ['Importe', 35, 'R']], $filas, $y + 9) + 6;
+
+    $pdf->SetFillColor(...PDF_OSCURO);
+    $pdf->Rect(105, $y, 90, 16, 'F');
+    $pdf->SetXY(105, $y + 2);
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->SetFont('Helvetica', '', 9);
+    $pdf->Cell(90, 5, 'TOTAL A TRANSFERIR', 0, 2, 'C');
+    $pdf->SetFont('Helvetica', 'B', 15);
+    $pdf->Cell(90, 7, pdf_monto($d['total']), 0, 0, 'C');
+    $y += 24;
+
+    $t = $d['transferencia'];
+    pdf_titulo_seccion($pdf, 'Datos para la transferencia', $y);
+    $y += 9;
+    foreach (
+        [
+            ['Banco', $t['banco']], ['Titular', $t['titular']], ['CUIT', $t['cuit']], ['CBU', $t['cbu']], ['Alias', $t['alias']],
+            ['Referencia', $d['numero'] . ' (escribila en el concepto de la transferencia)'],
+        ] as [$etiqueta, $valor]
+    ) {
+        pdf_fila($pdf, $etiqueta, $valor, $y);
+        $y = $pdf->GetY();
+    }
+
+    pdf_pie($pdf, 'Transferí el total exacto y cargá el comprobante de la transferencia en la app. El pago queda en revisión '
+        . 'hasta que la escuela lo apruebe. No se aceptan pagos en efectivo. Datos bancarios de demostración.');
+    return $pdf;
+}
