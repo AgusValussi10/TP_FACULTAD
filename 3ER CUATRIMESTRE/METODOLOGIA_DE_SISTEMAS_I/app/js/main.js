@@ -50,7 +50,7 @@ function alIniciarSesion(datos) {
   aplicarSesion(datos);
   estado.avisoLogin = '';
   navegar(RUTA_INICIAL);
-  mostrar();
+  refrescar();
 }
 
 async function cerrarSesion() {
@@ -58,7 +58,7 @@ async function cerrarSesion() {
   estado.usuario = null;
   estado.alumnos = [];
   navegar('login');
-  mostrar();
+  refrescar();
 }
 
 window.addEventListener('sesion-vencida', () => {
@@ -66,7 +66,7 @@ window.addEventListener('sesion-vencida', () => {
   estado.usuario = null;
   estado.avisoLogin = 'Tu sesión venció por inactividad. Volvé a ingresar.';
   navegar('login');
-  mostrar();
+  refrescar();
 });
 
 // ── Router ───────────────────────────────────────────────────────────────
@@ -104,6 +104,15 @@ function pintarMarco() {
   });
 }
 
+/** Pinta la vista sin dejar promesas sin manejar: si una vista falla, se avisa en pantalla. */
+function refrescar() {
+  mostrar().catch((e) => {
+    main.innerHTML = '';
+    mensaje(main, 'Ocurrió un error al mostrar la pantalla. Probá de nuevo.');
+    console.error(e);
+  });
+}
+
 async function mostrar() {
   pintarMarco();
   if (!estado.usuario) {
@@ -125,9 +134,9 @@ async function mostrar() {
 document.getElementById('sel-alumno').addEventListener('change', (e) => {
   estado.alumnoId = Number(e.target.value);
   guardarPreferencia(estado.alumnoId);
-  mostrar();
+  refrescar();
 });
-window.addEventListener('hashchange', mostrar);
+window.addEventListener('hashchange', refrescar);
 
 // ── Red y service worker ─────────────────────────────────────────────────
 
@@ -166,7 +175,7 @@ async function arrancar() {
     document.getElementById('reintentar').addEventListener('click', () => location.reload());
     return;
   }
-  mostrar();
+  refrescar();
 }
 
-arrancar();
+arrancar().catch(() => mensaje(main, 'No se pudo iniciar la app. Recargá la página.'));

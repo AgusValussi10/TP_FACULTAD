@@ -22,7 +22,8 @@ const SHELL = [
     'icons/apple-touch-icon.png',
 ];
 
-$hash = hash_init('sha1');
+// sha256 solo para versionar la caché (no protege nada); SonarCloud rechaza sha1.
+$hash = hash_init('sha256');
 foreach (SHELL as $archivo) {
     $ruta = __DIR__ . '/' . $archivo;
     hash_update($hash, $archivo . (is_file($ruta) ? (string) file_get_contents($ruta) : ''));

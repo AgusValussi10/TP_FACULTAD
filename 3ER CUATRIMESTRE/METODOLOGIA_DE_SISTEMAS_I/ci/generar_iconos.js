@@ -31,4 +31,7 @@ async function icono(nombre, tamanio, fondo, proporcion) {
   await icono('maskable-192.png', 192, marca, 0.62);
   await icono('maskable-512.png', 512, marca, 0.62);
   await icono('apple-touch-icon.png', 180, blanco, 0.86);
-})();
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
