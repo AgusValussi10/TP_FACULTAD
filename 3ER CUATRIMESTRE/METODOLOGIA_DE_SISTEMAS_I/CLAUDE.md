@@ -23,7 +23,9 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── recibo.php              ← render_recibo() + piezas comunes de los PDF (pdf_encabezado, pdf_titulo_seccion, pdf_fila, pdf_pie, pdf_institucion)
 │   ├── factura_pdf.php         ← Parte 3: render_factura() (mismo estilo que el recibo)
 │   ├── facturacion.php         ← Parte 3: tarifas, generación mensual, pagos, comprobantes y su revisión (única fuente de esas reglas)
-│   └── inscripciones.php       ← Parte 3: deportes (máx. 2, cupo, choque de horario) y comedor/transporte por mes; lo usan la web y la app
+│   ├── inscripciones.php       ← Parte 3: deportes (máx. 2, cupo, choque de horario) y comedor/transporte por mes; lo usan la web y la app
+│   ├── reportes.php            ← Parte 3 (RFGm12): los 5 reportes de pagos agregados en SQL + export CSV
+│   └── recordatorios.php       ← Parte 3 (RFGm07/08): mails de fin de mes y día 20 en MODO SIMULACIÓN
 ├── assets/                     ← Imágenes optimizadas en formato AVIF (+ logo.png para los PDF: FPDF no lee AVIF)
 │   ├── edificio.avif
 │   ├── piscina.avif
@@ -64,6 +66,8 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │                                  cuotas (RFGm03), facturas + deuda + factura_pdf (RFGm04),
 │                                  pago_crear + pago + pago_pdf + pago_anular (RFGm05), comprobante_subir (RFGm06),
 │                                  inscripciones + deporte + servicio (RFGm09/10/11)
+├── cron/
+│   └── recordatorios.php       ← Endpoint del cron de mails (?tipo=fin_de_mes|dia_20, header X-Cron-Token = env CRON_TOKEN; sin token → 403)
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -112,6 +116,9 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── facturacion.php / facturacion_generar.php / facturas_listar.php ← Parte 3: generar el mes (idempotente) y listar facturas con filtros
 │   ├── pagos_revisar.php / pagos_listar.php / pago_revisar.php ← Parte 3: ver comprobantes y aprobar/rechazar (con motivo) los pagos por transferencia
 │   ├── comprobante_ver.php            ← GET admin (todos) / padre (los de sus hijos) ?id= → archivo del comprobante
+│   ├── reportes_pagos.php / reportes_pagos_datos.php ← Parte 3 (RFGm12): reportes de pagos con período y CSV (solo admin)
+│   ├── mails.php / mails_listar.php / mails_ejecutar.php / mail_ver.php ← Parte 3 (RFGm07/08): mails generados, vista previa y "Ejecutar ahora (prueba)"
+│   ├── factura_pdf.php                ← GET admin ?factura_id= → factura en PDF (la que se adjunta en el mail de fin de mes)
 │   ├── recibo_pdf.php                 ← GET admin, o padre para cuotas de sus hijos, ?cuota_id= → recibo PDF (solo cuotas pagadas)
 │   ├── deportes.php                   ← UI inscripción a instalaciones deportivas — RFG11
 │   ├── deportes_guardar.php / deportes_listar.php
@@ -177,9 +184,9 @@ Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 �
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
 Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
 
-**Tests de integración** (`phpunit.xml`, 115 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+**Tests de integración** (`phpunit.xml`, 127 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
 `RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14), `CuotasEstadoTest` (RFG19)
-`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest`, `AppAuthTest`, `AppCuentaTest`, `AppPagosTest` y `AppInscripcionesTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
+`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest`, `AppAuthTest`, `AppCuentaTest`, `AppPagosTest`, `AppInscripcionesTest`, `ReportesPagosTest` y `RecordatoriosTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
 (un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
 `php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
 rearmar la base.
@@ -901,6 +908,21 @@ sola al llegar una versión nueva: muestra un aviso con "Actualizar".
   (`reservas_servicios` tiene dos claves únicas): `SELECT … FOR UPDATE` + `UPDATE`/`INSERT`.
 - La app (pantalla Inscripciones) muestra "Mis inscripciones", deportes con valor, profesor, cupo y por qué no se puede
   inscribir, y los próximos 3 meses abiertos para reservar. El alumno solo consulta.
+
+**Reportes de pagos (Paso 6, RFGm12, versión mínima):** `gestion/reportes_pagos.php` (solo admin) con los 5 listados
+de la consigna, filtro desde/hasta (`AAAA-MM`) y export CSV (UTF-8 con BOM, `;`, decimales con coma). Ingresos = pagos
+**aprobados** por fecha de aprobación; el resto, por mes facturado. Sin gráficos. Toda la agregación es SQL (`lib/reportes.php`).
+
+**Mails a las familias (Paso 7, RFGm07/08, versión mínima):** **solo modo simulación** (sin SMTP ni PHPMailer): el
+mail se arma y se guarda en `mails_enviados` con estado `simulado`. Fin de mes (último día hábil, lunes a viernes sin
+feriados): total a abonar del padre con la composición por hijo e ítem y las facturas con saldo adjuntas (ids en
+`adjuntos`; el PDF se genera al verlo). Día 20: deuda **vencida**. No se reclama lo que está en revisión; no se repite el
+mismo tipo y mes al mismo padre (clave única). Como `usuarios` no tiene email, el destinatario sale del legajo
+(`alumnos_datos.email` de un hijo). `cron/recordatorios.php` exige el header `X-Cron-Token` igual a la variable de
+entorno `CRON_TOKEN` (403 si falta o no coincide). `.github/workflows/recordatorios.yml` lo llama todos los días a las
+12:00 UTC (9:00 AR) y con `workflow_dispatch`; necesita el secret `CRON_TOKEN` (y opcional la variable `APP_URL`). En el
+admin, "Mails enviados" tiene la vista previa (iframe con sandbox) y "Ejecutar ahora (prueba)" con fecha simulada.
+**Pendiente:** envío real por SMTP y "Olvidé mi contraseña" (RFGm02, necesita mail).
 
 **Pendiente post-entrega:** revisión en navegador de la pantalla Inscripciones (sin spec de Cypress, por decisión del
 equipo; la lógica está cubierta por `AppInscripcionesTest`) y el spec de Cypress del Paso 4 (`app_pagos.cy.js`, guardado fuera del repo): dio 2/3 (el caso
