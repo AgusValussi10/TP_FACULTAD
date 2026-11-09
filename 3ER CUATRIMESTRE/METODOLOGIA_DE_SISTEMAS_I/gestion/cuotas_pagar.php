@@ -1,5 +1,7 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/../lib/facturacion.php';
 
 header('Content-Type: application/json; charset=utf-8');
 requerir_rol('admin');
@@ -21,7 +23,8 @@ if ($cuota_id <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_pago)) {
     echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
     exit;
 }
-if (!array_key_exists($metodo, METODOS_PAGO)) {
+// Parte 3: sin efectivo para pagos nuevos (los registros viejos se siguen mostrando).
+if (!in_array($metodo, METODOS_PAGO_HABILITADOS, true)) {
     echo json_encode(['success' => false, 'message' => 'Elegí la forma de pago.']);
     exit;
 }
@@ -32,36 +35,15 @@ if (mb_strlen($referencia) > 60) {
 $referenciaVal = $referencia !== '' ? $referencia : null;
 $registrado_por = (int) $_SESSION['usuario_id'];
 
-$stmt = $conn->prepare("SELECT alumno_id, importe, fecha_vencimiento, estado FROM cuotas WHERE id = ?");
-$stmt->bind_param('i', $cuota_id);
-$stmt->execute();
-$cuota = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$cuota) {
-    echo json_encode(['success' => false, 'message' => 'La cuota no existe.']);
+// marcar_cuota_pagada() también marca pagados sus ítems de factura (Parte 3),
+// así la web y la app muestran lo mismo.
+try {
+    $recargo = marcar_cuota_pagada($conn, $cuota_id, $fecha_pago, $metodo, $referenciaVal, $registrado_por, true);
+} catch (ReglaNegocioException $e) {
     $conn->close();
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     exit;
 }
-
-if ($cuota['estado'] !== 'pendiente') {
-    echo json_encode(['success' => false, 'message' => 'Esa cuota ya fue registrada como pagada.']);
-    $conn->close();
-    exit;
-}
-
-$recargo = calcular_recargo((float) $cuota['importe'], $cuota['fecha_vencimiento'], $fecha_pago);
-
-$upd = $conn->prepare(
-    "UPDATE cuotas
-     SET estado = 'pagada', recargo = ?, fecha_pago = ?, metodo_pago = ?, referencia_pago = ?, registrado_por = ?
-     WHERE id = ? AND estado = 'pendiente'"
-);
-$upd->bind_param('dsssii', $recargo, $fecha_pago, $metodo, $referenciaVal, $registrado_por, $cuota_id);
-$upd->execute();
-$upd->close();
-
-actualizar_condicion_regularizacion($conn, (int) $cuota['alumno_id']);
 
 $conn->close();
 
