@@ -39,5 +39,8 @@
         <testsuite name="Parte 3 - App: inscripciones (RFGm09/RFGm10/RFGm11)">
             <file>tests/AppInscripcionesTest.php</file>
         </testsuite>
+        <testsuite name="Parte 3 - Reportes de pagos (RFGm12)">
+            <file>tests/ReportesPagosTest.php</file>
+        </testsuite>
     </testsuites>
 </phpunit>
