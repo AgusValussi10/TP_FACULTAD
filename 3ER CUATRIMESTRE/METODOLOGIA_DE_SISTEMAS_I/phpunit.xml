@@ -27,5 +27,8 @@
             <file>tests/FacturacionTest.php</file>
             <file>tests/RecargoAppTest.php</file>
         </testsuite>
+        <testsuite name="Parte 3 - App: ingreso y cuenta (RFGm01/RFGm02)">
+            <file>tests/AppAuthTest.php</file>
+        </testsuite>
     </testsuites>
 </phpunit>
