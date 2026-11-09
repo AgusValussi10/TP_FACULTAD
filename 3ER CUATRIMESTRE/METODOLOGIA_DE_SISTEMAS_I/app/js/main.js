@@ -113,11 +113,22 @@ function refrescar() {
   });
 }
 
+/**
+ * Cada vista se dibuja en un contenedor NUEVO. Si mientras una vista espera a la API
+ * se pasa a otra pantalla (por ejemplo, la sesión vence y aparece el login), la vista
+ * vieja termina escribiendo en un contenedor que ya no está en la página y no pisa nada.
+ */
+function contenedorNuevo() {
+  const cont = document.createElement('div');
+  main.replaceChildren(cont);
+  return cont;
+}
+
 async function mostrar() {
   pintarMarco();
   if (!estado.usuario) {
     if (rutaActual() !== 'login') navegar('login');
-    login.render(main, ctx);
+    login.render(contenedorNuevo(), ctx);
     return;
   }
   let ruta = rutaActual();
@@ -126,8 +137,9 @@ async function mostrar() {
     navegar(ruta);
     pintarMarco();
   }
-  main.innerHTML = '<p class="cargando">Cargando…</p>';
-  await RUTAS[ruta].render(main, ctx);
+  const cont = contenedorNuevo();
+  cont.innerHTML = '<p class="cargando">Cargando…</p>';
+  await RUTAS[ruta].render(cont, ctx);
   main.focus({ preventScroll: true });
 }
 
