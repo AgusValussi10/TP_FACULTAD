@@ -4,9 +4,11 @@ import { html, mensaje } from './util.js';
 import * as login from './vistas/login.js';
 import * as inicio from './vistas/inicio.js';
 import * as cuenta from './vistas/cuenta.js';
+import * as cuotas from './vistas/cuotas.js';
+import * as facturas from './vistas/facturas.js';
 
 // Rutas que necesitan sesión. La de login se muestra sola cuando no hay sesión.
-const RUTAS = { inicio, cuenta };
+const RUTAS = { inicio, cuotas, facturas, cuenta };
 const RUTA_INICIAL = 'inicio';
 
 const main = document.getElementById('contenido');
