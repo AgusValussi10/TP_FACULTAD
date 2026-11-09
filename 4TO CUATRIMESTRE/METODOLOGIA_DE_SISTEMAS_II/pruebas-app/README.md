@@ -39,7 +39,8 @@ Las capturas de los casos fallidos quedan en `cypress/screenshots/` (está en el
 | `app_cuotas_facturas.cy.js` | 3 (RFGm03/04) | Cuotas (vencidas en rojo, por vencer en amarillo, pagadas con recibo), facturas con filtro de fechas, detalle y PDF, historial de deuda por ítem |
 
 **Pendiente post-entrega:** el spec del Paso 4 (pagos y comprobantes) quedó a medias (2/3, sin volver a correr
-después de un arreglo) y no está en el repo. El Paso 4 está cubierto por los tests de PHPUnit (`AppPagosTest`).
+después de un arreglo) y no está en el repo. El Paso 4 está cubierto por los tests de PHPUnit (`AppPagosTest`). La pantalla de
+Inscripciones (Paso 5) tampoco tiene spec ni revisión en navegador; su lógica la cubre `AppInscripcionesTest`.
 
 ## Notas
 
