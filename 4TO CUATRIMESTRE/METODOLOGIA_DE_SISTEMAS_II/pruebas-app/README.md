@@ -38,6 +38,9 @@ Las capturas de los casos fallidos quedan en `cypress/screenshots/` (está en el
 | `app_ingreso.cy.js` | 2 (RFGm01/02) | Docente rechazado, primera visita sin perder lo tipeado, padre con dos hijos (inicio, cambio de hijo, cuenta, validación de contraseña, cierre de sesión), alumno sin selector, sesión vencida |
 | `app_cuotas_facturas.cy.js` | 3 (RFGm03/04) | Cuotas (vencidas en rojo, por vencer en amarillo, pagadas con recibo), facturas con filtro de fechas, detalle y PDF, historial de deuda por ítem |
 
+**Pendiente post-entrega:** el spec del Paso 4 (pagos y comprobantes) quedó a medias (2/3, sin volver a correr
+después de un arreglo) y no está en el repo. El Paso 4 está cubierto por los tests de PHPUnit (`AppPagosTest`).
+
 ## Notas
 
 - `php -S` en Windows atiende **un pedido por vez** y el navegador abre conexiones de más: un ingreso puede tardar

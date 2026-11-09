@@ -60,7 +60,8 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── css/app.css · icons/    ← Estilos mobile-first; íconos generados con `node ci/generar_iconos.js`
 │   ├── js/main.js · api.js · util.js · instalar.js · vistas/*.js ← router por hash, cliente API, escape HTML, instalación
 │   └── api/                    ← JSON {success, data, message}: _base.php (sesión, 401/403, renovación de cookie), login, logout, sesion, password, inicio,
-│                                  cuotas (RFGm03), facturas + deuda + factura_pdf (RFGm04)
+│                                  cuotas (RFGm03), facturas + deuda + factura_pdf (RFGm04),
+│                                  pago_crear + pago + pago_pdf + pago_anular (RFGm05), comprobante_subir (RFGm06)
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -174,9 +175,9 @@ Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 �
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
 Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
 
-**Tests de integración** (`phpunit.xml`, 98 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+**Tests de integración** (`phpunit.xml`, 105 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
 `RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14), `CuotasEstadoTest` (RFG19)
-`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest`, `AppAuthTest` y `AppCuentaTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
+`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest`, `AppAuthTest`, `AppCuentaTest` y `AppPagosTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
 (un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
 `php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
 rearmar la base.
@@ -878,6 +879,17 @@ SQL (`GROUP BY` mes, tipo y deporte) facturado / pagado / en proceso / adeudado.
 `facturas_de_alumno()` y `deuda_por_concepto()` de `lib/facturacion.php`. **Pruebas E2E de la app:** Cypress (la
 herramienta del equipo), `cypress/e2e/app_*.cy.js` en la raíz del repo, en 390×844; se corren con Edge (Electron se
 cae en esta máquina). Instrucciones en `4TO CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_II/pruebas-app/README.md`.
+
+**Pagos y comprobantes (Paso 4, RFGm05/06):** en Facturas el padre toca "Pagar", marca los ítems pendientes y ve el
+total (si marca una cuota vencida, se le suma el recargo que `crear_pago()` agrega a esa factura). El sistema emite el
+comprobante de pago `P-` + id con los datos de transferencia (`DATOS_TRANSFERENCIA` en `lib/facturacion.php`, **ficticios**)
+y su PDF. Después carga uno o más comprobantes de transferencia (foto con la cámara o archivo; JPG/PNG/PDF validados
+por tipo real con `finfo`, nombre sanitizado, máximo `comprobante_max_bytes()` = 2 MB o menos según
+`max_allowed_packet`; la app achica las fotos a JPEG de 1600 px antes de subirlas) y el pago queda "en revisión". Sin
+comprobante se puede anular (los ítems se liberan). Solo el padre paga (el alumno recibe 403). La app ya no se recarga
+sola al llegar una versión nueva: muestra un aviso con "Actualizar".
+**Pendiente post-entrega:** spec de Cypress del Paso 4 (`app_pagos.cy.js`, guardado fuera del repo): dio 2/3 (el caso
+de anular falló por la recarga automática, ya corregida) y no se volvió a correr; los specs de los Pasos 2 y 3 están en verde.
 
 **Producción (después del merge):** el deploy corre `init_db.php`; después abrir una vez `/database/seed_parte3.php`
 con sesión de admin (carga tarifas y datos de demo). `laura.martinez` queda con dos hijos (ana.garcia y matias.vega).
