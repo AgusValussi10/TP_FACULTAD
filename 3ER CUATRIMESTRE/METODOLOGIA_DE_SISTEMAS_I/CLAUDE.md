@@ -163,9 +163,9 @@ Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 �
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
 Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
 
-**Tests de integración** (`phpunit.xml`, 74 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+**Tests de integración** (`phpunit.xml`, 77 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
 `RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14), `CuotasEstadoTest` (RFG19)
-`LegajoTest` (RFG16) y `FacturacionTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, permisos). Usan `tests/HttpClient.php`
+`LegajoTest` (RFG16) y `FacturacionTest` y `RecargoAppTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
 (un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
 `php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
 rearmar la base.
@@ -836,9 +836,11 @@ tiene un pago en revisión, el cobro por la web se rechaza.
   mientras sigan inscriptos; la baja borra la inscripción (los reportes salen de `factura_items`).
 - **Comedor con valor único** para todos los niveles; transporte según el recorrido reservado para el mes.
 - **Tarifas sin historial:** una fila por concepto; el importe queda congelado en el ítem de la factura.
-- **Recargo solo sobre la cuota mensual** impaga y vencida de un mes anterior, como ítem de la factura siguiente. Su
-  importe es `cuotas.recargo`: si estaba en 0 se calcula una única vez con `calcular_recargo()` y se guarda ahí; nunca se
-  factura dos veces. Si la cuota se paga por la app antes de la facturación siguiente, no lleva recargo.
+- **Recargo solo sobre la cuota mensual** vencida (RN11). Su importe es `cuotas.recargo`: si estaba en 0 se calcula una
+  única vez con `calcular_recargo()` (Sprint 5) y se guarda ahí. Entra como ítem de factura en lo que pase primero:
+  (a) el padre paga esa cuota por la app → `crear_pago()` llama a `agregar_recargo_a_factura()` y el recargo va a la
+  MISMA factura y al mismo pago (lo ve en el total antes de confirmar); (b) se genera la facturación del mes siguiente.
+  Un solo ítem de recargo por cuota: nunca se factura dos veces (`RecargoAppTest`).
 - **Sin efectivo** (consigna): `METODOS_PAGO_HABILITADOS` lo excluye para pagos nuevos; `METODOS_PAGO` sigue completo
   para mostrar bien los cobros viejos.
 - Generar la facturación de nuevo no modifica facturas existentes (las reservas cierran el día 25 del mes anterior).
