@@ -20,8 +20,10 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 ├── index.php                   ← Enrutador: inyecta banner de sesión activa sobre index.html
 ├── lib/
 │   ├── fpdf/                   ← FPDF 1.86 (librería PDF sin dependencias, vendorizada; solo fuentes Helvetica)
-│   ├── recibo.php              ← render_recibo(): dibuja el recibo de pago en PDF (no toca BD ni sesión)
-│   └── facturacion.php         ← Parte 3: tarifas, generación mensual, pagos, comprobantes y su revisión (única fuente de esas reglas)
+│   ├── recibo.php              ← render_recibo() + piezas comunes de los PDF (pdf_encabezado, pdf_titulo_seccion, pdf_fila, pdf_pie, pdf_institucion)
+│   ├── factura_pdf.php         ← Parte 3: render_factura() (mismo estilo que el recibo)
+│   ├── facturacion.php         ← Parte 3: tarifas, generación mensual, pagos, comprobantes y su revisión (única fuente de esas reglas)
+│   └── inscripciones.php       ← Parte 3: deportes (máx. 2, cupo, choque de horario) y comedor/transporte por mes; lo usan la web y la app
 ├── assets/                     ← Imágenes optimizadas en formato AVIF (+ logo.png para los PDF: FPDF no lee AVIF)
 │   ├── edificio.avif
 │   ├── piscina.avif
@@ -58,7 +60,10 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── offline.html            ← Pantalla sin conexión
 │   ├── css/app.css · icons/    ← Estilos mobile-first; íconos generados con `node ci/generar_iconos.js`
 │   ├── js/main.js · api.js · util.js · instalar.js · vistas/*.js ← router por hash, cliente API, escape HTML, instalación
-│   └── api/                    ← JSON {success, data, message}: _base.php (sesión, 401/403, renovación de cookie), login, logout, sesion, password, inicio
+│   └── api/                    ← JSON {success, data, message}: _base.php (sesión, 401/403, renovación de cookie), login, logout, sesion, password, inicio,
+│                                  cuotas (RFGm03), facturas + deuda + factura_pdf (RFGm04),
+│                                  pago_crear + pago + pago_pdf + pago_anular (RFGm05), comprobante_subir (RFGm06),
+│                                  inscripciones + deporte + servicio (RFGm09/10/11)
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -172,9 +177,9 @@ Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 �
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
 Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
 
-**Tests de integración** (`phpunit.xml`, 89 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+**Tests de integración** (`phpunit.xml`, 115 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
 `RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14), `CuotasEstadoTest` (RFG19)
-`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest` y `AppAuthTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
+`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest`, `AppAuthTest`, `AppCuentaTest`, `AppPagosTest` y `AppInscripcionesTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
 (un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
 `php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
 rearmar la base.
@@ -867,6 +872,39 @@ uno, recordado en localStorage); el alumno opera sobre sí mismo. Cambio de cont
 caracteres, distinta de la actual, `password_hash`. Instalación: botón con `beforeinstallprompt` (Android/Chrome) y
 pasos "Compartir → Agregar a inicio" en iOS. El service worker y la instalación necesitan HTTPS: en la LAN por HTTP no
 se registran (se prueban en Render o con un túnel). El logo original mide 262×231: los íconos de 512 quedan algo suavizados.
+
+**Cuotas, facturas e historial (Paso 3, RFGm03/04):** la pantalla Cuotas usa `cuotas_de_alumno()` (RFG19), así que
+muestra lo mismo que la web; el padre baja el recibo de las pagadas (`gestion/recibo_pdf.php`). Facturas filtra por
+rango de períodos (`desde`/`hasta` = `AAAA-MM`, sobre el mes facturado), muestra ítems, pagos y comprobantes y baja la
+factura en PDF (`app/api/factura_pdf.php`, 403 si no es de la familia aunque no exista). "Deuda por concepto" agrega en
+SQL (`GROUP BY` mes, tipo y deporte) facturado / pagado / en proceso / adeudado. Las consultas están en
+`facturas_de_alumno()` y `deuda_por_concepto()` de `lib/facturacion.php`. **Pruebas E2E de la app:** Cypress (la
+herramienta del equipo), `cypress/e2e/app_*.cy.js` en la raíz del repo, en 390×844; se corren con Edge (Electron se
+cae en esta máquina). Instrucciones en `4TO CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_II/pruebas-app/README.md`.
+
+**Pagos y comprobantes (Paso 4, RFGm05/06):** en Facturas el padre toca "Pagar", marca los ítems pendientes y ve el
+total (si marca una cuota vencida, se le suma el recargo que `crear_pago()` agrega a esa factura). El sistema emite el
+comprobante de pago `P-` + id con los datos de transferencia (`DATOS_TRANSFERENCIA` en `lib/facturacion.php`, **ficticios**)
+y su PDF. Después carga uno o más comprobantes de transferencia (foto con la cámara o archivo; JPG/PNG/PDF validados
+por tipo real con `finfo`, nombre sanitizado, máximo `comprobante_max_bytes()` = 2 MB o menos según
+`max_allowed_packet`; la app achica las fotos a JPEG de 1600 px antes de subirlas) y el pago queda "en revisión". Sin
+comprobante se puede anular (los ítems se liberan). Solo el padre paga (el alumno recibe 403). La app ya no se recarga
+sola al llegar una versión nueva: muestra un aviso con "Actualizar".
+**Inscripciones (Paso 5, RFGm09/10/11):** reglas en `lib/inscripciones.php`, usadas también por la web
+(`gestion/deportes_guardar.php` y `gestion/servicios_*.php`, que ahora pide recorrido para el transporte):
+- **Deportes:** hasta `MAX_DEPORTES_SIMULTANEOS` = 2 por alumno (reemplaza a RN10, que no fijaba máximo; también rige en la
+  web), cupo verificado con la fila del deporte bloqueada (`FOR UPDATE`), sin duplicados y sin choque de horario.
+  **Asunción:** chocan si comparten un día (`deportes.dias`, SET) y las franjas se superponen (`inicio1 < fin2 y
+  inicio2 < fin1`; terminar 17:00 y empezar 17:00 no es choque). La baja borra la inscripción (deja de facturarse el mes siguiente).
+- **Comedor y transporte:** por mes, hasta el día 25 del mes anterior (RN08); transporte con uno de los 4 recorridos,
+  cambiable o cancelable mes a mes. No se reserva ni se cancela un mes ya facturado (409). Sin `ON DUPLICATE KEY`
+  (`reservas_servicios` tiene dos claves únicas): `SELECT … FOR UPDATE` + `UPDATE`/`INSERT`.
+- La app (pantalla Inscripciones) muestra "Mis inscripciones", deportes con valor, profesor, cupo y por qué no se puede
+  inscribir, y los próximos 3 meses abiertos para reservar. El alumno solo consulta.
+
+**Pendiente post-entrega:** revisión en navegador de la pantalla Inscripciones (sin spec de Cypress, por decisión del
+equipo; la lógica está cubierta por `AppInscripcionesTest`) y el spec de Cypress del Paso 4 (`app_pagos.cy.js`, guardado fuera del repo): dio 2/3 (el caso
+de anular falló por la recarga automática, ya corregida) y no se volvió a correr; los specs de los Pasos 2 y 3 están en verde.
 
 **Producción (después del merge):** el deploy corre `init_db.php`; después abrir una vez `/database/seed_parte3.php`
 con sesión de admin (carga tarifas y datos de demo). `laura.martinez` queda con dos hijos (ana.garcia y matias.vega).

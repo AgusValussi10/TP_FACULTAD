@@ -1,5 +1,7 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/../lib/inscripciones.php';
 
 header('Content-Type: application/json; charset=utf-8');
 requerir_rol('padre');
@@ -30,39 +32,18 @@ if (!alumno_pertenece_a_padre($conn, $alumno_id, $padre_id)) {
     exit;
 }
 
-if (plazo_vencido_reserva($mes, $anio)) {
-    echo json_encode(['success' => false, 'message' =>
-        'El plazo para reservar este mes venció. Comunicate con administración para gestionarlo.']);
-    $conn->close();
-    exit;
-}
-
-$servicios_validos = ['comedor', 'transporte'];
+// Mismas reglas que la app (lib/inscripciones.php): plazo del día 25 (RN08), mes no
+// facturado y, para el transporte, un recorrido (RFGm11).
+$recorrido_id = (int) ($_POST['recorrido_id'] ?? 0);
 $confirmados = [];
-
-$conn->begin_transaction();
 try {
-    $stmt = $conn->prepare(
-        "INSERT INTO reservas_servicios (alumno_id, servicio, mes, anio, estado)
-         VALUES (?, ?, ?, ?, 'confirmada')
-         ON DUPLICATE KEY UPDATE estado = 'confirmada'"
-    );
-
-    foreach ($servicios as $servicio) {
-        if (!in_array($servicio, $servicios_validos, true)) {
-            continue;
-        }
-        $stmt->bind_param('isii', $alumno_id, $servicio, $mes, $anio);
-        $stmt->execute();
+    foreach (array_intersect(['comedor', 'transporte'], $servicios) as $servicio) {
+        reservar_servicio($conn, $alumno_id, $servicio, $mes, $anio, $servicio === 'transporte' ? $recorrido_id : null);
         $confirmados[] = $servicio;
     }
-    $stmt->close();
-
-    $conn->commit();
     echo json_encode(['success' => true, 'confirmados' => $confirmados]);
-} catch (Throwable $e) {
-    $conn->rollback();
-    echo json_encode(['success' => false, 'message' => 'Error al guardar la reserva.']);
+} catch (ReglaNegocioException $e) {
+    echo json_encode(['success' => false, 'message' => $e->getMessage(), 'confirmados' => $confirmados]);
 }
 
 $conn->close();

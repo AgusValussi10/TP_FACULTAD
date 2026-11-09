@@ -40,6 +40,16 @@ class HttpClient
         return $this->enviar('POST', $ruta, $datos);
     }
 
+    /**
+     * POST multipart con un archivo (como un <input type="file">).
+     * @return array{status:int, json:?array, body:string, headers:string[]}
+     */
+    public function postArchivo(string $ruta, array $datos, string $campo, string $archivo, string $nombre, string $mime): array
+    {
+        $datos[$campo] = new CURLFile($archivo, $mime, $nombre);
+        return $this->enviar('MULTIPART', $ruta, $datos);
+    }
+
     private function enviar(string $metodo, string $ruta, array $datos = []): array
     {
         $headers = [];
@@ -57,6 +67,9 @@ class HttpClient
         if ($metodo === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($datos));
+        } elseif ($metodo === 'MULTIPART') {
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $datos); // array con CURLFile → multipart/form-data
         }
         $body   = (string) curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
