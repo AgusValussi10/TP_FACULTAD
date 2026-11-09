@@ -53,6 +53,11 @@ a { color: var(--naranja-texto); }
 .selector-hijo label { font-weight: 700; font-size: .9rem; color: var(--gris); }
 .selector-hijo select { flex: 1; }
 
+.aviso-version { display: flex; align-items: center; justify-content: space-between; gap: .6rem; background: var(--azul-bg); color: var(--azul); padding: .4rem 1rem; font-weight: 600; font-size: .9rem; }
+.aviso-version .btn-chico {
+  min-height: 44px; padding: .3rem .8rem; border-radius: 9px; border: 2px solid var(--azul);
+  background: var(--blanco); color: var(--azul); font: inherit; font-weight: 700; cursor: pointer;
+}
 .aviso-red { background: var(--amarillo-bg); color: var(--amarillo); padding: .6rem 1rem; font-weight: 600; font-size: .9rem; }
 
 main { padding: 1rem; max-width: 640px; margin: 0 auto; outline: none; }
