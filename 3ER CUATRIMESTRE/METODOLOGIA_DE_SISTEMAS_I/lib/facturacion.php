@@ -191,6 +191,161 @@ function deuda_de_alumno(mysqli $conn, int $alumno_id): array
     ];
 }
 
+// ── Consultas para la app (RFGm03/RFGm04) ───────────────────────────────
+
+const ESTADOS_ITEM = ['pendiente' => 'Pendiente', 'en_revision' => 'En proceso de pago', 'pagado' => 'Pagado'];
+
+/**
+ * Convierte 'AAAA-MM' en un índice de mes (anio * 12 + mes) para filtrar por período.
+ * null si viene vacío; lanza 422 si el formato es inválido.
+ */
+function indice_periodo(?string $periodo): ?int
+{
+    if ($periodo === null || $periodo === '') {
+        return null;
+    }
+    if (!preg_match('/^(\d{4})-(\d{2})$/', $periodo, $m) || (int) $m[2] < 1 || (int) $m[2] > 12) {
+        throw new ReglaNegocioException('El período tiene que tener el formato AAAA-MM.', 422);
+    }
+    return (int) $m[1] * 12 + (int) $m[2];
+}
+
+/**
+ * Facturas de un alumno (más nuevas primero) con ítems, pagos y comprobantes (sin el archivo).
+ * $desde / $hasta: 'AAAA-MM' sobre el período facturado, inclusive; null = sin límite.
+ */
+function facturas_de_alumno(mysqli $conn, int $alumno_id, ?string $desde = null, ?string $hasta = null): array
+{
+    $min = indice_periodo($desde) ?? 0;
+    $max = indice_periodo($hasta) ?? 999999;
+    $stmt = $conn->prepare(
+        "SELECT id, mes, anio, fecha_emision, fecha_vencimiento, total, pagado, estado FROM facturas
+         WHERE alumno_id = ? AND (anio * 12 + mes) BETWEEN ? AND ? ORDER BY anio DESC, mes DESC"
+    );
+    $stmt->bind_param('iii', $alumno_id, $min, $max);
+    $stmt->execute();
+    $facturas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    if (!$facturas) {
+        return [];
+    }
+
+    $ids = implode(',', array_map(fn ($f) => (int) $f['id'], $facturas));
+    $items = [];
+    foreach ($conn->query("SELECT id, factura_id, tipo, descripcion, importe, estado FROM factura_items WHERE factura_id IN ($ids) ORDER BY id")->fetch_all(MYSQLI_ASSOC) as $it) {
+        $items[(int) $it['factura_id']][] = [
+            'id'           => (int) $it['id'],
+            'tipo'         => $it['tipo'],
+            'tipo_texto'   => TIPOS_ITEM[$it['tipo']],
+            'descripcion'  => $it['descripcion'],
+            'importe'      => (float) $it['importe'],
+            'estado'       => $it['estado'],
+            'estado_texto' => ESTADOS_ITEM[$it['estado']],
+        ];
+    }
+    $comprobantes = [];
+    $res = $conn->query(
+        "SELECT c.id, c.pago_id, c.nombre_archivo, c.monto_declarado, c.fecha_transferencia
+         FROM comprobantes_transferencia c JOIN pagos p ON p.id = c.pago_id WHERE p.factura_id IN ($ids) ORDER BY c.id"
+    );
+    foreach ($res->fetch_all(MYSQLI_ASSOC) as $c) {
+        $comprobantes[(int) $c['pago_id']][] = [
+            'id' => (int) $c['id'], 'nombre' => $c['nombre_archivo'], 'monto' => (float) $c['monto_declarado'],
+            'fecha' => date('d/m/Y', strtotime($c['fecha_transferencia'])),
+        ];
+    }
+    $pagos = [];
+    foreach ($conn->query("SELECT id, factura_id, total, estado, motivo_rechazo, created_at FROM pagos WHERE factura_id IN ($ids) ORDER BY id DESC")->fetch_all(MYSQLI_ASSOC) as $p) {
+        $pagos[(int) $p['factura_id']][] = [
+            'id'             => (int) $p['id'],
+            'numero'         => numero_pago((int) $p['id']),
+            'total'          => (float) $p['total'],
+            'estado'         => $p['estado'],
+            'estado_texto'   => ESTADOS_PAGO[$p['estado']],
+            'motivo_rechazo' => $p['motivo_rechazo'],
+            'fecha'          => date('d/m/Y', strtotime($p['created_at'])),
+            'comprobantes'   => $comprobantes[(int) $p['id']] ?? [],
+        ];
+    }
+
+    $hoy = date('Y-m-d');
+    return array_map(function ($f) use ($items, $pagos, $hoy) {
+        $propios = $items[(int) $f['id']] ?? [];
+        $suma = fn ($estado) => round(array_sum(array_map(fn ($it) => $it['estado'] === $estado ? $it['importe'] : 0, $propios)), 2);
+        $saldo = $suma('pendiente');
+        return [
+            'id'             => (int) $f['id'],
+            'numero'         => numero_factura((int) $f['id']),
+            'periodo'        => periodo_texto((int) $f['mes'], (int) $f['anio']),
+            'mes'            => (int) $f['mes'],
+            'anio'           => (int) $f['anio'],
+            'emision'        => $f['fecha_emision'],
+            'emision_ar'     => date('d/m/Y', strtotime($f['fecha_emision'])),
+            'vencimiento'    => $f['fecha_vencimiento'],
+            'vencimiento_ar' => date('d/m/Y', strtotime($f['fecha_vencimiento'])),
+            'vencida'        => $saldo > 0 && $f['fecha_vencimiento'] < $hoy,
+            'total'          => (float) $f['total'],
+            'pagado'         => (float) $f['pagado'],
+            'en_revision'    => $suma('en_revision'),
+            'saldo'          => $saldo,
+            'estado'         => $f['estado'],
+            'estado_texto'   => ESTADOS_FACTURA[$f['estado']],
+            'items'          => $propios,
+            'pagos'          => $pagos[(int) $f['id']] ?? [],
+        ];
+    }, $facturas);
+}
+
+/**
+ * Historial de deuda por concepto (RFGm04): por cada concepto (cuota, matrícula, cada
+ * deporte, comedor, transporte, recargo) y mes, cuánto se facturó, pagó y debe.
+ * La agregación es SQL (GROUP BY); PHP solo agrupa las filas por concepto.
+ */
+function deuda_por_concepto(mysqli $conn, int $alumno_id, ?string $desde = null, ?string $hasta = null): array
+{
+    $min = indice_periodo($desde) ?? 0;
+    $max = indice_periodo($hasta) ?? 999999;
+    $stmt = $conn->prepare(
+        "SELECT f.anio, f.mes, fi.tipo, fi.deporte_id, MAX(d.nombre) AS deporte, MAX(rt.nombre) AS recorrido,
+                SUM(fi.importe) AS facturado,
+                SUM(CASE WHEN fi.estado = 'pagado' THEN fi.importe ELSE 0 END) AS pagado,
+                SUM(CASE WHEN fi.estado = 'en_revision' THEN fi.importe ELSE 0 END) AS en_revision,
+                SUM(CASE WHEN fi.estado = 'pendiente' THEN fi.importe ELSE 0 END) AS adeudado
+         FROM facturas f
+         JOIN factura_items fi ON fi.factura_id = f.id
+         LEFT JOIN deportes d ON d.id = fi.deporte_id
+         LEFT JOIN recorridos_transporte rt ON rt.id = fi.recorrido_id
+         WHERE f.alumno_id = ? AND (f.anio * 12 + f.mes) BETWEEN ? AND ?
+         GROUP BY f.anio, f.mes, fi.tipo, fi.deporte_id
+         ORDER BY fi.tipo, MAX(d.nombre), f.anio DESC, f.mes DESC"
+    );
+    $stmt->bind_param('iii', $alumno_id, $min, $max);
+    $stmt->execute();
+    $filas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $conceptos = [];
+    $totales = ['facturado' => 0.0, 'pagado' => 0.0, 'en_revision' => 0.0, 'adeudado' => 0.0];
+    foreach ($filas as $f) {
+        $clave = $f['tipo'] . ':' . ($f['deporte_id'] ?? '');
+        if (!isset($conceptos[$clave])) {
+            $conceptos[$clave] = [
+                'concepto' => TIPOS_ITEM[$f['tipo']] . ($f['deporte'] ? ' · ' . $f['deporte'] : ''),
+                'facturado' => 0.0, 'pagado' => 0.0, 'en_revision' => 0.0, 'adeudado' => 0.0, 'meses' => [],
+            ];
+        }
+        $mes = ['periodo' => periodo_texto((int) $f['mes'], (int) $f['anio']), 'detalle' => $f['recorrido']];
+        foreach (array_keys($totales) as $campo) {
+            $valor = round((float) $f[$campo], 2);
+            $mes[$campo] = $valor;
+            $conceptos[$clave][$campo] = round($conceptos[$clave][$campo] + $valor, 2);
+            $totales[$campo] = round($totales[$campo] + $valor, 2);
+        }
+        $conceptos[$clave]['meses'][] = $mes;
+    }
+    return ['conceptos' => array_values($conceptos), 'totales' => $totales];
+}
+
 // ── Generación mensual ──────────────────────────────────────────────────
 
 /**
