@@ -9,9 +9,11 @@
  * - Una factura por alumno y mes; vence el DIA_VENCIMIENTO_CUOTA (RN11).
  * - El ítem cuota/matrícula apunta a la fila de "cuotas": no se duplica la deuda.
  *   Cuando ese ítem se paga, la cuota se marca pagada (la web y la app muestran lo mismo).
- * - Recargo: solo sobre la cuota mensual impaga y vencida de un mes ANTERIOR; va como
- *   ítem en la factura siguiente y su importe es cuotas.recargo (si estaba en 0 se
- *   calcula una sola vez con calcular_recargo() y se guarda ahí). Nunca se factura dos veces.
+ * - Recargo (RN11): solo sobre la cuota mensual vencida. Su importe es cuotas.recargo (si
+ *   estaba en 0 se calcula una sola vez con calcular_recargo() y se guarda ahí) y entra como
+ *   ítem en la primera de estas dos situaciones: el padre paga esa cuota por la app (va a la
+ *   misma factura, antes de confirmar) o se genera la facturación del mes siguiente.
+ *   Nunca se factura dos veces (un solo ítem de recargo por cuota).
  * - Deportes: se cobran desde el mes siguiente a la inscripción, mientras siga inscripto.
  * - Comedor con valor único; transporte según el recorrido reservado para el mes.
  * - Tarifas sin historial: el importe queda congelado en el ítem de la factura.
@@ -391,23 +393,74 @@ function recargos_pendientes(mysqli $conn, int $alumno_id, int $mes, int $anio):
     $stmt->close();
 
     $items = [];
-    $guardar = $conn->prepare("UPDATE cuotas SET recargo = ? WHERE id = ?");
     foreach ($cuotas as $c) {
-        $recargo = (float) $c['recargo'];
-        if ($recargo <= 0) {
-            // Única vez que se calcula: desde acá el número es el que guarda cuotas.recargo.
-            $recargo = calcular_recargo((float) $c['importe'], $c['fecha_vencimiento']);
-            $cuota_id = (int) $c['id'];
-            $guardar->bind_param('di', $recargo, $cuota_id);
-            $guardar->execute();
-        }
-        if ($recargo > 0) {
-            $periodo = periodo_texto((int) $c['mes'], (int) $c['anio']);
-            $items[] = nuevo_item('recargo', 'recargo:' . $c['id'], "Recargo por mora · Cuota $periodo", $recargo, ['cuota_id' => (int) $c['id']]);
+        $item = item_de_recargo($conn, $c);
+        if ($item) {
+            $items[] = $item;
         }
     }
-    $guardar->close();
     return $items;
+}
+
+/**
+ * Recargo de una cuota vencida como ítem. El importe es cuotas.recargo; si
+ * estaba en 0 se calcula UNA vez con calcular_recargo() (Sprint 5) y se guarda.
+ *
+ * @param array $c fila de cuotas con id, mes, anio, importe, recargo y fecha_vencimiento
+ */
+function item_de_recargo(mysqli $conn, array $c): ?array
+{
+    $recargo = (float) $c['recargo'];
+    if ($recargo <= 0) {
+        $recargo = calcular_recargo((float) $c['importe'], $c['fecha_vencimiento']);
+        $cuota_id = (int) $c['id'];
+        $stmt = $conn->prepare("UPDATE cuotas SET recargo = ? WHERE id = ?");
+        $stmt->bind_param('di', $recargo, $cuota_id);
+        $stmt->execute();
+        $stmt->close();
+    }
+    if ($recargo <= 0) {
+        return null;
+    }
+    $periodo = periodo_texto((int) $c['mes'], (int) $c['anio']);
+    return nuevo_item('recargo', 'recargo:' . $c['id'], "Recargo por mora · Cuota $periodo", $recargo, ['cuota_id' => (int) $c['id']]);
+}
+
+/**
+ * RN11 al pagar por la app: si la cuota (mensual) está pendiente y vencida y su
+ * recargo todavía no se facturó, lo agrega como ítem a ESA factura (así el padre
+ * lo ve en el total y se paga junto con la cuota). La facturación siguiente no
+ * lo repite porque ya existe un ítem de recargo para esa cuota.
+ * Usar dentro de una transacción. Devuelve el ítem creado (id, descripcion,
+ * importe, estado) o null si no corresponde.
+ */
+function agregar_recargo_a_factura(mysqli $conn, int $factura_id, int $cuota_id): ?array
+{
+    $stmt = $conn->prepare(
+        "SELECT c.id, c.mes, c.anio, c.importe, c.recargo, c.fecha_vencimiento FROM cuotas c
+         WHERE c.id = ? AND c.concepto = 'cuota' AND c.estado = 'pendiente' AND c.fecha_vencimiento < CURDATE()
+           AND NOT EXISTS (SELECT 1 FROM factura_items fi WHERE fi.tipo = 'recargo' AND fi.cuota_id = c.id)
+         FOR UPDATE"
+    );
+    $stmt->bind_param('i', $cuota_id);
+    $stmt->execute();
+    $cuota = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $item = $cuota ? item_de_recargo($conn, $cuota) : null;
+    if (!$item) {
+        return null;
+    }
+
+    $estado = 'pendiente';
+    $stmt = $conn->prepare(
+        "INSERT INTO factura_items (factura_id, tipo, clave, cuota_id, descripcion, importe, estado) VALUES (?, 'recargo', ?, ?, ?, ?, ?)"
+    );
+    $stmt->bind_param('isisds', $factura_id, $item['clave'], $cuota_id, $item['descripcion'], $item['importe'], $estado);
+    $stmt->execute();
+    $id = (int) $conn->insert_id;
+    $stmt->close();
+    recalcular_factura($conn, $factura_id);
+    return ['id' => $id, 'tipo' => 'recargo', 'cuota_id' => $cuota_id, 'descripcion' => $item['descripcion'], 'importe' => $item['importe'], 'estado' => $estado];
 }
 
 /** Recalcula total, pagado y estado de una factura a partir de sus ítems. */
@@ -544,7 +597,7 @@ function crear_pago(mysqli $conn, int $factura_id, int $padre_id, array $item_id
         }
 
         $marcas = implode(',', array_fill(0, count($item_ids), '?'));
-        $stmt = $conn->prepare("SELECT id, descripcion, importe, estado FROM factura_items WHERE factura_id = ? AND id IN ($marcas) FOR UPDATE");
+        $stmt = $conn->prepare("SELECT id, tipo, cuota_id, descripcion, importe, estado FROM factura_items WHERE factura_id = ? AND id IN ($marcas) FOR UPDATE");
         $stmt->bind_param('i' . str_repeat('i', count($item_ids)), $factura_id, ...$item_ids);
         $stmt->execute();
         $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -556,6 +609,15 @@ function crear_pago(mysqli $conn, int $factura_id, int $padre_id, array $item_id
             if ($it['estado'] !== 'pendiente') {
                 $estado = $it['estado'] === 'pagado' ? 'ya está pagado' : 'ya está en un pago en revisión';
                 throw new ReglaNegocioException("\"{$it['descripcion']}\" $estado.", 409);
+            }
+        }
+        // RN11: una cuota vencida se paga con su recargo (que entra a esta factura si no se facturó antes).
+        foreach ($items as $it) {
+            if ($it['tipo'] === 'cuota' && $it['cuota_id'] !== null) {
+                $recargo = agregar_recargo_a_factura($conn, $factura_id, (int) $it['cuota_id']);
+                if ($recargo) {
+                    $items[] = $recargo;
+                }
             }
         }
 

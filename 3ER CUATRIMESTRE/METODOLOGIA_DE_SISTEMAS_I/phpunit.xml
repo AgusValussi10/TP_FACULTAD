@@ -25,6 +25,7 @@
         </testsuite>
         <testsuite name="Parte 3 - Facturación y revisión de pagos">
             <file>tests/FacturacionTest.php</file>
+            <file>tests/RecargoAppTest.php</file>
         </testsuite>
     </testsuites>
 </phpunit>
