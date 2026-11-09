@@ -42,5 +42,8 @@
         <testsuite name="Parte 3 - Reportes de pagos (RFGm12)">
             <file>tests/ReportesPagosTest.php</file>
         </testsuite>
+        <testsuite name="Parte 3 - Mails a las familias, modo simulación (RFGm07/RFGm08)">
+            <file>tests/RecordatoriosTest.php</file>
+        </testsuite>
     </testsuites>
 </phpunit>
