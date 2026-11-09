@@ -1,0 +1,46 @@
+# Mails automáticos a las familias (Parte 3, RFGm07/RFGm08).
+# Todos los días a las 9:00 de Argentina llama al endpoint del sistema en Render, que
+# decide si hoy corresponde mandar el mail de fin de mes (último día hábil) o el del día 20.
+# Por ahora el sistema trabaja en MODO SIMULACIÓN (sin SMTP): los mails quedan guardados
+# en "Mails enviados" del portal admin.
+#
+# Requiere el secret CRON_TOKEN (el mismo valor que la variable de entorno CRON_TOKEN de Render).
+# La URL se puede cambiar con la variable de repositorio APP_URL.
+name: Recordatorios por mail
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # 12:00 UTC = 9:00 en Argentina (UTC-3, sin horario de verano)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recordatorios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_URL: ${{ vars.APP_URL || 'https://educar-para-transformar-nw1k.onrender.com' }}
+      CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+    steps:
+      - name: Verificar el secret
+        run: |
+          if [ -z "$CRON_TOKEN" ]; then
+            echo "::error::Falta el secret CRON_TOKEN en el repositorio."
+            exit 1
+          fi
+
+      # Render (plan gratis) se duerme: el primer pedido puede tardar ~1 minuto.
+      - name: Despertar el servidor
+        run: curl --silent --show-error --max-time 120 --retry 3 --retry-delay 10 -o /dev/null "$APP_URL/"
+
+      - name: Fin de mes y día 20
+        run: |
+          for tipo in fin_de_mes dia_20; do
+            echo "== $tipo"
+            curl --silent --show-error --fail-with-body --max-time 60 \
+              -H "X-Cron-Token: $CRON_TOKEN" \
+              "$APP_URL/cron/recordatorios.php?tipo=$tipo"
+            echo
+          done
