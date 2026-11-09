@@ -31,6 +31,9 @@ const METODOS_PAGO = [
     'tarjeta_credito' => 'Tarjeta de crédito',
     'otro'            => 'Otro',
 ];
+// Parte 3 (consigna: "no se realizan pagos en efectivo"): formas aceptadas en
+// pagos NUEVOS. METODOS_PAGO sigue completo para mostrar bien los registros viejos.
+const METODOS_PAGO_HABILITADOS = ['transferencia', 'tarjeta_debito', 'tarjeta_credito', 'otro'];
 
 // Datos de la institución que figuran en el recibo.
 const INSTITUCION_NOMBRE    = 'Educar para Transformar';

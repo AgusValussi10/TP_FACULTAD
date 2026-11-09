@@ -214,8 +214,8 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Administrador');
   // Debe coincidir con PORCENTAJE_RECARGO_MORA en gestion/helpers.php (RFG12).
   const PORCENTAJE_RECARGO_MORA = 10;
 
-  // Misma lista que METODOS_PAGO en gestion/helpers.php.
-  const METODOS_PAGO = <?= json_encode(METODOS_PAGO, JSON_UNESCAPED_UNICODE) ?>;
+  // METODOS_PAGO_HABILITADOS de gestion/helpers.php: sin efectivo para pagos nuevos (Parte 3).
+  const METODOS_PAGO = <?= json_encode(array_intersect_key(METODOS_PAGO, array_flip(METODOS_PAGO_HABILITADOS)), JSON_UNESCAPED_UNICODE) ?>;
   const opcionesMetodo = Object.entries(METODOS_PAGO).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
   // RFG19: estado visual de cada cuota → [texto, clase del badge].
   const ESTADOS = {

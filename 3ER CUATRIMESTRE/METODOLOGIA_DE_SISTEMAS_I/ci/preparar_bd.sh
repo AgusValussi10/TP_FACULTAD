@@ -44,9 +44,11 @@ correr_sql database/schema_sprint4.sql
 correr_php seed_datos.php
 correr_sql database/schema_sprint5.sql
 correr_sql database/schema_sprint6.sql      # RFG14: columnas nuevas de sanciones
+correr_sql database/schema_parte3.sql       # Parte 3: tarifas, recorridos, facturas, pagos, comprobantes
 echo "    PHP  init_db.php"
 php init_db.php
 correr_php seed_legajo.php                  # datos personales del legajo (necesita alumnos_datos de init_db)
 correr_php seed_cuotas.php                  # RFG19: cuotas de demo con vencimientos relativos a hoy
+correr_php seed_parte3.php                  # Parte 3: tarifas, facturas y pagos de demo (usa las cuotas de arriba)
 
 echo "==> Base lista"

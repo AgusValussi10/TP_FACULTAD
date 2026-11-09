@@ -28,7 +28,7 @@ class HttpClient
         ])['json'];
     }
 
-    /** @return array{status:int, json:?array, body:string} */
+    /** @return array{status:int, json:?array, body:string, headers:string[]} */
     public function get(string $ruta): array
     {
         return $this->enviar('GET', $ruta);
@@ -42,8 +42,13 @@ class HttpClient
 
     private function enviar(string $metodo, string $ruta, array $datos = []): array
     {
+        $headers = [];
         $ch = curl_init(TEST_BASE_URL . $ruta);
         curl_setopt_array($ch, [
+            CURLOPT_HEADERFUNCTION => function ($ch, $linea) use (&$headers) {
+                $headers[] = trim($linea);
+                return strlen($linea);
+            },
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_COOKIEJAR      => $this->cookieJar,
             CURLOPT_COOKIEFILE     => $this->cookieJar,
@@ -58,6 +63,6 @@ class HttpClient
         curl_close($ch);
 
         $json = json_decode($body, true);
-        return ['status' => $status, 'json' => is_array($json) ? $json : null, 'body' => $body];
+        return ['status' => $status, 'json' => is_array($json) ? $json : null, 'body' => $body, 'headers' => $headers];
     }
 }

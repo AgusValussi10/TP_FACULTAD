@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Educar para Transformar</title>
+  <meta name="description" content="Cuotas, pagos e inscripciones de la escuela Educar para Transformar.">
+  <meta name="theme-color" content="#C2410C">
+  <link rel="manifest" href="/app/manifest.webmanifest">
+  <link rel="icon" href="/app/icons/icon-192.png">
+  <!-- iOS: ícono y modo app al agregar a la pantalla de inicio -->
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Educar">
+  <link rel="stylesheet" href="/app/css/app.css">
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+
+  <header class="barra" id="barra" hidden>
+    <img src="/app/icons/icon-192.png" alt="" class="barra-logo" width="36" height="36">
+    <div class="barra-titulo">
+      <strong>Educar para Transformar</strong>
+      <span id="barra-usuario"></span>
+    </div>
+  </header>
+
+  <div class="selector-hijo" id="selector-hijo" hidden>
+    <label for="sel-alumno">Alumno/a</label>
+    <select id="sel-alumno"></select>
+  </div>
+
+  <div class="aviso-version" id="aviso-version" role="status" hidden>
+    Hay una versión nueva de la app. <button type="button" class="btn-chico" id="btn-actualizar">Actualizar</button>
+  </div>
+  <div class="aviso-red" id="aviso-red" role="status" hidden>Sin conexión. Los datos se actualizan cuando vuelva internet.</div>
+
+  <main id="contenido" tabindex="-1">
+    <p class="cargando">Cargando…</p>
+  </main>
+
+  <nav class="nav" id="nav" aria-label="Secciones" hidden>
+    <a href="#/inicio" data-ruta="inicio"><span aria-hidden="true">🏠</span>Inicio</a>
+    <a href="#/cuenta" data-ruta="cuenta"><span aria-hidden="true">👤</span>Cuenta</a>
+  </nav>
+
+  <script type="module" src="/app/js/main.js"></script>
+</body>
+</html>

@@ -291,5 +291,154 @@ if (tabla_existe($conn, 'materias')) {
     }
 }
 
+// Parte 3 (App móvil, MSII): tarifas, recorridos, facturas, pagos y
+// comprobantes. Mismo modelo que database/schema_parte3.sql, en versión
+// idempotente. Depende de cuotas/deportes (Sprint 5, arriba) y de
+// reservas_servicios (schema_sprint2.sql); sin esta última se omite.
+function columna_existe(mysqli $conn, string $tabla, string $columna): bool
+{
+    $stmt = $conn->prepare(
+        "SELECT 1 FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?"
+    );
+    $stmt->bind_param('ss', $tabla, $columna);
+    $stmt->execute();
+    $existe = (bool) $stmt->get_result()->fetch_row();
+    $stmt->close();
+    return $existe;
+}
+
+function ejecutar_o_salir(mysqli $conn, string $sql, string $contexto): void
+{
+    if (!$conn->query($sql)) {
+        fwrite(STDERR, "Error en $contexto: " . $conn->error . PHP_EOL);
+        exit(1);
+    }
+}
+
+if (tabla_existe($conn, 'reservas_servicios')) {
+    $tablasParte3 = [
+        "CREATE TABLE IF NOT EXISTS recorridos_transporte (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            nombre      VARCHAR(60)  NOT NULL,
+            descripcion VARCHAR(255) NOT NULL,
+            activo      TINYINT(1)   NOT NULL DEFAULT 1,
+            UNIQUE KEY uq_recorrido (nombre)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+        "INSERT IGNORE INTO recorridos_transporte (id, nombre, descripcion) VALUES
+            (1, 'Recorrido 1 · Centro',       'Plaza 25 de Mayo, Av. Alberdi, Av. Sarmiento hasta la escuela'),
+            (2, 'Recorrido 2 · Norte',        'Villa Prosperidad, Av. Edison, Av. Alvear'),
+            (3, 'Recorrido 3 · Sur',          'Villa Don Enrique, Av. Laprida, Av. Las Heras'),
+            (4, 'Recorrido 4 · Barranqueras', 'Barranqueras, Av. 9 de Julio, Av. Italia')",
+        "CREATE TABLE IF NOT EXISTS tarifas (
+            clave           VARCHAR(40)   NOT NULL PRIMARY KEY,
+            valor           DECIMAL(10,2) NOT NULL,
+            actualizado_en  DATETIME      NULL DEFAULT NULL,
+            actualizado_por INT           NULL DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+        "CREATE TABLE IF NOT EXISTS facturas (
+            id                INT AUTO_INCREMENT PRIMARY KEY,
+            alumno_id         INT NOT NULL,
+            mes               TINYINT UNSIGNED  NOT NULL,
+            anio              SMALLINT UNSIGNED NOT NULL,
+            fecha_emision     DATE NOT NULL,
+            fecha_vencimiento DATE NOT NULL,
+            total             DECIMAL(10,2) NOT NULL DEFAULT 0,
+            pagado            DECIMAL(10,2) NOT NULL DEFAULT 0,
+            estado            ENUM('pendiente','parcial','pagada') NOT NULL DEFAULT 'pendiente',
+            generada_por      INT NULL DEFAULT NULL,
+            created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_factura (alumno_id, mes, anio),
+            FOREIGN KEY (alumno_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+        "CREATE TABLE IF NOT EXISTS factura_items (
+            id           INT AUTO_INCREMENT PRIMARY KEY,
+            factura_id   INT NOT NULL,
+            tipo         ENUM('cuota','matricula','deporte','comedor','transporte','recargo') NOT NULL,
+            clave        VARCHAR(40)  NOT NULL,
+            cuota_id     INT NULL DEFAULT NULL,
+            deporte_id   INT NULL DEFAULT NULL,
+            recorrido_id INT NULL DEFAULT NULL,
+            descripcion  VARCHAR(150) NOT NULL,
+            importe      DECIMAL(10,2) NOT NULL,
+            estado       ENUM('pendiente','en_revision','pagado') NOT NULL DEFAULT 'pendiente',
+            UNIQUE KEY uq_item (factura_id, clave),
+            FOREIGN KEY (factura_id)   REFERENCES facturas(id)              ON DELETE CASCADE,
+            FOREIGN KEY (cuota_id)     REFERENCES cuotas(id)                ON DELETE SET NULL,
+            FOREIGN KEY (deporte_id)   REFERENCES deportes(id)              ON DELETE SET NULL,
+            FOREIGN KEY (recorrido_id) REFERENCES recorridos_transporte(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+        "CREATE TABLE IF NOT EXISTS pagos (
+            id             INT AUTO_INCREMENT PRIMARY KEY,
+            factura_id     INT NOT NULL,
+            padre_id       INT NOT NULL,
+            total          DECIMAL(10,2) NOT NULL,
+            estado         ENUM('pendiente_transferencia','en_revision','aprobado','rechazado','anulado')
+                           NOT NULL DEFAULT 'pendiente_transferencia',
+            motivo_rechazo VARCHAR(255) NULL DEFAULT NULL,
+            revisado_por   INT NULL DEFAULT NULL,
+            revisado_en    DATETIME NULL DEFAULT NULL,
+            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
+            FOREIGN KEY (padre_id)   REFERENCES usuarios(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+        "CREATE TABLE IF NOT EXISTS pago_items (
+            pago_id         INT NOT NULL,
+            factura_item_id INT NOT NULL,
+            importe         DECIMAL(10,2) NOT NULL,
+            PRIMARY KEY (pago_id, factura_item_id),
+            FOREIGN KEY (pago_id)         REFERENCES pagos(id)         ON DELETE CASCADE,
+            FOREIGN KEY (factura_item_id) REFERENCES factura_items(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+        "CREATE TABLE IF NOT EXISTS comprobantes_transferencia (
+            id                  INT AUTO_INCREMENT PRIMARY KEY,
+            pago_id             INT NOT NULL,
+            nombre_archivo      VARCHAR(120) NOT NULL,
+            mime                VARCHAR(50)  NOT NULL,
+            tamanio             INT UNSIGNED NOT NULL,
+            archivo             MEDIUMBLOB   NOT NULL,
+            monto_declarado     DECIMAL(10,2) NOT NULL,
+            fecha_transferencia DATE NOT NULL,
+            subido_por          INT NOT NULL,
+            created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pago_id) REFERENCES pagos(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    ];
+    foreach ($tablasParte3 as $sql) {
+        ejecutar_o_salir($conn, $sql, 'tablas de Parte 3');
+    }
+
+    if (!columna_existe($conn, 'deportes', 'profesor_id')) {
+        ejecutar_o_salir($conn, "ALTER TABLE deportes
+            ADD COLUMN profesor_id INT NULL DEFAULT NULL,
+            ADD COLUMN dias        SET('lun','mar','mie','jue','vie','sab') NULL DEFAULT NULL,
+            ADD COLUMN hora_inicio TIME NULL DEFAULT NULL,
+            ADD COLUMN hora_fin    TIME NULL DEFAULT NULL,
+            ADD CONSTRAINT fk_deporte_profesor FOREIGN KEY (profesor_id) REFERENCES usuarios(id) ON DELETE SET NULL", 'deportes (Parte 3)');
+        echo "Columnas agregadas: deportes.profesor_id/dias/hora_inicio/hora_fin" . PHP_EOL;
+    }
+    // Horario estructurado de los 6 deportes del catálogo (solo si todavía no se cargó).
+    $horarios = [
+        ['Atletismo', 'lun,mie', '16:00', '17:30'], ['Natación', 'mar,jue', '15:00', '16:00'],
+        ['Fútbol', 'lun,mie,vie', '17:00', '18:30'], ['Artes Marciales', 'mar,jue', '17:00', '18:00'],
+        ['Vóleibol', 'mie,vie', '16:00', '17:30'], ['Danza', 'lun,jue', '15:30', '16:30'],
+    ];
+    $stmtHorario = $conn->prepare(
+        "UPDATE deportes SET dias = ?, hora_inicio = ?, hora_fin = ? WHERE nombre = ? AND dias IS NULL"
+    );
+    foreach ($horarios as [$deporte, $dias, $desde, $hasta]) {
+        $stmtHorario->bind_param('ssss', $dias, $desde, $hasta, $deporte);
+        $stmtHorario->execute();
+    }
+    $stmtHorario->close();
+
+    if (!columna_existe($conn, 'reservas_servicios', 'recorrido_id')) {
+        ejecutar_o_salir($conn, "ALTER TABLE reservas_servicios
+            ADD COLUMN recorrido_id INT NULL DEFAULT NULL,
+            ADD CONSTRAINT fk_reserva_recorrido FOREIGN KEY (recorrido_id) REFERENCES recorridos_transporte(id)", 'reservas_servicios (Parte 3)');
+        echo "Columna agregada: reservas_servicios.recorrido_id" . PHP_EOL;
+    }
+}
+
 echo "DB schema OK" . PHP_EOL;
 $conn->close();

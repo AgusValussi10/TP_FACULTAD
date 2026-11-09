@@ -14,6 +14,12 @@
 require_once __DIR__ . '/HttpClient.php';
 require_once __DIR__ . '/Db.php';
 
+// Reglas de la Parte 3 (lib/facturacion.php) para armar escenarios que todavía no
+// tienen endpoint. Se carga acá, antes de que PHPUnit escriba nada: helpers.php
+// abre la sesión y no puede hacerlo con la salida ya enviada.
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+require_once __DIR__ . '/../lib/facturacion.php';
+
 $baseUrl = getenv('TEST_BASE_URL') ?: '';
 
 if ($baseUrl === '') {
