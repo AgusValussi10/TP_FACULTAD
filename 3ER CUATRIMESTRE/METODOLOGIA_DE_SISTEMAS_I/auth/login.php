@@ -1,8 +1,10 @@
 <?php
+
 require_once 'session.php';
 header('Content-Type: application/json; charset=utf-8');
 
 require_once '../database/db_config.php';
+require_once __DIR__ . '/autenticar.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Método no permitido.']);
@@ -33,29 +35,16 @@ if ($roles_db === null) {
     exit;
 }
 
-$placeholders = implode(',', array_fill(0, count($roles_db), '?'));
-$stmt = $conn->prepare(
-    "SELECT id, nombre, password_hash, rol FROM usuarios WHERE usuario = ? AND rol IN ($placeholders) AND activo = 1"
-);
-$stmt->bind_param(str_repeat('s', 1 + count($roles_db)), $usuario, ...$roles_db);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
+// Misma verificación que la app (auth/autenticar.php). En la web cualquier
+// rechazo muestra el mensaje genérico, como antes.
+$auth = autenticar_usuario($conn, $usuario, $password, $roles_db);
+if ($auth['estado'] !== 'ok') {
     echo json_encode(['success' => false, 'message' => 'Usuario o contraseña incorrectos.']);
-    $stmt->close();
     $conn->close();
     exit;
 }
 
-$user = $result->fetch_assoc();
-
-if (!password_verify($password, $user['password_hash'])) {
-    echo json_encode(['success' => false, 'message' => 'Usuario o contraseña incorrectos.']);
-    $stmt->close();
-    $conn->close();
-    exit;
-}
+$user = $auth['usuario'];
 
 $_SESSION['usuario_id']  = $user['id'];
 $_SESSION['nombre']      = $user['nombre'];
@@ -68,5 +57,4 @@ echo json_encode([
     'nombre'  => htmlspecialchars($user['nombre']),
 ]);
 
-$stmt->close();
 $conn->close();
