@@ -1,43 +1,46 @@
-# Pruebas en navegador de la app (Playwright)
+# Pruebas E2E de la app (Cypress)
 
-Pruebas de humo de la PWA (`/app/`) en tamaño celular (390×844), con el **Edge instalado en Windows**
-(no descarga Chromium). Complementan los tests de integración de PHPUnit (que prueban la API por HTTP):
-acá se verifica que las pantallas cargan, navegan y no tiran errores de JavaScript. Están fuera del
-sistema para que no se desplieguen.
+Las pantallas de la app móvil (`/app/`) se prueban con **Cypress**, la herramienta E2E del equipo (la misma de
+`cypress/e2e/rfg04_admision.cy.js`). Los specs están en la raíz del repo, en `cypress/e2e/app_*.cy.js`, y corren
+en tamaño celular (390×844). Complementan los tests de integración de PHPUnit, que prueban la API por HTTP.
 
-## Cómo correrlas
+## 1. Base y servidor
 
-1. Base de prueba armada (`educar_test`, ver `CLAUDE.md` del sistema) y servidor levantado sobre ella:
+Base de prueba `educar_test` (nunca `educar_db`), armada con el script del sistema:
 
-   ```bash
-   cd "3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I"
-   MYSQLDATABASE=educar_test /c/xampp/php/php.exe -S 127.0.0.1:8096
-   ```
+```bash
+cd "3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I"
+MYSQLHOST=127.0.0.1 MYSQLUSER=root MYSQLDATABASE=educar_test bash ci/preparar_bd.sh
+```
 
-2. En otra terminal, desde esta carpeta (la primera vez, `npm install`; no descarga navegadores):
+Servidor sobre esa base en el puerto que espera `cypress.config.js` (`http://localhost:8080`):
 
-   ```bash
-   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install
-   node paso2-ingreso.js http://127.0.0.1:8096     # o: npm run paso2
-   ```
+```bash
+cd "3ER CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_I"
+MYSQLDATABASE=educar_test /c/xampp/php/php.exe -S localhost:8080
+```
 
-   La URL es opcional (por defecto `http://127.0.0.1:8096`; también `APP_URL`). Se puede apuntar a Render.
+Conviene rearmar la base antes de correr los specs si antes se corrió PHPUnit (los tests dejan datos propios).
 
-Cada script imprime `OK` / `FALLA` por caso y deja las capturas en `capturas/` (las fallas como `FALLA-*.png`).
-Sale con código 1 si algo falló.
+## 2. Correr los specs
+
+En otra terminal, desde la **raíz del repo** (`TP_FACULTAD/`):
+
+```bash
+npx cypress run --browser edge --spec "cypress/e2e/app_*.cy.js"
+```
+
+Se usa **Edge** porque en esta máquina el navegador interno de Cypress (Electron) se cae al arrancar.
+Las capturas de los casos fallidos quedan en `cypress/screenshots/` (está en el `.gitignore`).
+
+| Spec | Paso | Qué prueba |
+|---|---|---|
+| `app_ingreso.cy.js` | 2 (RFGm01/02) | Docente rechazado, primera visita sin perder lo tipeado, padre con dos hijos (inicio, cambio de hijo, cuenta, validación de contraseña, cierre de sesión), alumno sin selector, sesión vencida |
+| `app_cuotas_facturas.cy.js` | 3 (RFGm03/04) | Cuotas (vencidas en rojo, por vencer en amarillo, pagadas con recibo), facturas con filtro de fechas, detalle y PDF, historial de deuda por ítem |
 
 ## Notas
 
-- `php -S` en Windows atiende **un pedido por vez** y el navegador abre conexiones de más: un ingreso puede
-  tardar 10–25 s. Por eso el tiempo de espera es de 20 s. En Render (Linux, 4 workers) no pasa.
-- Cada captura verifica además que la página no sea más ancha que la pantalla (390 px): si hay scroll
-  horizontal, el caso falla.
-- Los 401/403 de la API que el navegador anota en la consola son esperables y se ignoran; cualquier otro
-  error de JavaScript hace fallar el caso.
-- Cypress (que está en la raíz del repo) no corre en esta máquina: se cae su proceso de Electron. Ver la
-  bitácora (filas 9 y 10).
-
-| Script | Paso | Qué prueba |
-|---|---|---|
-| `paso2-ingreso.js` | 2 (RFGm01/02) | Docente rechazado, primera visita sin perder lo tipeado, padre con dos hijos, alumno, sesión vencida |
-| `paso3-cuotas.js` | 3 (RFGm03/04) | Cuotas con colores y recibo, facturas con detalle y PDF, deuda por concepto, filtro inválido, alumno sin recibo |
+- `php -S` en Windows atiende **un pedido por vez** y el navegador abre conexiones de más: un ingreso puede tardar
+  10–25 s. Por eso los specs de la app suben los tiempos de espera **en el propio spec** (no en la configuración
+  general). En Render (Linux, 4 workers) no pasa.
+- Cada spec verifica además que la página no tenga scroll horizontal en 390 px.

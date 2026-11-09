@@ -875,8 +875,9 @@ muestra lo mismo que la web; el padre baja el recibo de las pagadas (`gestion/re
 rango de períodos (`desde`/`hasta` = `AAAA-MM`, sobre el mes facturado), muestra ítems, pagos y comprobantes y baja la
 factura en PDF (`app/api/factura_pdf.php`, 403 si no es de la familia aunque no exista). "Deuda por concepto" agrega en
 SQL (`GROUP BY` mes, tipo y deporte) facturado / pagado / en proceso / adeudado. Las consultas están en
-`facturas_de_alumno()` y `deuda_por_concepto()` de `lib/facturacion.php`. **Pruebas en navegador:**
-`4TO CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_II/pruebas-app/` (Playwright + Edge, 390 px; fallan si hay scroll horizontal).
+`facturas_de_alumno()` y `deuda_por_concepto()` de `lib/facturacion.php`. **Pruebas E2E de la app:** Cypress (la
+herramienta del equipo), `cypress/e2e/app_*.cy.js` en la raíz del repo, en 390×844; se corren con Edge (Electron se
+cae en esta máquina). Instrucciones en `4TO CUATRIMESTRE/METODOLOGIA_DE_SISTEMAS_II/pruebas-app/README.md`.
 
 **Producción (después del merge):** el deploy corre `init_db.php`; después abrir una vez `/database/seed_parte3.php`
 con sesión de admin (carga tarifas y datos de demo). `laura.martinez` queda con dos hijos (ana.garcia y matias.vega).
