@@ -140,11 +140,14 @@ window.addEventListener('offline', avisoRed);
 function registrarServiceWorker() {
   // Requiere HTTPS (o localhost): por HTTP en la red local no se registra.
   if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
-  navigator.serviceWorker.register('/app/sw.php', { scope: '/app/' }).catch(() => {});
   // Cuando un deploy trae un shell nuevo, el SW nuevo toma el control: recargar una vez.
+  // Solo si ya había uno: en la PRIMERA visita el SW también toma el control
+  // (clients.claim) y recargar ahí borraba lo que el usuario estaba escribiendo.
+  const habiaControlador = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('/app/sw.php', { scope: '/app/' }).catch(() => {});
   let recargado = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (recargado || !navigator.serviceWorker.controller) return;
+    if (!habiaControlador || recargado) return;
     recargado = true;
     location.reload();
   });

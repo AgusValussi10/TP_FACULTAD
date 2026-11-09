@@ -43,7 +43,7 @@ export async function render(main, ctx) {
       ${crudo(deuda.proximo_vencimiento_ar
         ? html`<p class="sub">Próximo vencimiento: <strong>${deuda.proximo_vencimiento_ar}</strong></p>` : '')}
       ${crudo(deuda.en_revision > 0
-        ? html`<p class="sub">En revisión por la escuela: <strong>${pesos(deuda.en_revision)}</strong></p>` : '')}
+        ? html`<p class="sub">En proceso de pago: <strong>${pesos(deuda.en_revision)}</strong></p>` : '')}
       ${crudo(enCurso > 0 ? html`<p class="sub">Pagos en curso: ${enCurso}</p>` : '')}
     </section>
 
