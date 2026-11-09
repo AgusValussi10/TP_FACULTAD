@@ -39,8 +39,13 @@ async function correr(casos) {
   return resultados.some((r) => r[0] !== 'OK') ? 1 : 0;
 }
 
+/** Guarda la captura y falla si la página es más ancha que la pantalla (scroll horizontal). */
 async function captura(page, nombre) {
   await page.screenshot({ path: path.join(CAPTURAS, nombre + '.png'), fullPage: true });
+  // Se compara con el ancho configurado: en modo celular el navegador agranda innerWidth hasta que entre todo.
+  const pantalla = page.viewportSize().width;
+  const ancho = await page.evaluate(() => document.documentElement.scrollWidth);
+  if (ancho > pantalla) throw new Error(`${nombre}: la página mide ${ancho}px y la pantalla ${pantalla}px (desborde horizontal)`);
 }
 
 async function ingresar(page, usuario, password) {

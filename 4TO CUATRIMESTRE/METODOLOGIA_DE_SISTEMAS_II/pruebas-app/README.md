@@ -30,6 +30,8 @@ Sale con código 1 si algo falló.
 
 - `php -S` en Windows atiende **un pedido por vez** y el navegador abre conexiones de más: un ingreso puede
   tardar 10–25 s. Por eso el tiempo de espera es de 20 s. En Render (Linux, 4 workers) no pasa.
+- Cada captura verifica además que la página no sea más ancha que la pantalla (390 px): si hay scroll
+  horizontal, el caso falla.
 - Los 401/403 de la API que el navegador anota en la consola son esperables y se ignoran; cualquier otro
   error de JavaScript hace fallar el caso.
 - Cypress (que está en la raíz del repo) no corre en esta máquina: se cae su proceso de Electron. Ver la
@@ -38,3 +40,4 @@ Sale con código 1 si algo falló.
 | Script | Paso | Qué prueba |
 |---|---|---|
 | `paso2-ingreso.js` | 2 (RFGm01/02) | Docente rechazado, primera visita sin perder lo tipeado, padre con dos hijos, alumno, sesión vencida |
+| `paso3-cuotas.js` | 3 (RFGm03/04) | Cuotas con colores y recibo, facturas con detalle y PDF, deuda por concepto, filtro inválido, alumno sin recibo |
