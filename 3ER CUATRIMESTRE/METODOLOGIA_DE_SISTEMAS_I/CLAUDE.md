@@ -30,6 +30,7 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   └── salacomputacion.avif
 ├── auth/
 │   ├── session.php             ← Inicia sesión PHP (timeout 30 min)
+│   ├── autenticar.php          ← autenticar_usuario(): verificación común de la web y la app (credenciales / rol / suspendido / ok)
 │   ├── login.php               ← Endpoint POST de autenticación → JSON
 │   └── logout.php              ← Destruye sesión y redirige a /
 ├── database/
@@ -50,6 +51,14 @@ Sitio web institucional de una escuela ubicada en Resistencia, Chaco, Argentina.
 │   ├── seed_datos.php          ← Seed masivo: 13 usuarios nuevos + todos los datos de demostración (secciones 1–18)
 │   └── seed_parte2.php         ← Continuación del seed desde sección 11 (útil si seed_datos falla a mitad)
 ├── init_db.php                 ← Corre en el deploy (Render): crea tablas públicas, Sprint 3/4 (planificaciones, recuperatorios, sanciones), Sprint 5, alumnos_datos, consultas_notas; agrega columnas faltantes, elimina materias duplicadas y crea lo de la Parte 3 (bloque propio)
+├── app/                        ← Parte 3: App móvil (PWA) — ver "Parte 3" más abajo
+│   ├── index.html              ← Shell: barra, selector de hijo, <main>, nav inferior; carga js/main.js (módulo ES)
+│   ├── manifest.webmanifest    ← start_url/scope /app/, standalone, íconos 192/512 + maskable
+│   ├── sw.php                  ← Service worker (JS generado): precachea el shell; versión = hash del shell; /app/api/ nunca se cachea
+│   ├── offline.html            ← Pantalla sin conexión
+│   ├── css/app.css · icons/    ← Estilos mobile-first; íconos generados con `node ci/generar_iconos.js`
+│   ├── js/main.js · api.js · util.js · instalar.js · vistas/*.js ← router por hash, cliente API, escape HTML, instalación
+│   └── api/                    ← JSON {success, data, message}: _base.php (sesión, 401/403, renovación de cookie), login, logout, sesion, password, inicio
 ├── portals/
 │   ├── portal_admin.php        ← Panel de administración
 │   ├── portal_docente.php      ← Portal docente
@@ -163,9 +172,9 @@ Pipeline CI/CD: `.github/workflows/ci-educar.yml` (en la raíz del repo) — 1 �
 `ghcr.io/agusvalussi10/educar-para-transformar:sha-<commit>` y `:latest`. Render debe tener
 Auto-Deploy = "After CI Checks Pass". El PR también pasa por SonarCloud (Quality Gate sobre el código nuevo).
 
-**Tests de integración** (`phpunit.xml`, 77 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
+**Tests de integración** (`phpunit.xml`, 89 tests): `AdmisionTest` (RFG04), `PlanificacionTest` (RFG05),
 `RecuperatoriosTest` (RFG06), `ConsultasNotasTest` (RFG07), `SancionesTest` (RFG14), `CuotasEstadoTest` (RFG19)
-`LegajoTest` (RFG16) y `FacturacionTest` y `RecargoAppTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
+`LegajoTest` (RFG16) y `FacturacionTest`, `RecargoAppTest` y `AppAuthTest` (Parte 3: generación, revisión de pagos, cobro web sincronizado, recargo al pagar por la app, permisos). `tests/bootstrap.php` carga `lib/facturacion.php` para armar escenarios sin endpoint. Usan `tests/HttpClient.php`
 (un "navegador" con cookies por instancia) y `tests/Db.php` (preparar/verificar datos); `tests/bootstrap.php` levanta
 `php -S` en el puerto 8099. Usan fechas relativas a hoy y limpian sus propios datos, así que se pueden repetir sin
 rearmar la base.
@@ -847,6 +856,17 @@ tiene un pago en revisión, el cobro por la web se rechaza.
 - Ítems de un pago activo quedan `en_revision`; si el admin rechaza, vuelven a `pendiente`.
 - **Tamaño de comprobantes:** `max_allowed_packet` es 1 MB en el MariaDB local (y probablemente en Filess.io); el
   límite real lo fija el Paso 4 (la app comprime la foto antes de subirla).
+
+**App (Paso 2):** PWA en `/app/` (mismo origen que la web). Ingreso solo para `padre` y `alumno` (`app/api/login.php`
+usa `autenticar_usuario()`, la misma verificación que `auth/login.php`; a docente/admin/enfermería les da 403 con
+"La app es para familias y alumnos…" y al suspendido, 403 con su mensaje; la web sigue mostrando el mensaje genérico).
+El login de la app regenera el id de sesión. `app/api/_base.php` reenvía la cookie de sesión en cada pedido
+(Max-Age 1800, HttpOnly, SameSite=Lax, Secure detrás del proxy de Render): vence a los 30 min **sin uso**. La web no
+cambió. 401 = sin sesión (la app vuelve al login), 403 = sin permiso. El padre elige el hijo (selector si tiene más de
+uno, recordado en localStorage); el alumno opera sobre sí mismo. Cambio de contraseña (RFGm02): pide la actual, 8 a 72
+caracteres, distinta de la actual, `password_hash`. Instalación: botón con `beforeinstallprompt` (Android/Chrome) y
+pasos "Compartir → Agregar a inicio" en iOS. El service worker y la instalación necesitan HTTPS: en la LAN por HTTP no
+se registran (se prueban en Render o con un túnel). El logo original mide 262×231: los íconos de 512 quedan algo suavizados.
 
 **Producción (después del merge):** el deploy corre `init_db.php`; después abrir una vez `/database/seed_parte3.php`
 con sesión de admin (carga tarifas y datos de demo). `laura.martinez` queda con dos hijos (ana.garcia y matias.vega).
