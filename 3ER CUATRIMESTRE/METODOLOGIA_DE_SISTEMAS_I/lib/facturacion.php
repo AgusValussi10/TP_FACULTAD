@@ -160,6 +160,37 @@ function guardar_tarifa(mysqli $conn, string $clave, float $valor, int $admin_id
     $stmt->close();
 }
 
+// ── Deuda facturada de un alumno ────────────────────────────────────────
+
+/**
+ * Resumen de lo facturado y no pagado de un alumno: pendiente (a pagar), en
+ * revisión (transferencias cargadas que revisa el admin), vencido y próximo vencimiento.
+ */
+function deuda_de_alumno(mysqli $conn, int $alumno_id): array
+{
+    $stmt = $conn->prepare(
+        "SELECT
+            COALESCE(SUM(CASE WHEN fi.estado = 'pendiente' THEN fi.importe END), 0) AS pendiente,
+            COALESCE(SUM(CASE WHEN fi.estado = 'en_revision' THEN fi.importe END), 0) AS en_revision,
+            COALESCE(SUM(CASE WHEN fi.estado = 'pendiente' AND f.fecha_vencimiento < CURDATE() THEN fi.importe END), 0) AS vencido,
+            COUNT(DISTINCT CASE WHEN fi.estado = 'pendiente' AND f.fecha_vencimiento < CURDATE() THEN f.id END) AS facturas_vencidas,
+            MIN(CASE WHEN fi.estado = 'pendiente' AND f.fecha_vencimiento >= CURDATE() THEN f.fecha_vencimiento END) AS proximo
+         FROM facturas f JOIN factura_items fi ON fi.factura_id = f.id
+         WHERE f.alumno_id = ?"
+    );
+    $stmt->bind_param('i', $alumno_id);
+    $stmt->execute();
+    $r = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return [
+        'pendiente'           => round((float) $r['pendiente'], 2),
+        'en_revision'         => round((float) $r['en_revision'], 2),
+        'vencido'             => round((float) $r['vencido'], 2),
+        'facturas_vencidas'   => (int) $r['facturas_vencidas'],
+        'proximo_vencimiento' => $r['proximo'],
+    ];
+}
+
 // ── Generación mensual ──────────────────────────────────────────────────
 
 /**
