@@ -17,7 +17,7 @@
 const SHELL = [
     'index.html', 'offline.html', 'manifest.webmanifest', 'css/app.css',
     'js/main.js', 'js/api.js', 'js/util.js', 'js/instalar.js',
-    'js/vistas/login.js', 'js/vistas/inicio.js', 'js/vistas/cuenta.js', 'js/vistas/cuotas.js', 'js/vistas/facturas.js', 'js/vistas/pagar.js', 'js/vistas/pago.js',
+    'js/vistas/login.js', 'js/vistas/inicio.js', 'js/vistas/cuenta.js', 'js/vistas/cuotas.js', 'js/vistas/facturas.js', 'js/vistas/pagar.js', 'js/vistas/pago.js', 'js/vistas/inscripciones.js',
     'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-192.png', 'icons/maskable-512.png',
     'icons/apple-touch-icon.png',
 ];

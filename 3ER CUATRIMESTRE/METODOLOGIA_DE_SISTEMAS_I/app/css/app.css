@@ -181,3 +181,8 @@ details.plegable[open] > summary { margin-bottom: .4rem; }
 .oculto { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 .campo .btn + .oculto + .btn { margin-top: .6rem; }
 .factura .btn + .btn { margin-top: .6rem; }
+
+/* Paso 5: inscripciones */
+.deporte .btn, .mes-servicios .btn { margin-top: .6rem; }
+.mes-servicios .campo { margin: .6rem 0 0; }
+.nav a { font-size: .72rem; }

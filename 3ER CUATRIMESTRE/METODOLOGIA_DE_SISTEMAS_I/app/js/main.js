@@ -8,9 +8,10 @@ import * as cuotas from './vistas/cuotas.js';
 import * as facturas from './vistas/facturas.js';
 import * as pagar from './vistas/pagar.js';
 import * as pago from './vistas/pago.js';
+import * as inscripciones from './vistas/inscripciones.js';
 
 // Rutas que necesitan sesión. La de login se muestra sola cuando no hay sesión.
-const RUTAS = { inicio, cuotas, facturas, pagar, pago, cuenta };
+const RUTAS = { inicio, cuotas, facturas, pagar, pago, inscripciones, cuenta };
 // Rutas sin botón propio en la barra: se marca la sección a la que pertenecen.
 const SECCION = { pagar: 'facturas', pago: 'facturas' };
 const RUTA_INICIAL = 'inicio';
