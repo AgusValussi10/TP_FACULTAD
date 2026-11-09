@@ -30,5 +30,8 @@
         <testsuite name="Parte 3 - App: ingreso y cuenta (RFGm01/RFGm02)">
             <file>tests/AppAuthTest.php</file>
         </testsuite>
+        <testsuite name="Parte 3 - App: cuotas, facturas y deuda (RFGm03/RFGm04)">
+            <file>tests/AppCuentaTest.php</file>
+        </testsuite>
     </testsuites>
 </phpunit>
