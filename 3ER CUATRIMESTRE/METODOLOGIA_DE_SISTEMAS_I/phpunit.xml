@@ -30,5 +30,20 @@
         <testsuite name="Parte 3 - App: ingreso y cuenta (RFGm01/RFGm02)">
             <file>tests/AppAuthTest.php</file>
         </testsuite>
+        <testsuite name="Parte 3 - App: cuotas, facturas y deuda (RFGm03/RFGm04)">
+            <file>tests/AppCuentaTest.php</file>
+        </testsuite>
+        <testsuite name="Parte 3 - App: pagos y comprobantes (RFGm05/RFGm06)">
+            <file>tests/AppPagosTest.php</file>
+        </testsuite>
+        <testsuite name="Parte 3 - App: inscripciones (RFGm09/RFGm10/RFGm11)">
+            <file>tests/AppInscripcionesTest.php</file>
+        </testsuite>
+        <testsuite name="Parte 3 - Reportes de pagos (RFGm12)">
+            <file>tests/ReportesPagosTest.php</file>
+        </testsuite>
+        <testsuite name="Parte 3 - Mails a las familias, modo simulación (RFGm07/RFGm08)">
+            <file>tests/RecordatoriosTest.php</file>
+        </testsuite>
     </testsuites>
 </phpunit>

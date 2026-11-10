@@ -45,6 +45,22 @@ const ESTADOS_PAGO = [
     'anulado'                 => 'Anulado',
 ];
 
+/**
+ * Datos para la transferencia que figuran en el comprobante de pago (RFGm05).
+ * FICTICIOS, solo para el TP: reemplazar por los reales de la escuela antes de usarlo en serio.
+ */
+const DATOS_TRANSFERENCIA = [
+    'banco'   => 'Banco de la Nación Argentina (DEMO)',
+    'titular' => 'Educar para Transformar',
+    'cuit'    => INSTITUCION_CUIT,
+    'cbu'     => '0110599520000012345678',
+    'alias'   => 'EDUCAR.TRANSFORMAR.DEMO',
+];
+
+/** Comprobantes de transferencia aceptados (RFGm06): tipo real (finfo) => extensión. */
+const COMPROBANTE_TIPOS = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'application/pdf' => 'pdf'];
+const COMPROBANTE_MAX_DESEADO = 2 * 1024 * 1024; // 2 MB, salvo que la base admita menos
+
 /** Error de una regla de negocio: el mensaje se le muestra al usuario; el código es el HTTP. */
 class ReglaNegocioException extends RuntimeException
 {
@@ -189,6 +205,177 @@ function deuda_de_alumno(mysqli $conn, int $alumno_id): array
         'facturas_vencidas'   => (int) $r['facturas_vencidas'],
         'proximo_vencimiento' => $r['proximo'],
     ];
+}
+
+// ── Consultas para la app (RFGm03/RFGm04) ───────────────────────────────
+
+const ESTADOS_ITEM = ['pendiente' => 'Pendiente', 'en_revision' => 'En proceso de pago', 'pagado' => 'Pagado'];
+
+/**
+ * Convierte 'AAAA-MM' en un índice de mes (anio * 12 + mes) para filtrar por período.
+ * null si viene vacío; lanza 422 si el formato es inválido.
+ */
+function indice_periodo(?string $periodo): ?int
+{
+    if ($periodo === null || $periodo === '') {
+        return null;
+    }
+    if (!preg_match('/^(\d{4})-(\d{2})$/', $periodo, $m) || (int) $m[2] < 1 || (int) $m[2] > 12) {
+        throw new ReglaNegocioException('El período tiene que tener el formato AAAA-MM.', 422);
+    }
+    return (int) $m[1] * 12 + (int) $m[2];
+}
+
+/**
+ * Facturas de un alumno (más nuevas primero) con ítems, pagos y comprobantes (sin el archivo).
+ * $desde / $hasta: 'AAAA-MM' sobre el período facturado, inclusive; null = sin límite.
+ */
+function facturas_de_alumno(mysqli $conn, int $alumno_id, ?string $desde = null, ?string $hasta = null): array
+{
+    $min = indice_periodo($desde) ?? 0;
+    $max = indice_periodo($hasta) ?? 999999;
+    $stmt = $conn->prepare(
+        "SELECT id, mes, anio, fecha_emision, fecha_vencimiento, total, pagado, estado FROM facturas
+         WHERE alumno_id = ? AND (anio * 12 + mes) BETWEEN ? AND ? ORDER BY anio DESC, mes DESC"
+    );
+    $stmt->bind_param('iii', $alumno_id, $min, $max);
+    $stmt->execute();
+    $facturas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    if (!$facturas) {
+        return [];
+    }
+
+    $ids = implode(',', array_map(fn ($f) => (int) $f['id'], $facturas));
+    // RN11: recargo que se sumaría si hoy se paga una cuota vencida cuyo recargo aún no se facturó
+    // (lo agrega crear_pago(); acá solo se anticipa para mostrarlo antes de confirmar).
+    $recargos = [];
+    $res = $conn->query(
+        "SELECT c.id, c.importe, c.recargo, c.fecha_vencimiento
+         FROM factura_items fi JOIN cuotas c ON c.id = fi.cuota_id
+         WHERE fi.factura_id IN ($ids) AND fi.tipo = 'cuota' AND fi.estado = 'pendiente'
+           AND c.estado = 'pendiente' AND c.fecha_vencimiento < CURDATE()
+           AND NOT EXISTS (SELECT 1 FROM factura_items r WHERE r.tipo = 'recargo' AND r.cuota_id = c.id)"
+    );
+    foreach ($res->fetch_all(MYSQLI_ASSOC) as $c) {
+        $recargos[(int) $c['id']] = (float) $c['recargo'] > 0
+            ? (float) $c['recargo'] : calcular_recargo((float) $c['importe'], $c['fecha_vencimiento']);
+    }
+
+    $items = [];
+    foreach ($conn->query("SELECT id, factura_id, tipo, cuota_id, descripcion, importe, estado FROM factura_items WHERE factura_id IN ($ids) ORDER BY id")->fetch_all(MYSQLI_ASSOC) as $it) {
+        $items[(int) $it['factura_id']][] = [
+            'id'               => (int) $it['id'],
+            'tipo'             => $it['tipo'],
+            'tipo_texto'       => TIPOS_ITEM[$it['tipo']],
+            'descripcion'      => $it['descripcion'],
+            'importe'          => (float) $it['importe'],
+            'estado'           => $it['estado'],
+            'estado_texto'     => ESTADOS_ITEM[$it['estado']],
+            'recargo_previsto' => $it['tipo'] === 'cuota' ? ($recargos[(int) $it['cuota_id']] ?? 0.0) : 0.0,
+        ];
+    }
+    $comprobantes = [];
+    $res = $conn->query(
+        "SELECT c.id, c.pago_id, c.nombre_archivo, c.monto_declarado, c.fecha_transferencia
+         FROM comprobantes_transferencia c JOIN pagos p ON p.id = c.pago_id WHERE p.factura_id IN ($ids) ORDER BY c.id"
+    );
+    foreach ($res->fetch_all(MYSQLI_ASSOC) as $c) {
+        $comprobantes[(int) $c['pago_id']][] = [
+            'id' => (int) $c['id'], 'nombre' => $c['nombre_archivo'], 'monto' => (float) $c['monto_declarado'],
+            'fecha' => date('d/m/Y', strtotime($c['fecha_transferencia'])),
+        ];
+    }
+    $pagos = [];
+    foreach ($conn->query("SELECT id, factura_id, total, estado, motivo_rechazo, created_at FROM pagos WHERE factura_id IN ($ids) ORDER BY id DESC")->fetch_all(MYSQLI_ASSOC) as $p) {
+        $pagos[(int) $p['factura_id']][] = [
+            'id'             => (int) $p['id'],
+            'numero'         => numero_pago((int) $p['id']),
+            'total'          => (float) $p['total'],
+            'estado'         => $p['estado'],
+            'estado_texto'   => ESTADOS_PAGO[$p['estado']],
+            'motivo_rechazo' => $p['motivo_rechazo'],
+            'fecha'          => date('d/m/Y', strtotime($p['created_at'])),
+            'comprobantes'   => $comprobantes[(int) $p['id']] ?? [],
+        ];
+    }
+
+    $hoy = date('Y-m-d');
+    return array_map(function ($f) use ($items, $pagos, $hoy) {
+        $propios = $items[(int) $f['id']] ?? [];
+        $suma = fn ($estado) => round(array_sum(array_map(fn ($it) => $it['estado'] === $estado ? $it['importe'] : 0, $propios)), 2);
+        $saldo = $suma('pendiente');
+        return [
+            'id'             => (int) $f['id'],
+            'numero'         => numero_factura((int) $f['id']),
+            'periodo'        => periodo_texto((int) $f['mes'], (int) $f['anio']),
+            'mes'            => (int) $f['mes'],
+            'anio'           => (int) $f['anio'],
+            'emision'        => $f['fecha_emision'],
+            'emision_ar'     => date('d/m/Y', strtotime($f['fecha_emision'])),
+            'vencimiento'    => $f['fecha_vencimiento'],
+            'vencimiento_ar' => date('d/m/Y', strtotime($f['fecha_vencimiento'])),
+            'vencida'        => $saldo > 0 && $f['fecha_vencimiento'] < $hoy,
+            'total'          => (float) $f['total'],
+            'pagado'         => (float) $f['pagado'],
+            'en_revision'    => $suma('en_revision'),
+            'saldo'          => $saldo,
+            'estado'         => $f['estado'],
+            'estado_texto'   => ESTADOS_FACTURA[$f['estado']],
+            'items'          => $propios,
+            'pagos'          => $pagos[(int) $f['id']] ?? [],
+        ];
+    }, $facturas);
+}
+
+/**
+ * Historial de deuda por concepto (RFGm04): por cada concepto (cuota, matrícula, cada
+ * deporte, comedor, transporte, recargo) y mes, cuánto se facturó, pagó y debe.
+ * La agregación es SQL (GROUP BY); PHP solo agrupa las filas por concepto.
+ */
+function deuda_por_concepto(mysqli $conn, int $alumno_id, ?string $desde = null, ?string $hasta = null): array
+{
+    $min = indice_periodo($desde) ?? 0;
+    $max = indice_periodo($hasta) ?? 999999;
+    $stmt = $conn->prepare(
+        "SELECT f.anio, f.mes, fi.tipo, fi.deporte_id, MAX(d.nombre) AS deporte, MAX(rt.nombre) AS recorrido,
+                SUM(fi.importe) AS facturado,
+                SUM(CASE WHEN fi.estado = 'pagado' THEN fi.importe ELSE 0 END) AS pagado,
+                SUM(CASE WHEN fi.estado = 'en_revision' THEN fi.importe ELSE 0 END) AS en_revision,
+                SUM(CASE WHEN fi.estado = 'pendiente' THEN fi.importe ELSE 0 END) AS adeudado
+         FROM facturas f
+         JOIN factura_items fi ON fi.factura_id = f.id
+         LEFT JOIN deportes d ON d.id = fi.deporte_id
+         LEFT JOIN recorridos_transporte rt ON rt.id = fi.recorrido_id
+         WHERE f.alumno_id = ? AND (f.anio * 12 + f.mes) BETWEEN ? AND ?
+         GROUP BY f.anio, f.mes, fi.tipo, fi.deporte_id
+         ORDER BY fi.tipo, MAX(d.nombre), f.anio DESC, f.mes DESC"
+    );
+    $stmt->bind_param('iii', $alumno_id, $min, $max);
+    $stmt->execute();
+    $filas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $conceptos = [];
+    $totales = ['facturado' => 0.0, 'pagado' => 0.0, 'en_revision' => 0.0, 'adeudado' => 0.0];
+    foreach ($filas as $f) {
+        $clave = $f['tipo'] . ':' . ($f['deporte_id'] ?? '');
+        if (!isset($conceptos[$clave])) {
+            $conceptos[$clave] = [
+                'concepto' => TIPOS_ITEM[$f['tipo']] . ($f['deporte'] ? ' · ' . $f['deporte'] : ''),
+                'facturado' => 0.0, 'pagado' => 0.0, 'en_revision' => 0.0, 'adeudado' => 0.0, 'meses' => [],
+            ];
+        }
+        $mes = ['periodo' => periodo_texto((int) $f['mes'], (int) $f['anio']), 'detalle' => $f['recorrido']];
+        foreach (array_keys($totales) as $campo) {
+            $valor = round((float) $f[$campo], 2);
+            $mes[$campo] = $valor;
+            $conceptos[$clave][$campo] = round($conceptos[$clave][$campo] + $valor, 2);
+            $totales[$campo] = round($totales[$campo] + $valor, 2);
+        }
+        $conceptos[$clave]['meses'][] = $mes;
+    }
+    return ['conceptos' => array_values($conceptos), 'totales' => $totales];
 }
 
 // ── Generación mensual ──────────────────────────────────────────────────
@@ -611,9 +798,6 @@ function cuota_en_revision(mysqli $conn, int $cuota_id): bool
 function crear_pago(mysqli $conn, int $factura_id, int $padre_id, array $item_ids): int
 {
     $item_ids = array_values(array_unique(array_filter(array_map('intval', $item_ids), fn ($id) => $id > 0)));
-    if (!$item_ids) {
-        throw new ReglaNegocioException('Elegí al menos un ítem para pagar.', 422);
-    }
 
     $conn->begin_transaction();
     try {
@@ -623,8 +807,11 @@ function crear_pago(mysqli $conn, int $factura_id, int $padre_id, array $item_id
         $factura = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         if (!$factura || !alumno_pertenece_a_padre($conn, (int) $factura['alumno_id'], $padre_id)) {
-            // Mismo 403 exista o no la factura, para no revelar ids ajenos.
+            // Primero el permiso, y el mismo 403 exista o no la factura, para no revelar ids ajenos.
             throw new ReglaNegocioException('La factura no corresponde a tus hijos.', 403);
+        }
+        if (!$item_ids) {
+            throw new ReglaNegocioException('Elegí al menos un ítem para pagar.', 422);
         }
 
         $marcas = implode(',', array_fill(0, count($item_ids), '?'));
@@ -827,6 +1014,147 @@ function rechazar_pago(mysqli $conn, int $pago_id, int $admin_id, string $motivo
             'Rechazamos tu pago ' . numero_pago($pago_id) . ' de la factura ' . numero_factura((int) $pago['factura_id'])
                 . ' (' . periodo_texto((int) $pago['mes'], (int) $pago['anio']) . "). Motivo: $motivo"
         );
+        $conn->commit();
+    } catch (Throwable $e) {
+        $conn->rollback();
+        throw $e;
+    }
+}
+
+// ── Pagos del padre (RFGm05/RFGm06) ─────────────────────────────────────
+
+/**
+ * Tamaño máximo de un comprobante: 2 MB, o menos si la base no admite paquetes tan
+ * grandes (max_allowed_packet; en MySQL 5.5 / MariaDB de XAMPP es 1 MB). Se deja un
+ * margen de 64 KB para el resto del INSERT. La app comprime las fotos antes de subirlas.
+ */
+function comprobante_max_bytes(mysqli $conn): int
+{
+    $paquete = (int) ($conn->query("SELECT @@max_allowed_packet")->fetch_row()[0] ?? 0);
+    return max(256 * 1024, min(COMPROBANTE_MAX_DESEADO, $paquete - 64 * 1024));
+}
+
+/**
+ * Valida un archivo subido ($_FILES['archivo']) como comprobante: que haya llegado,
+ * el tamaño, el tipo REAL (finfo, no la extensión ni lo que diga el navegador) y que
+ * las imágenes se puedan leer. Devuelve [mime, nombre sanitizado, contenido].
+ */
+function validar_comprobante(?array $archivo, int $max_bytes): array
+{
+    if (!$archivo || ($archivo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        throw new ReglaNegocioException('Adjuntá la foto o el PDF del comprobante.', 422);
+    }
+    $kb = (int) round($max_bytes / 1024);
+    if (in_array($archivo['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || (int) $archivo['size'] > $max_bytes) {
+        throw new ReglaNegocioException("El archivo es demasiado grande: el máximo es $kb KB.", 422);
+    }
+    if ($archivo['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($archivo['tmp_name'])) {
+        throw new ReglaNegocioException('No se pudo recibir el archivo. Probá de nuevo.', 422);
+    }
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($archivo['tmp_name']);
+    if (!isset(COMPROBANTE_TIPOS[$mime])) {
+        throw new ReglaNegocioException('Solo se aceptan fotos JPG o PNG, o archivos PDF.', 422);
+    }
+    $contenido = (string) file_get_contents($archivo['tmp_name']);
+    if ($mime !== 'application/pdf' && @getimagesizefromstring($contenido) === false) {
+        throw new ReglaNegocioException('La imagen está dañada o no se puede leer.', 422);
+    }
+    return [$mime, nombre_archivo_seguro((string) ($archivo['name'] ?? ''), COMPROBANTE_TIPOS[$mime]), $contenido];
+}
+
+/** Nombre de archivo sin rutas ni caracteres raros (sirve para Content-Disposition), con la extensión real. */
+function nombre_archivo_seguro(string $nombre, string $extension): string
+{
+    $base = pathinfo(basename(str_replace('\\', '/', $nombre)), PATHINFO_FILENAME);
+    // Mapa explícito: iconv//TRANSLIT da resultados distintos en Windows y en Linux.
+    $base = strtr($base, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n',
+        'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ü' => 'U', 'Ñ' => 'N']);
+    $base = trim(preg_replace('/[^A-Za-z0-9_-]+/', '-', $base), '-');
+    $base = substr($base, 0, 60);
+    return ($base !== '' ? $base : 'comprobante') . '.' . $extension;
+}
+
+/**
+ * Pago con su factura, ítems y comprobantes (sin el archivo), solo si es de un hijo
+ * del padre. 403 si no, exista o no (no se revelan ids).
+ */
+function pago_de_padre(mysqli $conn, int $pago_id, int $padre_id): array
+{
+    $stmt = $conn->prepare(
+        "SELECT p.id, p.factura_id, p.total, p.estado, p.motivo_rechazo, p.created_at, p.revisado_en,
+                f.alumno_id, f.mes, f.anio, a.nombre AS alumno
+         FROM pagos p JOIN facturas f ON f.id = p.factura_id JOIN usuarios a ON a.id = f.alumno_id
+         WHERE p.id = ?"
+    );
+    $stmt->bind_param('i', $pago_id);
+    $stmt->execute();
+    $p = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$p || !alumno_pertenece_a_padre($conn, (int) $p['alumno_id'], $padre_id)) {
+        throw new ReglaNegocioException('El pago no corresponde a tus hijos.', 403);
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT fi.descripcion, pi.importe FROM pago_items pi JOIN factura_items fi ON fi.id = pi.factura_item_id
+         WHERE pi.pago_id = ? ORDER BY fi.id"
+    );
+    $stmt->bind_param('i', $pago_id);
+    $stmt->execute();
+    $items = array_map(fn ($it) => ['descripcion' => $it['descripcion'], 'importe' => (float) $it['importe']], $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+    $stmt->close();
+
+    $stmt = $conn->prepare("SELECT id, nombre_archivo, tamanio, monto_declarado, fecha_transferencia FROM comprobantes_transferencia WHERE pago_id = ? ORDER BY id");
+    $stmt->bind_param('i', $pago_id);
+    $stmt->execute();
+    $comprobantes = array_map(fn ($c) => [
+        'id' => (int) $c['id'], 'nombre' => $c['nombre_archivo'], 'kb' => (int) ceil($c['tamanio'] / 1024),
+        'monto' => (float) $c['monto_declarado'], 'fecha' => date('d/m/Y', strtotime($c['fecha_transferencia'])),
+    ], $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+    $stmt->close();
+
+    return [
+        'id'             => (int) $p['id'],
+        'numero'         => numero_pago((int) $p['id']),
+        'factura_id'     => (int) $p['factura_id'],
+        'factura'        => numero_factura((int) $p['factura_id']),
+        'periodo'        => periodo_texto((int) $p['mes'], (int) $p['anio']),
+        'alumno_id'      => (int) $p['alumno_id'],
+        'alumno'         => $p['alumno'],
+        'total'          => (float) $p['total'],
+        'declarado'      => round(array_sum(array_column($comprobantes, 'monto')), 2),
+        'estado'         => $p['estado'],
+        'estado_texto'   => ESTADOS_PAGO[$p['estado']],
+        'motivo_rechazo' => $p['motivo_rechazo'],
+        'fecha'          => date('d/m/Y', strtotime($p['created_at'])),
+        'emision'        => date('Y-m-d', strtotime($p['created_at'])),
+        'admite_comprobantes' => in_array($p['estado'], ['pendiente_transferencia', 'en_revision'], true),
+        'items'          => $items,
+        'comprobantes'   => $comprobantes,
+        'transferencia'  => DATOS_TRANSFERENCIA,
+    ];
+}
+
+/** El padre anula un pago que todavía no tiene comprobante: los ítems vuelven a quedar pendientes. */
+function anular_pago(mysqli $conn, int $pago_id, int $padre_id): void
+{
+    pago_de_padre($conn, $pago_id, $padre_id); // 403 si no es suyo
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare("UPDATE pagos SET estado = 'anulado' WHERE id = ? AND estado = 'pendiente_transferencia'");
+        $stmt->bind_param('i', $pago_id);
+        $stmt->execute();
+        $anulado = $stmt->affected_rows === 1;
+        $stmt->close();
+        if (!$anulado) {
+            throw new ReglaNegocioException('Solo se puede anular un pago que todavía no tiene comprobante cargado.', 409);
+        }
+        $stmt = $conn->prepare(
+            "UPDATE factura_items fi JOIN pago_items pi ON pi.factura_item_id = fi.id
+             SET fi.estado = 'pendiente' WHERE pi.pago_id = ? AND fi.estado = 'en_revision'"
+        );
+        $stmt->bind_param('i', $pago_id);
+        $stmt->execute();
+        $stmt->close();
         $conn->commit();
     } catch (Throwable $e) {
         $conn->rollback();

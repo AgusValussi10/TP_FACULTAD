@@ -1,5 +1,7 @@
 <?php
+
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/../lib/inscripciones.php';
 
 header('Content-Type: application/json; charset=utf-8');
 requerir_rol('padre');
@@ -30,17 +32,24 @@ $plazo_vencido = plazo_vencido_reserva($mes, $anio);
 
 $comedor = false;
 $transporte = false;
+$recorrido_id = null;
 $stmt = $conn->prepare(
-    "SELECT servicio FROM reservas_servicios WHERE alumno_id = ? AND mes = ? AND anio = ? AND estado = 'confirmada'"
+    "SELECT servicio, recorrido_id FROM reservas_servicios WHERE alumno_id = ? AND mes = ? AND anio = ? AND estado = 'confirmada'"
 );
 $stmt->bind_param('iii', $alumno_id, $mes, $anio);
 $stmt->execute();
 $res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) {
-    if ($row['servicio'] === 'comedor') $comedor = true;
-    if ($row['servicio'] === 'transporte') $transporte = true;
+    if ($row['servicio'] === 'comedor') {
+        $comedor = true;
+    }
+    if ($row['servicio'] === 'transporte') {
+        $transporte = true;
+        $recorrido_id = $row['recorrido_id'] !== null ? (int) $row['recorrido_id'] : null;
+    }
 }
 $stmt->close();
+$recorridos = recorridos_con_valor($conn);
 $conn->close();
 
 echo json_encode([
@@ -52,4 +61,6 @@ echo json_encode([
     'plazo_vencido' => $plazo_vencido,
     'comedor'       => $comedor,
     'transporte'    => $transporte,
+    'recorrido_id'  => $recorrido_id,
+    'recorridos'    => $recorridos,
 ]);

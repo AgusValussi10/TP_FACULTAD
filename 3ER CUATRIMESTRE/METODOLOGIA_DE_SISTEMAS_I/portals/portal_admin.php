@@ -447,6 +447,8 @@ $conn->close();
     <a href="../gestion/tarifas.php"       class="ar-btn"><span class="ar-icon">💲</span> Tarifas</a>
     <a href="../gestion/facturacion.php"   class="ar-btn"><span class="ar-icon">🧾</span> Facturación</a>
     <a href="../gestion/pagos_revisar.php" class="ar-btn"><span class="ar-icon">🔎</span> Pagos a revisar</a>
+    <a href="../gestion/reportes_pagos.php" class="ar-btn"><span class="ar-icon">📊</span> Reportes de pagos</a>
+    <a href="../gestion/mails.php"         class="ar-btn"><span class="ar-icon">✉️</span> Mails enviados</a>
     <a href="../gestion/sanciones.php"     class="ar-btn"><span class="ar-icon">⚠️</span> Sanciones</a>
   </div>
 </div>

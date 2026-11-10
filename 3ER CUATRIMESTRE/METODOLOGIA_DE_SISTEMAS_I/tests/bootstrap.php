@@ -22,6 +22,9 @@ require_once __DIR__ . '/../lib/facturacion.php';
 
 $baseUrl = getenv('TEST_BASE_URL') ?: '';
 
+// Token del cron de mails (Parte 3): el servidor de prueba lo recibe por entorno, como en Render.
+define('TEST_CRON_TOKEN', getenv('CRON_TOKEN') ?: 'token-de-prueba');
+
 if ($baseUrl === '') {
     $puerto  = (int) (getenv('TEST_PORT') ?: 8099);
     $docroot = realpath(__DIR__ . '/..');
@@ -31,7 +34,8 @@ if ($baseUrl === '') {
         [PHP_BINARY, '-S', "127.0.0.1:$puerto", '-t', $docroot],
         [0 => ['pipe', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']],
         $pipes,
-        $docroot
+        $docroot,
+        array_merge(getenv(), ['CRON_TOKEN' => TEST_CRON_TOKEN])
     );
     if (!is_resource($proceso)) {
         fwrite(STDERR, "No se pudo iniciar el servidor PHP\n");
