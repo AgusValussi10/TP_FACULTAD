@@ -149,7 +149,7 @@ $conn->close();
     .btn-logout { background: #C2410C; color: #fff; border: none; border-radius: 20px; padding: .4rem 1rem; font-weight: 900; font-size: .85rem; cursor: pointer; text-decoration: none; transition: opacity .2s; }
     .btn-logout:hover { opacity: .85; }
 
-    .welcome { background: linear-gradient(135deg, #1F2937 0%, #111827 100%); color: #fff; padding: 2.5rem 1.5rem; text-align: center; }
+    .welcome { background: linear-gradient(135deg, #1F2937 0%, #111827 100%); color: #fff; padding: 1.8rem 1.5rem 1.4rem; text-align: center; }
     .welcome h1 { font-family: 'Merriweather', serif; font-size: clamp(1.4rem, 4vw, 2rem); margin-bottom: .4rem; }
     .welcome p  { opacity: .85; font-size: .95rem; }
     .rol-badge  { display: inline-block; margin-top: .8rem; background: rgba(249,115,22,.25); border: 1px solid rgba(249,115,22,.5); color: #F97316; border-radius: 20px; padding: .25rem .9rem; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
@@ -369,45 +369,40 @@ $conn->close();
     .not-filtro-sep { width: 1.5px; height: 22px; background: var(--borde); flex-shrink: 0; margin: 0 .15rem; align-self: center; }
     .not-filtros-count { margin-left: auto; font-size: .78rem; font-weight: 700; color: #9CA3AF; white-space: nowrap; }
 
-    /* ── Gestión del Sistema (accesos rápidos) ── */
-    .accesos-rapidos {
-      background: #1F2937;
-      padding: 1rem 1.5rem;
-      border-bottom: 3px solid #F97316;
+    /* ── Selector de vista: Gestión del sistema / Landing page ── */
+    .selector-vista {
+      display: inline-flex; gap: .25rem; margin-top: 1.1rem;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px; padding: .25rem;
     }
-    .accesos-rapidos .ar-titulo {
-      font-size: .68rem; font-weight: 800; color: #9CA3AF;
-      text-transform: uppercase; letter-spacing: .1em;
-      margin-bottom: .6rem;
+    .selector-vista button {
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      color: #D1D5DB; font-size: .85rem; font-weight: 800;
+      padding: .5rem 1.2rem; border-radius: 999px;
+      transition: background .18s, color .18s;
     }
-    .accesos-rapidos .ar-grid {
-      display: flex; flex-wrap: wrap; gap: .5rem;
-    }
-    .ar-btn {
-      display: flex; align-items: center; gap: .4rem;
-      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
-      border-radius: 10px; padding: .45rem .9rem;
-      text-decoration: none; color: #F3F4F6;
-      font-size: .83rem; font-weight: 700; font-family: 'Nunito', sans-serif;
-      transition: background .18s, border-color .18s;
-    }
-    .ar-btn:hover { background: rgba(249,115,22,.3); border-color: #F97316; color: #fff; }
-    .ar-btn .ar-icon { font-size: 1rem; }
+    .selector-vista button:hover { color: #fff; }
+    .selector-vista button[aria-selected="true"] { background: #fff; color: var(--gris-texto); }
+    .vista[hidden] { display: none; }
 
-    /* ── Gestión de la Landing Page (separada de la del sistema) ── */
-    .landing-cabecera {
-      margin-top: 1.75rem;
-      background: var(--blanco);
-      border-top: 1px solid var(--borde);
-      padding: 1.1rem 1.5rem .4rem;
+    /* ── Gestión del sistema (accesos agrupados) ── */
+    .sistema { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem 3rem; }
+    .ar-grupo + .ar-grupo { margin-top: 1.75rem; }
+    .ar-titulo {
+      font-size: .7rem; font-weight: 800; color: #9CA3AF;
+      text-transform: uppercase; letter-spacing: .1em; margin-bottom: .6rem;
     }
-    .landing-cabecera .lc-titulo {
-      font-size: .68rem; font-weight: 800; color: #9CA3AF;
-      text-transform: uppercase; letter-spacing: .1em; margin: 0;
+    .ar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .6rem; }
+    .ar-btn {
+      display: flex; align-items: center; gap: .6rem;
+      background: var(--blanco); border: 1px solid var(--borde);
+      border-radius: 12px; padding: .85rem 1rem;
+      text-decoration: none; color: var(--gris-texto);
+      font-size: .9rem; font-weight: 700;
+      transition: border-color .18s, box-shadow .18s;
     }
-    .landing-cabecera .lc-sub {
-      font-size: .85rem; color: #6B7280; margin: .2rem 0 0;
-    }
+    .ar-btn:hover { border-color: #F97316; box-shadow: 0 2px 10px rgba(249,115,22,.12); }
+    .ar-btn .ar-icon { font-size: 1.1rem; }
 
   </style>
 </head>
@@ -430,34 +425,46 @@ $conn->close();
 <div class="welcome">
   <h1>Panel de Administración</h1>
   <p>Gestión integral del centro educativo</p>
-  <span class="rol-badge">Administrador</span>
-</div>
-
-<!-- Accesos rápidos al sistema -->
-<div class="accesos-rapidos">
-  <p class="ar-titulo">Gestión del Sistema</p>
-  <div class="ar-grid">
-    <a href="../gestion/alumnos.php"       class="ar-btn"><span class="ar-icon">👩‍🎓</span> Gestión de Alumnos</a>
-    <a href="../gestion/legajo.php"        class="ar-btn"><span class="ar-icon">📂</span> Legajo de Alumno</a>
-    <a href="../gestion/vacantes.php"      class="ar-btn"><span class="ar-icon">🏫</span> Vacantes por Curso</a>
-    <a href="../gestion/materias.php"      class="ar-btn"><span class="ar-icon">📖</span> Materias y Docentes</a>
-    <a href="../gestion/planificacion.php" class="ar-btn"><span class="ar-icon">📁</span> Planificaciones</a>
-    <a href="../gestion/recuperatorios.php" class="ar-btn"><span class="ar-icon">🔄</span> Recuperatorios</a>
-    <a href="../gestion/cuotas.php"        class="ar-btn"><span class="ar-icon">💳</span> Cuotas y Pagos</a>
-    <a href="../gestion/tarifas.php"       class="ar-btn"><span class="ar-icon">💲</span> Tarifas</a>
-    <a href="../gestion/facturacion.php"   class="ar-btn"><span class="ar-icon">🧾</span> Facturación</a>
-    <a href="../gestion/pagos_revisar.php" class="ar-btn"><span class="ar-icon">🔎</span> Pagos a revisar</a>
-    <a href="../gestion/reportes_pagos.php" class="ar-btn"><span class="ar-icon">📊</span> Reportes de pagos</a>
-    <a href="../gestion/mails.php"         class="ar-btn"><span class="ar-icon">✉️</span> Mails enviados</a>
-    <a href="../gestion/sanciones.php"     class="ar-btn"><span class="ar-icon">⚠️</span> Sanciones</a>
+  <div class="selector-vista" role="tablist" aria-label="Qué gestionar">
+    <button type="button" role="tab" id="sel-sistema" data-vista="sistema" aria-controls="vista-sistema" aria-selected="true">Gestión del sistema</button>
+    <button type="button" role="tab" id="sel-landing" data-vista="landing" aria-controls="vista-landing" aria-selected="false">Landing page</button>
   </div>
 </div>
 
-<!-- Gestión de la landing page: contenido que ven los visitantes del sitio público -->
-<div class="landing-cabecera">
-  <p class="lc-titulo">Gestión de la Landing Page</p>
-  <p class="lc-sub">Lo que ven y envían los visitantes del sitio público.</p>
+<!-- ══ VISTA: GESTIÓN DEL SISTEMA ══ -->
+<div class="vista sistema" id="vista-sistema" role="tabpanel" aria-labelledby="sel-sistema">
+  <section class="ar-grupo">
+    <p class="ar-titulo">Alumnos y cursos</p>
+    <div class="ar-grid">
+      <a href="../gestion/alumnos.php"        class="ar-btn"><span class="ar-icon">👩‍🎓</span> Gestión de Alumnos</a>
+      <a href="../gestion/legajo.php"         class="ar-btn"><span class="ar-icon">📂</span> Legajo de Alumno</a>
+      <a href="../gestion/vacantes.php"       class="ar-btn"><span class="ar-icon">🏫</span> Vacantes por Curso</a>
+      <a href="../gestion/materias.php"       class="ar-btn"><span class="ar-icon">📖</span> Materias y Docentes</a>
+    </div>
+  </section>
+  <section class="ar-grupo">
+    <p class="ar-titulo">Académico y convivencia</p>
+    <div class="ar-grid">
+      <a href="../gestion/planificacion.php"  class="ar-btn"><span class="ar-icon">📁</span> Planificaciones</a>
+      <a href="../gestion/recuperatorios.php" class="ar-btn"><span class="ar-icon">🔄</span> Recuperatorios</a>
+      <a href="../gestion/sanciones.php"      class="ar-btn"><span class="ar-icon">⚠️</span> Sanciones</a>
+    </div>
+  </section>
+  <section class="ar-grupo">
+    <p class="ar-titulo">Cobros</p>
+    <div class="ar-grid">
+      <a href="../gestion/cuotas.php"         class="ar-btn"><span class="ar-icon">💳</span> Cuotas y Pagos</a>
+      <a href="../gestion/tarifas.php"        class="ar-btn"><span class="ar-icon">💲</span> Tarifas</a>
+      <a href="../gestion/facturacion.php"    class="ar-btn"><span class="ar-icon">🧾</span> Facturación</a>
+      <a href="../gestion/pagos_revisar.php"  class="ar-btn"><span class="ar-icon">🔎</span> Pagos a revisar</a>
+      <a href="../gestion/reportes_pagos.php" class="ar-btn"><span class="ar-icon">📊</span> Reportes de pagos</a>
+      <a href="../gestion/mails.php"          class="ar-btn"><span class="ar-icon">✉️</span> Mails enviados</a>
+    </div>
+  </section>
 </div>
+
+<!-- ══ VISTA: LANDING PAGE ══ -->
+<div class="vista" id="vista-landing" role="tabpanel" aria-labelledby="sel-landing" hidden>
 
 <!-- Navegación por pestañas -->
 <nav class="tabs-nav" aria-label="Gestión de la landing page">
@@ -1065,6 +1072,8 @@ $conn->close();
 
 </div>
 
+</div><!-- /vista-landing -->
+
 <!-- Modal admisión -->
 <div class="overlay" id="overlay-admitir" onclick="cerrarModal(event)">
   <div class="modal-box">
@@ -1213,6 +1222,23 @@ $conn->close();
     if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
     return edad;
   }
+
+  // ── Selector de vista: Gestión del sistema / Landing page ────────────
+  // Recuerda la última vista elegida (si el navegador no deja guardar, arranca en "sistema").
+  function mostrarVista(vista) {
+    document.querySelectorAll('.selector-vista button').forEach(b => {
+      const activa = b.dataset.vista === vista;
+      b.setAttribute('aria-selected', activa ? 'true' : 'false');
+      document.getElementById('vista-' + b.dataset.vista).hidden = !activa;
+    });
+    try { localStorage.setItem('adminVista', vista); } catch (e) { /* sin almacenamiento */ }
+  }
+  document.querySelectorAll('.selector-vista button').forEach(b => {
+    b.addEventListener('click', () => mostrarVista(b.dataset.vista));
+  });
+  let vistaGuardada = null;
+  try { vistaGuardada = localStorage.getItem('adminVista'); } catch (e) { /* sin almacenamiento */ }
+  mostrarVista(vistaGuardada === 'landing' ? 'landing' : 'sistema');
 
   // ── Navegación por tabs ──────────────────────────────────────────────
   document.querySelectorAll('.tab-btn').forEach(btn => {
