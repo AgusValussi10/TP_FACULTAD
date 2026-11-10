@@ -70,6 +70,25 @@ function api_sesion(): array
     return $sesion;
 }
 
+/** Los pagos los hace la familia: el alumno recibe 403. */
+function api_solo_padre(array $sesion): void
+{
+    if ($sesion['rol'] !== 'padre') {
+        responder_json(403, false, null, 'Los pagos los hace la familia desde su cuenta.');
+        exit;
+    }
+}
+
+/** Ejecuta $fn y responde su resultado; una ReglaNegocioException se responde con su código y mensaje. */
+function api_responder(callable $fn, string $mensaje = ''): void
+{
+    try {
+        responder_json(200, true, $fn(), $mensaje);
+    } catch (ReglaNegocioException $e) {
+        responder_json($e->getCode(), false, null, $e->getMessage());
+    }
+}
+
 /** Hijos del padre, o el propio alumno, con curso y nivel. */
 function api_alumnos(mysqli $conn, array $sesion): array
 {

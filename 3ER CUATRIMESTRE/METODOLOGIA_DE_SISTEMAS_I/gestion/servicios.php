@@ -1,4 +1,5 @@
 <?php
+
 require_once '../auth/session.php';
 if (($_SESSION['rol'] ?? '') !== 'padre') {
     header('Location: /');
@@ -168,6 +169,10 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
           <input type="checkbox" id="chk-transporte">
           <div><strong>🚌 Transporte</strong><span>Traslado escolar mensual</span></div>
         </label>
+        <label class="servicio-item" for="sel-recorrido">
+          <div><strong>Recorrido</strong><span>Obligatorio si reservás transporte (puede cambiar mes a mes)</span></div>
+          <select id="sel-recorrido"><option value="">Elegí un recorrido…</option></select>
+        </label>
       </div>
 
       <button type="button" class="btn" id="btn-guardar">💾 Confirmar reserva</button>
@@ -183,6 +188,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
   const chkComedor    = document.getElementById('chk-comedor');
   const chkTransporte = document.getElementById('chk-transporte');
   const btnGuardar = document.getElementById('btn-guardar');
+  const selRecorrido = document.getElementById('sel-recorrido');
   const plazoAviso = document.getElementById('plazo-aviso');
   const msg = document.getElementById('msg');
 
@@ -211,6 +217,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
     plazoAviso.style.display = plazoVencido ? '' : 'none';
     chkComedor.disabled = plazoVencido;
     chkTransporte.disabled = plazoVencido;
+    selRecorrido.disabled = plazoVencido;
     btnGuardar.disabled = plazoVencido;
   }
 
@@ -240,6 +247,15 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
 
       chkComedor.checked = data.comedor;
       chkTransporte.checked = data.transporte;
+      if (selRecorrido.options.length === 1) {
+        data.recorridos.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.id;
+          opt.textContent = r.nombre + (r.valor ? ` – $ ${r.valor.toLocaleString('es-AR')}` : '');
+          selRecorrido.appendChild(opt);
+        });
+      }
+      selRecorrido.value = data.recorrido_id || '';
       actualizarPlazo(data.plazo_vencido);
       setMsg('');
     } catch {
@@ -257,6 +273,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
     if (chkTransporte.checked) servicios.push('transporte');
 
     if (servicios.length === 0) { setMsg('Marcá al menos un servicio.', '#DC2626'); return; }
+    if (chkTransporte.checked && !selRecorrido.value) { setMsg('Elegí el recorrido del transporte.', '#DC2626'); return; }
 
     btnGuardar.disabled = true;
     setMsg('Guardando...');
@@ -266,6 +283,7 @@ $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Padre/Tutor');
     body.append('mes', selMes.value);
     body.append('anio', selAnio.value);
     servicios.forEach(s => body.append('servicios[]', s));
+    body.append('recorrido_id', selRecorrido.value);
 
     try {
       const res  = await fetch('servicios_guardar.php', { method: 'POST', body });

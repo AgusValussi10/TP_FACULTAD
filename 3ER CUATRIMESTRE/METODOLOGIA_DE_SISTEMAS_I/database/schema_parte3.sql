@@ -137,3 +137,26 @@ CREATE TABLE IF NOT EXISTS comprobantes_transferencia (
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (pago_id) REFERENCES pagos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- RFGm07/RFGm08: mails de fin de mes (total a abonar + factura adjunta) y del día 20
+-- (deuda impaga). Por ahora solo en MODO SIMULACIÓN (sin SMTP): el mail se arma y se
+-- guarda acá. La clave única evita mandar dos veces el mismo tipo y mes al mismo padre.
+-- "adjuntos": ids de las facturas adjuntas (el PDF se genera al verlo).
+CREATE TABLE IF NOT EXISTS mails_enviados (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    padre_id       INT NOT NULL,
+    tipo           ENUM('fin_de_mes','dia_20') NOT NULL,
+    mes            TINYINT UNSIGNED  NOT NULL,
+    anio           SMALLINT UNSIGNED NOT NULL,
+    destinatario   VARCHAR(150) NULL DEFAULT NULL,
+    asunto         VARCHAR(200) NOT NULL,
+    cuerpo_html    MEDIUMTEXT NOT NULL,
+    adjuntos       VARCHAR(255) NULL DEFAULT NULL,
+    total          DECIMAL(10,2) NOT NULL,
+    estado         ENUM('simulado','enviado','error') NOT NULL DEFAULT 'simulado',
+    error          VARCHAR(255) NULL DEFAULT NULL,
+    fecha_simulada DATE NOT NULL,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_mail (padre_id, tipo, mes, anio),
+    FOREIGN KEY (padre_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
