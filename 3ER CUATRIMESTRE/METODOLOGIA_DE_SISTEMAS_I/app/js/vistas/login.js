@@ -22,7 +22,7 @@ export function render(main, ctx) {
         </div>
         <button class="btn" type="submit" id="btn-ingresar">Ingresar</button>
       </form>
-      <p class="sub">¿Sos docente o trabajás en la escuela? Ingresá desde la <a href="/">web</a>.</p>
+      <p class="sub">¿Sos docente o trabajás en la escuela?<br>Ingresá desde la <a href="/">web</a>.</p>
     </section>`;
 
   const msg = document.getElementById('login-msg');

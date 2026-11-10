@@ -277,16 +277,20 @@ $conn->close();
     /* ── Tabs ── */
     .tabs-nav {
       display: flex; gap: .5rem;
-      background: var(--blanco); border-bottom: 2px solid var(--borde);
+      background: var(--blanco);
       padding: 0 1.5rem; position: sticky; top: 65px; z-index: 90;
-      box-shadow: 0 2px 8px rgba(0,0,0,.05);
-      overflow-x: auto;
+      /* La línea inferior va como sombra interna: un borde con margin negativo en los botones
+         desbordaba 2px en vertical y el navegador mostraba una barra de scroll. */
+      box-shadow: inset 0 -2px 0 var(--borde), 0 2px 8px rgba(0,0,0,.05);
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none;
     }
+    .tabs-nav::-webkit-scrollbar { display: none; }
     .tab-btn {
       background: none; border: none; cursor: pointer; font-family: inherit;
       font-size: .9rem; font-weight: 700; color: #6B7280;
       padding: .9rem 1.2rem; border-bottom: 3px solid transparent;
-      margin-bottom: -2px; transition: color .2s, border-color .2s;
+      transition: color .2s, border-color .2s;
       white-space: nowrap; display: flex; align-items: center; gap: .4rem;
     }
     .tab-btn:hover { color: var(--verde); }
@@ -390,6 +394,21 @@ $conn->close();
     .ar-btn:hover { background: rgba(249,115,22,.3); border-color: #F97316; color: #fff; }
     .ar-btn .ar-icon { font-size: 1rem; }
 
+    /* ── Gestión de la Landing Page (separada de la del sistema) ── */
+    .landing-cabecera {
+      margin-top: 1.75rem;
+      background: var(--blanco);
+      border-top: 1px solid var(--borde);
+      padding: 1.1rem 1.5rem .4rem;
+    }
+    .landing-cabecera .lc-titulo {
+      font-size: .68rem; font-weight: 800; color: #9CA3AF;
+      text-transform: uppercase; letter-spacing: .1em; margin: 0;
+    }
+    .landing-cabecera .lc-sub {
+      font-size: .85rem; color: #6B7280; margin: .2rem 0 0;
+    }
+
   </style>
 </head>
 <body>
@@ -432,8 +451,14 @@ $conn->close();
   </div>
 </div>
 
+<!-- Gestión de la landing page: contenido que ven los visitantes del sitio público -->
+<div class="landing-cabecera">
+  <p class="lc-titulo">Gestión de la Landing Page</p>
+  <p class="lc-sub">Lo que ven y envían los visitantes del sitio público.</p>
+</div>
+
 <!-- Navegación por pestañas -->
-<nav class="tabs-nav">
+<nav class="tabs-nav" aria-label="Gestión de la landing page">
   <button class="tab-btn active" data-tab="inscripciones">📋 Inscripciones</button>
   <button class="tab-btn" data-tab="opiniones">💬 Opiniones</button>
   <button class="tab-btn" data-tab="propuestas">💼 Propuestas de Trabajo</button>
